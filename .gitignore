@@ -1,0 +1,27 @@
+# OS & IDE
+.DS_Store
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+*.log
+
+# Backend (Java / Maven)
+backend/target/
+backend/.classpath
+backend/.project
+backend/.settings/
+backend/.apt_generated/
+backend/.factorypath
+
+# Frontend (Node / Vite)
+frontend/node_modules/
+frontend/dist/
+frontend/dist-ssr/
+frontend/*.local
+frontend/.env.local
+frontend/.env.*.local
+
+# MinIO runtime lock / temp files
+minio-storage/.minio.sys/tmp/

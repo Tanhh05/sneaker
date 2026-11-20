@@ -1,0 +1,102 @@
+services:
+  # -------------------------------------------------------------
+  # 1. Oracle Database 23ai Free (Auto-creates schema & seed data)
+  # -------------------------------------------------------------
+  sneaker-oracle:
+    image: container-registry.oracle.com/database/free:latest
+    container_name: sneaker-oracle
+    restart: unless-stopped
+    ports:
+      - "${ORACLE_PORT:-1521}:1521"
+    environment:
+      - ORACLE_PWD=SneakerStore123
+      - ORACLE_CHARACTERSET=AL32UTF8
+    volumes:
+      - oracle-data:/opt/oracle/oradata
+      - ./backend/database:/opt/sneaker-db-scripts:ro
+      - ./backend/database/docker-init:/opt/oracle/scripts/setup:ro
+    networks:
+      - sneaker-net
+    healthcheck:
+      test: ["CMD-SHELL", "\"$$SCRIPT_BASE_DIR/$$CHECK_DB_FILE\" >/dev/null || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 30
+      start_period: 60s
+
+  # -------------------------------------------------------------
+  # 2. MinIO Object Storage (S3 API: 9000 & Web Console: 9001)
+  # -------------------------------------------------------------
+  sneaker-minio:
+    image: elestio/minio:latest
+    container_name: sneaker-minio
+    restart: unless-stopped
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    volumes:
+      - ./minio-storage:/data
+    command: server /data --console-address ":9001"
+    networks:
+      - sneaker-net
+
+  # -------------------------------------------------------------
+  # 3. Spring Boot 3 Backend (Java 17)
+  # -------------------------------------------------------------
+  sneaker-backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: sneaker-backend
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - SERVER_PORT=8080
+      - DB_URL=jdbc:oracle:thin:@//sneaker-oracle:1521/FREEPDB1
+      - DB_USERNAME=SNEAKER_STORE
+      - DB_PASSWORD=SneakerStore123
+      - MINIO_ENDPOINT=http://sneaker-minio:9000
+      - MINIO_ACCESS_KEY=minioadmin
+      - MINIO_SECRET_KEY=minioadmin
+      - MINIO_BUCKET_NAME=sneaker-products
+      - MINIO_PUBLIC_URL=http://localhost:9000/sneaker-products
+      - SEPAY_BANK_ACCOUNT=0346771322
+      - SEPAY_ACCOUNT_NAME=SNEAKERHUB PRO
+      - SEPAY_BANK_NAME=MBBank
+    networks:
+      - sneaker-net
+    depends_on:
+      sneaker-oracle:
+        condition: service_healthy
+      sneaker-minio:
+        condition: service_started
+
+  # -------------------------------------------------------------
+  # 4. Vue 3 Frontend (Nginx Reverse Proxy)
+  # -------------------------------------------------------------
+  sneaker-frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: sneaker-frontend
+    restart: unless-stopped
+    ports:
+      - "5173:80"
+      - "80:80"
+    networks:
+      - sneaker-net
+    depends_on:
+      - sneaker-backend
+
+volumes:
+  oracle-data:
+    name: sneaker-oracle-data
+
+networks:
+  sneaker-net:
+    name: sneaker-net
+    driver: bridge

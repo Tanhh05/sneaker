@@ -1,0 +1,650 @@
+package com.sneakerstore.service.impl;
+
+import com.sneakerstore.common.constant.AppConstants;
+import com.sneakerstore.common.exception.BusinessException;
+import com.sneakerstore.common.exception.ResourceNotFoundException;
+import com.sneakerstore.common.response.PageResponse;
+import com.sneakerstore.common.util.SecurityUtils;
+import com.sneakerstore.dto.request.CreateReviewRequest;
+import com.sneakerstore.dto.request.StoreOrderRequest;
+import com.sneakerstore.dto.response.*;
+import com.sneakerstore.entity.*;
+import com.sneakerstore.mapper.OrderMapper;
+import com.sneakerstore.repository.*;
+import com.sneakerstore.service.BrandService;
+import com.sneakerstore.service.CategoryService;
+import com.sneakerstore.service.ProductService;
+import com.sneakerstore.service.StoreService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.stream.Collectors;
+
+@Service
+@RequiredArgsConstructor
+@Slf4j
+public class StoreServiceImpl implements StoreService {
+
+    private final BrandService brandService;
+    private final CategoryService categoryService;
+    private final ProductService productService;
+    private final ProductVariantRepository variantRepository;
+    private final CustomerRepository customerRepository;
+    private final SalesOrderRepository salesOrderRepository;
+    private final SalesOrderDetailRepository detailRepository;
+    private final OrderStatusHistoryRepository historyRepository;
+    private final PaymentRepository paymentRepository;
+    private final ProductReviewRepository reviewRepository;
+    private final ProductRepository productRepository;
+    private final ReportQueryRepository reportQueryRepository;
+    private final OrderMapper orderMapper;
+    private final UserRepository userRepository;
+
+    @Value("${sepay.bank-account:0346771322}")
+    private String configuredBankAccount;
+
+    @Value("${sepay.account-name:SNEAKERHUB PRO}")
+    private String configuredAccountName;
+
+    @Value("${sepay.bank-name:MBBank}")
+    private String configuredBankName;
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<BrandDto> getActiveBrands() {
+        return brandService.getAllBrands().stream()
+                .filter(b -> AppConstants.STATUS_ACTIVE.equalsIgnoreCase(b.getStatus()))
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<CategoryDto> getActiveCategories() {
+        return categoryService.getAllCategories().stream()
+                .filter(c -> AppConstants.STATUS_ACTIVE.equalsIgnoreCase(c.getStatus()))
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PageResponse<ProductDto> getStoreProducts(String keyword, Long brandId, Long categoryId, int page, int size) {
+        return productService.searchProducts(
+                keyword,
+                brandId,
+                categoryId,
+                AppConstants.STATUS_ACTIVE,
+                PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "id"))
+        );
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ProductDto> getFeaturedProducts() {
+        PageResponse<ProductDto> result = productService.searchProducts(
+                null,
+                null,
+                null,
+                AppConstants.STATUS_ACTIVE,
+                PageRequest.of(0, 8, Sort.by(Sort.Direction.DESC, "id"))
+        );
+        return result.getContent();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ProductDto getBestSellerProduct() {
+        try {
+            List<DashboardResponse.ProductSalesStatDto> stats = reportQueryRepository.queryProductSalesStats(
+                    null, null, null, null, true, 1);
+            if (stats != null && !stats.isEmpty()) {
+                Long topProdId = stats.get(0).getProductId();
+                if (topProdId != null) {
+                    ProductDto dto = productService.getById(topProdId);
+                    if (dto != null) {
+                        return dto;
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Lỗi khi truy vấn sản phẩm bán chạy nhất cho Store: {}", e.getMessage());
+        }
+
+        // Fallback sang sản phẩm nổi bật đầu tiên nếu chưa có số liệu bán hàng
+        List<ProductDto> featured = getFeaturedProducts();
+        if (featured != null && !featured.isEmpty()) {
+            return productService.getById(featured.get(0).getId());
+        }
+        return null;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ProductDto getProductDetail(Long id) {
+        return productService.getById(id);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public StoreOrderResponse checkout(StoreOrderRequest request) {
+        log.info("Khách hàng đang đặt hàng online: {}", request.getCustomerName());
+
+        // 1. Tìm hoặc tạo mới thông tin khách hàng theo số điện thoại
+        Customer customer = customerRepository.findByPhone(request.getCustomerPhone().trim())
+                .orElseGet(() -> {
+                    String customerCode = generateCustomerCode();
+                    Customer newCustomer = Customer.builder()
+                            .customerCode(customerCode)
+                            .fullName(request.getCustomerName().trim())
+                            .phone(request.getCustomerPhone().trim())
+                            .email(request.getCustomerEmail() != null ? request.getCustomerEmail().trim() : null)
+                            .address(request.getShippingAddress().trim())
+                            .status(AppConstants.STATUS_ACTIVE)
+                            .build();
+                    return customerRepository.save(newCustomer);
+                });
+
+        // Cập nhật lại họ tên, email và địa chỉ mới nhất cho khách hàng
+        customer.setFullName(request.getCustomerName().trim());
+        customer.setAddress(request.getShippingAddress().trim());
+        if (request.getCustomerEmail() != null && !request.getCustomerEmail().trim().isEmpty()) {
+            customer.setEmail(request.getCustomerEmail().trim());
+        }
+        customerRepository.save(customer);
+
+        // 2. Gộp sản phẩm trùng và kiểm tra tồn kho từng biến thể
+        Map<Long, Integer> itemMap = new LinkedHashMap<>();
+        for (StoreOrderRequest.StoreOrderItemRequest item : request.getItems()) {
+            itemMap.merge(item.getVariantId(), item.getQuantity(), Integer::sum);
+        }
+
+        BigDecimal totalAmount = BigDecimal.ZERO;
+        List<SalesOrderDetail> details = new ArrayList<>();
+        List<ProductVariant> variantsToUpdate = new ArrayList<>();
+
+        for (Map.Entry<Long, Integer> entry : itemMap.entrySet()) {
+            Long variantId = entry.getKey();
+            Integer qty = entry.getValue();
+
+            ProductVariant variant = variantRepository.findById(variantId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy biến thể sản phẩm với ID: " + variantId));
+
+            if (!AppConstants.STATUS_ACTIVE.equalsIgnoreCase(variant.getStatus())) {
+                throw new BusinessException("Sản phẩm '" + variant.getProduct().getProductName() + "' (SKU: " + variant.getSku() + ") hiện đã ngừng kinh doanh");
+            }
+
+            if (variant.getAvailableQuantity() < qty) {
+                throw new BusinessException(String.format(
+                        "Sản phẩm '%s' (SKU: %s) không đủ số lượng tồn! Hiện còn: %d đôi, bạn yêu cầu: %d đôi",
+                        variant.getProduct().getProductName(), variant.getSku(), variant.getAvailableQuantity(), qty
+                ));
+            }
+
+            // Trừ tồn kho khả dụng ngay để giữ hàng cho đơn online
+            variant.setAvailableQuantity(variant.getAvailableQuantity() - qty);
+            variantsToUpdate.add(variant);
+
+            BigDecimal unitPrice = variant.getSalePrice() != null ? variant.getSalePrice() : BigDecimal.ZERO;
+            BigDecimal subtotal = unitPrice.multiply(BigDecimal.valueOf(qty));
+            totalAmount = totalAmount.add(subtotal);
+
+            SalesOrderDetail detail = SalesOrderDetail.builder()
+                    .productVariant(variant)
+                    .quantity(qty)
+                    .unitPrice(unitPrice)
+                    .subtotal(subtotal)
+                    .build();
+            details.add(detail);
+        }
+
+        // Lưu cập nhật tồn kho
+        variantRepository.saveAll(variantsToUpdate);
+
+        // 3. Khởi tạo đơn bán hàng
+        String orderCode = generateOrderCode();
+        String paymentMethod = (request.getPaymentMethod() != null && request.getPaymentMethod().equalsIgnoreCase("BANK_TRANSFER"))
+                ? AppConstants.PAYMENT_BANK_TRANSFER
+                : AppConstants.PAYMENT_CASH;
+
+        StringBuilder noteBuilder = new StringBuilder();
+        noteBuilder.append("[ĐƠN HÀNG ONLINE] Người nhận: ").append(request.getCustomerName().trim())
+                .append(" | SĐT: ").append(request.getCustomerPhone().trim())
+                .append(" | Đ/C nhận: ").append(request.getShippingAddress().trim());
+        if (request.getNote() != null && !request.getNote().trim().isEmpty()) {
+            noteBuilder.append(" | Ghi chú: ").append(request.getNote().trim());
+        }
+
+        SalesOrder order = SalesOrder.builder()
+                .orderCode(orderCode)
+                .customer(customer)
+                .employee(null) // Khách đặt online, không có nhân viên tại quầy
+                .orderDate(LocalDateTime.now())
+                .totalAmount(totalAmount)
+                .finalAmount(totalAmount)
+                .paymentMethod(paymentMethod)
+                .status(AppConstants.ORDER_PENDING)
+                .note(noteBuilder.toString())
+                .build();
+
+        SalesOrder savedOrder = salesOrderRepository.save(order);
+
+        // Lưu chi tiết đơn hàng
+        for (SalesOrderDetail detail : details) {
+            detail.setSalesOrder(savedOrder);
+        }
+        detailRepository.saveAll(details);
+
+        // Lưu lịch sử trạng thái đơn hàng
+        OrderStatusHistory history = OrderStatusHistory.builder()
+                .salesOrder(savedOrder)
+                .fromStatus(null)
+                .toStatus(AppConstants.ORDER_PENDING)
+                .changedAt(LocalDateTime.now())
+                .note("Khách hàng đặt hàng trực tuyến trên website Storefront (Chờ xác nhận)")
+                .build();
+        historyRepository.save(history);
+
+        // Xử lý thông tin thanh toán chuyển khoản nếu khách chọn BANK_TRANSFER
+        String qrUrl = null;
+        String bankInfo = null;
+        String accountNo = configuredBankAccount != null ? configuredBankAccount : "0346771322";
+        String bankId = configuredBankName != null ? configuredBankName : "MBBank";
+        String accountName = configuredAccountName != null ? configuredAccountName : "SNEAKERHUB PRO";
+        if (AppConstants.PAYMENT_BANK_TRANSFER.equals(paymentMethod)) {
+            long amount = totalAmount.longValue();
+            String memo = URLEncoder.encode(orderCode, StandardCharsets.UTF_8);
+            qrUrl = String.format("https://qr.sepay.vn/img?acc=%s&bank=%s&amount=%d&des=%s&template=compact",
+                    accountNo, bankId, amount, memo);
+            bankInfo = String.format("Ngân hàng: %s | STK: %s | Chủ TK: %s | Nội dung: %s", bankId, accountNo, accountName, orderCode);
+        }
+
+        List<SalesOrderDetailDto> itemDtos = details.stream()
+                .map(orderMapper::toDetailDto)
+                .collect(Collectors.toList());
+
+        return StoreOrderResponse.builder()
+                .orderId(savedOrder.getId())
+                .orderCode(savedOrder.getOrderCode())
+                .orderDate(savedOrder.getOrderDate())
+                .customerName(request.getCustomerName())
+                .customerPhone(request.getCustomerPhone())
+                .shippingAddress(request.getShippingAddress())
+                .totalAmount(totalAmount)
+                .paymentMethod(paymentMethod)
+                .status(savedOrder.getStatus())
+                .qrPaymentUrl(qrUrl)
+                .bankInfo(bankInfo)
+                .bankAccount(accountNo)
+                .bankName(bankId)
+                .accountName(accountName)
+                .note(savedOrder.getNote())
+                .items(itemDtos)
+                .build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public SalesOrderDto trackOrder(String code, String phone) {
+        SalesOrder order = salesOrderRepository.findByOrderCodeIgnoreCase(code.trim())
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng với mã: " + code));
+
+        if (phone != null && !phone.trim().isEmpty()) {
+            if (order.getCustomer() == null || !phone.trim().equals(order.getCustomer().getPhone())) {
+                throw new BusinessException("Số điện thoại không khớp với thông tin đơn hàng!");
+            }
+        }
+
+        SalesOrderDto dto = orderMapper.toSummaryDto(order);
+        dto.setDetails(detailRepository.findBySalesOrderIdOrderByIdAsc(order.getId()).stream()
+                .map(orderMapper::toDetailDto)
+                .collect(Collectors.toList()));
+        dto.setHistories(historyRepository.findBySalesOrderIdOrderByChangedAtAscIdAsc(order.getId()).stream()
+                .map(orderMapper::toHistoryDto)
+                .collect(Collectors.toList()));
+        attachPaymentQrIfApplicable(dto);
+        return dto;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<SalesOrderDto> getMyOrders(String phone, String email) {
+        String queryPhone = phone != null ? phone.trim() : null;
+        String queryEmail = email != null ? email.trim() : null;
+
+        // Tự động nhận diện User đang đăng nhập qua SecurityContext JWT
+        String username = SecurityUtils.getCurrentUsername();
+        if (!"SYSTEM".equals(username) && !"anonymousUser".equals(username)) {
+            User user = userRepository.findByUsername(username).orElse(null);
+            if (user != null) {
+                if ((queryPhone == null || queryPhone.isEmpty()) && user.getPhone() != null) {
+                    queryPhone = user.getPhone().trim();
+                }
+                if ((queryEmail == null || queryEmail.isEmpty()) && user.getEmail() != null) {
+                    queryEmail = user.getEmail().trim();
+                }
+            }
+        }
+
+        if ((queryPhone == null || queryPhone.isEmpty()) && (queryEmail == null || queryEmail.isEmpty())) {
+            return Collections.emptyList();
+        }
+
+        List<SalesOrder> orders = new ArrayList<>();
+        Set<Long> seenOrderIds = new HashSet<>();
+
+        // 1. Tìm theo Customer ID thông qua Số điện thoại hoặc Email
+        if (queryPhone != null && !queryPhone.isEmpty()) {
+            customerRepository.findByPhone(queryPhone).ifPresent(cust -> {
+                List<SalesOrder> list = salesOrderRepository.findByCustomerIdOrderByOrderDateDesc(cust.getId());
+                for (SalesOrder o : list) {
+                    if (seenOrderIds.add(o.getId())) orders.add(o);
+                }
+            });
+        }
+        if (queryEmail != null && !queryEmail.isEmpty()) {
+            customerRepository.findByEmail(queryEmail).ifPresent(cust -> {
+                List<SalesOrder> list = salesOrderRepository.findByCustomerIdOrderByOrderDateDesc(cust.getId());
+                for (SalesOrder o : list) {
+                    if (seenOrderIds.add(o.getId())) orders.add(o);
+                }
+            });
+        }
+
+        // 2. Dự phòng thêm query trực tiếp trên SalesOrder
+        List<SalesOrder> directOrders = salesOrderRepository.findOrdersByPhoneOrEmail(queryPhone, queryEmail);
+        for (SalesOrder o : directOrders) {
+            if (seenOrderIds.add(o.getId())) orders.add(o);
+        }
+
+        orders.sort((a, b) -> b.getOrderDate().compareTo(a.getOrderDate()));
+
+        return orders.stream().map(order -> {
+            SalesOrderDto dto = orderMapper.toSummaryDto(order);
+            dto.setDetails(detailRepository.findBySalesOrderIdOrderByIdAsc(order.getId()).stream()
+                    .map(orderMapper::toDetailDto)
+                    .collect(Collectors.toList()));
+            dto.setHistories(historyRepository.findBySalesOrderIdOrderByChangedAtAscIdAsc(order.getId()).stream()
+                    .map(orderMapper::toHistoryDto)
+                    .collect(Collectors.toList()));
+            dto.setPayments(paymentRepository.findBySalesOrderIdOrderByIdAsc(order.getId()).stream()
+                    .map(orderMapper::toPaymentDto)
+                    .collect(Collectors.toList()));
+            attachPaymentQrIfApplicable(dto);
+            return dto;
+        }).collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public SalesOrderDto getMyOrderDetail(String orderCode, String phone) {
+        SalesOrder order = salesOrderRepository.findByOrderCodeIgnoreCase(orderCode.trim())
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng với mã: " + orderCode));
+
+        validateOrderOwnership(order, phone);
+
+        SalesOrderDto dto = orderMapper.toSummaryDto(order);
+        dto.setDetails(detailRepository.findBySalesOrderIdOrderByIdAsc(order.getId()).stream()
+                .map(orderMapper::toDetailDto)
+                .collect(Collectors.toList()));
+        dto.setHistories(historyRepository.findBySalesOrderIdOrderByChangedAtAscIdAsc(order.getId()).stream()
+                .map(orderMapper::toHistoryDto)
+                .collect(Collectors.toList()));
+        dto.setPayments(paymentRepository.findBySalesOrderIdOrderByIdAsc(order.getId()).stream()
+                .map(orderMapper::toPaymentDto)
+                .collect(Collectors.toList()));
+        attachPaymentQrIfApplicable(dto);
+        return dto;
+    }
+
+    @Override
+    @Transactional
+    public SalesOrderDto cancelMyOrder(String orderCode, String reason, String phone) {
+        SalesOrder order = salesOrderRepository.findByOrderCodeIgnoreCase(orderCode.trim())
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng với mã: " + orderCode));
+
+        validateOrderOwnership(order, phone);
+
+        String currentStatus = order.getStatus();
+        if (!AppConstants.ORDER_PENDING.equalsIgnoreCase(currentStatus) && !AppConstants.ORDER_DRAFT.equalsIgnoreCase(currentStatus)) {
+            throw new BusinessException(String.format(
+                    "Đơn hàng %s đang ở trạng thái '%s', bạn chỉ có thể tự hủy khi đơn đang ở trạng thái Chờ xác nhận (PENDING). Vui lòng liên hệ hotline hỗ trợ!",
+                    orderCode, currentStatus));
+        }
+
+        // 1. Hoàn trả lại số lượng tồn kho khả dụng cho từng biến thể
+        List<SalesOrderDetail> details = detailRepository.findBySalesOrderIdOrderByIdAsc(order.getId());
+        List<ProductVariant> variantsToRestore = new ArrayList<>();
+        for (SalesOrderDetail d : details) {
+            ProductVariant pv = d.getProductVariant();
+            if (pv != null) {
+                int curr = pv.getAvailableQuantity() != null ? pv.getAvailableQuantity() : 0;
+                pv.setAvailableQuantity(curr + d.getQuantity());
+                variantsToRestore.add(pv);
+            }
+        }
+        if (!variantsToRestore.isEmpty()) {
+            variantRepository.saveAll(variantsToRestore);
+        }
+
+        // 2. Chuyển trạng thái đơn sang CANCELLED
+        String actor = SecurityUtils.getCurrentUsername();
+        if ("SYSTEM".equals(actor) || "anonymousUser".equals(actor)) {
+            actor = "KHÁCH HÀNG (CLIENT)";
+        }
+        order.setStatus(AppConstants.ORDER_CANCELLED);
+        order.setUpdatedBy(actor);
+        SalesOrder savedOrder = salesOrderRepository.save(order);
+
+        // 3. Ghi vết lịch sử trạng thái
+        String cancelNote = (reason != null && !reason.trim().isEmpty())
+                ? "Khách hàng yêu cầu hủy đơn trực tuyến: " + reason.trim()
+                : "Khách hàng tự hủy đơn hàng trực tuyến trên website";
+        OrderStatusHistory history = OrderStatusHistory.builder()
+                .salesOrder(savedOrder)
+                .fromStatus(currentStatus)
+                .toStatus(AppConstants.ORDER_CANCELLED)
+                .changedAt(LocalDateTime.now())
+                .note(cancelNote)
+                .build();
+        historyRepository.save(history);
+
+        SalesOrderDto dto = orderMapper.toSummaryDto(savedOrder);
+        dto.setDetails(details.stream().map(orderMapper::toDetailDto).collect(Collectors.toList()));
+        dto.setHistories(historyRepository.findBySalesOrderIdOrderByChangedAtAscIdAsc(savedOrder.getId()).stream()
+                .map(orderMapper::toHistoryDto)
+                .collect(Collectors.toList()));
+        return dto;
+    }
+
+    private void validateOrderOwnership(SalesOrder order, String phone) {
+        String username = SecurityUtils.getCurrentUsername();
+        if (!"SYSTEM".equals(username) && !"anonymousUser".equals(username)) {
+            User user = userRepository.findByUsername(username).orElse(null);
+            if (user != null) {
+                Customer c = order.getCustomer();
+                boolean matchesPhone = (c != null && c.getPhone() != null && user.getPhone() != null && c.getPhone().equals(user.getPhone()));
+                boolean matchesEmail = (c != null && c.getEmail() != null && user.getEmail() != null && c.getEmail().equalsIgnoreCase(user.getEmail()));
+                if (matchesPhone || matchesEmail) {
+                    return;
+                }
+            }
+        }
+        if (phone != null && !phone.trim().isEmpty()) {
+            Customer c = order.getCustomer();
+            if (c != null && phone.trim().equals(c.getPhone())) {
+                return;
+            }
+        }
+        throw new BusinessException("Bạn không có quyền truy cập hoặc thao tác trên đơn hàng này!");
+    }
+
+    private void attachPaymentQrIfApplicable(SalesOrderDto dto) {
+        if (dto == null) return;
+        String accountNo = configuredBankAccount != null ? configuredBankAccount : "0346771322";
+        String bankId = configuredBankName != null ? configuredBankName : "MBBank";
+        String accountName = configuredAccountName != null ? configuredAccountName : "SNEAKERHUB PRO";
+        dto.setBankAccount(accountNo);
+        dto.setBankName(bankId);
+        dto.setAccountName(accountName);
+        if (AppConstants.PAYMENT_BANK_TRANSFER.equalsIgnoreCase(dto.getPaymentMethod())
+                && (AppConstants.ORDER_PENDING.equalsIgnoreCase(dto.getStatus()) || AppConstants.ORDER_CONFIRMED.equalsIgnoreCase(dto.getStatus()))) {
+            long amount = dto.getFinalAmount() != null ? dto.getFinalAmount().longValue() : 0L;
+            String memo = URLEncoder.encode(dto.getOrderCode(), StandardCharsets.UTF_8);
+            String qrUrl = String.format("https://qr.sepay.vn/img?acc=%s&bank=%s&amount=%d&des=%s&template=compact",
+                    accountNo, bankId, amount, memo);
+            dto.setQrPaymentUrl(qrUrl);
+            dto.setBankInfo(String.format("Ngân hàng: %s | STK: %s | Chủ TK: %s | Nội dung: %s", bankId, accountNo, accountName, dto.getOrderCode()));
+        }
+    }
+
+    private String generateOrderCode() {
+        String code;
+        do {
+            int rand = java.util.concurrent.ThreadLocalRandom.current().nextInt(100000, 1000000);
+            code = "HD" + rand;
+        } while (salesOrderRepository.existsByOrderCodeIgnoreCase(code));
+        return code;
+    }
+
+    private String generateCustomerCode() {
+        String code;
+        do {
+            int rand = java.util.concurrent.ThreadLocalRandom.current().nextInt(100000, 1000000);
+            code = "KH" + rand;
+        } while (customerRepository.existsByCustomerCodeIgnoreCase(code));
+        return code;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ProductReviewSummaryDto getProductReviews(Long productId) {
+        List<ProductReview> reviews = reviewRepository.findByProductIdAndStatusOrderByCreatedAtDesc(productId, "APPROVED");
+
+        double avg = reviews.isEmpty() ? 5.0 : reviews.stream().mapToInt(ProductReview::getRating).average().orElse(5.0);
+        avg = Math.round(avg * 10.0) / 10.0;
+
+        Map<Integer, Long> starCounts = new HashMap<>();
+        for (int i = 1; i <= 5; i++) starCounts.put(i, 0L);
+        reviews.forEach(r -> starCounts.put(r.getRating(), starCounts.getOrDefault(r.getRating(), 0L) + 1));
+
+        Map<String, Long> fitCounts = new HashMap<>();
+        reviews.stream()
+                .filter(r -> r.getFitFeedback() != null && !r.getFitFeedback().isBlank())
+                .forEach(r -> fitCounts.put(r.getFitFeedback(), fitCounts.getOrDefault(r.getFitFeedback(), 0L) + 1));
+
+        List<ProductReviewDto> dtos = reviews.stream().map(r -> {
+            List<String> photos = new ArrayList<>();
+            if (r.getPhotoUrls() != null && !r.getPhotoUrls().isBlank()) {
+                photos = Arrays.stream(r.getPhotoUrls().split(","))
+                        .map(String::trim)
+                        .filter(s -> !s.isEmpty())
+                        .collect(Collectors.toList());
+            }
+            return ProductReviewDto.builder()
+                    .id(r.getId())
+                    .productId(r.getProduct().getId())
+                    .productName(r.getProduct().getProductName())
+                    .customerName(r.getCustomerName())
+                    .rating(r.getRating())
+                    .fitFeedback(r.getFitFeedback())
+                    .comment(r.getCommentText())
+                    .photoUrls(photos)
+                    .isPurchased(r.getIsPurchased() != null && r.getIsPurchased() == 1)
+                    .createdAt(r.getCreatedAt())
+                    .build();
+        }).collect(Collectors.toList());
+
+        return ProductReviewSummaryDto.builder()
+                .averageRating(avg)
+                .totalReviews(reviews.size())
+                .starCounts(starCounts)
+                .fitCounts(fitCounts)
+                .reviews(dtos)
+                .build();
+    }
+
+    @Override
+    @Transactional
+    public ProductReviewDto submitProductReview(Long productId, CreateReviewRequest request) {
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy sản phẩm ID: " + productId));
+
+        SalesOrder order = salesOrderRepository.findByOrderCodeIgnoreCase(request.getOrderCode().trim())
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng với mã: " + request.getOrderCode()));
+
+        if (!AppConstants.ORDER_COMPLETED.equalsIgnoreCase(order.getStatus())) {
+            throw new BusinessException("Bạn chỉ có thể gửi đánh giá khi đơn hàng đã ở trạng thái HOÀN THÀNH (COMPLETED)!");
+        }
+
+        // Verify product in order
+        List<SalesOrderDetail> details = detailRepository.findBySalesOrderIdOrderByIdAsc(order.getId());
+        boolean hasProduct = details.stream().anyMatch(d ->
+                d.getProductVariant() != null &&
+                d.getProductVariant().getProduct() != null &&
+                d.getProductVariant().getProduct().getId().equals(productId));
+
+        if (!hasProduct) {
+            throw new BusinessException("Sản phẩm này không nằm trong đơn hàng #" + order.getOrderCode() + " của bạn!");
+        }
+
+        // Verify phone if customer exists
+        if (order.getCustomer() != null && request.getCustomerPhone() != null && !request.getCustomerPhone().isBlank()) {
+            if (!request.getCustomerPhone().trim().equals(order.getCustomer().getPhone())) {
+                throw new BusinessException("Số điện thoại không khớp với thông tin người đặt đơn hàng này!");
+            }
+        }
+
+        // Check duplicate
+        if (reviewRepository.existsBySalesOrderIdAndProductId(order.getId(), productId)) {
+            throw new BusinessException("Bạn đã gửi đánh giá cho sản phẩm này trong đơn hàng #" + order.getOrderCode() + " rồi!");
+        }
+
+        String photos = null;
+        if (request.getPhotoUrls() != null && !request.getPhotoUrls().isEmpty()) {
+            photos = String.join(",", request.getPhotoUrls());
+        }
+
+        String custName = order.getCustomer() != null ? order.getCustomer().getFullName() : "Khách hàng SneakerHub";
+        String custPhone = order.getCustomer() != null ? order.getCustomer().getPhone() : request.getCustomerPhone();
+
+        ProductReview review = ProductReview.builder()
+                .product(product)
+                .salesOrder(order)
+                .customer(order.getCustomer())
+                .customerName(custName)
+                .customerPhone(custPhone)
+                .rating(request.getRating())
+                .fitFeedback(request.getFitFeedback() != null && !request.getFitFeedback().isBlank() ? request.getFitFeedback() : "TRUE_TO_SIZE")
+                .commentText(request.getComment())
+                .photoUrls(photos)
+                .isPurchased(1)
+                .status("APPROVED")
+                .createdBy(custName)
+                .updatedBy(custName)
+                .build();
+
+        ProductReview saved = reviewRepository.save(review);
+
+        return ProductReviewDto.builder()
+                .id(saved.getId())
+                .productId(product.getId())
+                .productName(product.getProductName())
+                .customerName(saved.getCustomerName())
+                .rating(saved.getRating())
+                .fitFeedback(saved.getFitFeedback())
+                .comment(saved.getCommentText())
+                .photoUrls(request.getPhotoUrls() != null ? request.getPhotoUrls() : Collections.emptyList())
+                .isPurchased(true)
+                .createdAt(saved.getCreatedAt())
+                .build();
+    }
+}
