@@ -23,5 +23,10 @@ frontend/*.local
 frontend/.env.local
 frontend/.env.*.local
 
+# Local configs & secrets
+*local.yml
+*local.properties
+.env
+
 # MinIO runtime lock / temp files
 minio-storage/.minio.sys/tmp/
