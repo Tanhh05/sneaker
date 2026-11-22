@@ -27,6 +27,3 @@ frontend/.env.*.local
 *local.yml
 *local.properties
 .env
-
-# MinIO runtime lock / temp files
-minio-storage/.minio.sys/tmp/
