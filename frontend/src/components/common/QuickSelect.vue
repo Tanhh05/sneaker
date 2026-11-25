@@ -231,6 +231,8 @@ function onSearchKeydown(e) {
 }
 
 .adha-quick-select-popper {
+  border-radius: 6px !important;
+
   .el-select-dropdown__header {
     padding: 8px !important;
     border-bottom: 1px solid #e5e5e5 !important;
@@ -243,6 +245,7 @@ function onSearchKeydown(e) {
     gap: 6px;
     background: #ffffff;
     border: 1px solid #d4d4d4;
+    border-radius: 4px;
     padding: 4px 8px;
     transition: border-color 0.14s ease;
 

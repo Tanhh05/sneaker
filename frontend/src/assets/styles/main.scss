@@ -28,10 +28,10 @@
   --el-color-primary-light-9: #f5f5f5;
   --el-color-primary-dark-2: #000000;
 
-  --el-border-radius-base: 0px !important;
-  --el-border-radius-small: 0px !important;
-  --el-border-radius-round: 0px !important;
-  --el-border-radius-circle: 0px !important;
+  --el-border-radius-base: 5px !important;
+  --el-border-radius-small: 4px !important;
+  --el-border-radius-round: 20px !important;
+  --el-border-radius-circle: 100% !important;
 }
 
 * {
@@ -55,42 +55,53 @@ body,
 }
 
 /* =========================================================
-   ELEMENT PLUS ARCHITECTURAL SQUARE OVERRIDES
+   ELEMENT PLUS MODERN MONOCHROME OVERRIDES
    ========================================================= */
 
-/* All Buttons: Sharp Square, High-Impact Uppercase */
+/* All Buttons: Refined Soft-Rounded Monochrome */
 .el-button {
-  border-radius: 0 !important;
+  border-radius: 5px !important;
   font-family: var(--font-sans) !important;
-  font-weight: 800 !important;
-  text-transform: uppercase !important;
-  letter-spacing: 0.06em !important;
-  font-size: 11px !important;
-  transition: all 0.15s ease !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.02em !important;
+  font-size: 12px !important;
+  transition: all 0.16s ease !important;
 
   /* Default Button */
   background-color: #ffffff;
-  border: 1px solid #000000;
-  color: #000000;
+  border: 1px solid #d4d4d4;
+  color: #262626;
 
   &:hover,
   &:focus {
-    background-color: #000000 !important;
+    background-color: #fafafa !important;
     border-color: #000000 !important;
-    color: #ffffff !important;
+    color: #000000 !important;
   }
 
   /* Primary Button */
   &--primary {
-    background-color: #000000 !important;
-    border-color: #000000 !important;
+    background-color: #111111 !important;
+    border-color: #111111 !important;
     color: #ffffff !important;
 
     &:hover,
     &:focus {
-      background-color: #262626 !important;
-      border-color: #262626 !important;
+      background-color: #2b2b2b !important;
+      border-color: #2b2b2b !important;
       color: #ffffff !important;
+    }
+
+    &.is-plain {
+      background-color: #ffffff !important;
+      border-color: #111111 !important;
+      color: #111111 !important;
+
+      &:hover,
+      &:focus {
+        background-color: #111111 !important;
+        color: #ffffff !important;
+      }
     }
   }
 
@@ -107,13 +118,14 @@ body,
     }
 
     &.is-plain {
-      background-color: transparent !important;
-      color: #ef4444 !important;
-      border: 1px solid #ef4444 !important;
+      background-color: #fff5f5 !important;
+      color: #dc2626 !important;
+      border: 1px solid #fca5a5 !important;
 
       &:hover,
       &:focus {
         background-color: #ef4444 !important;
+        border-color: #ef4444 !important;
         color: #ffffff !important;
       }
     }
@@ -130,6 +142,19 @@ body,
       background-color: #059669 !important;
       border-color: #059669 !important;
     }
+
+    &.is-plain {
+      background-color: #ecfdf5 !important;
+      color: #047857 !important;
+      border-color: #6ee7b7 !important;
+
+      &:hover,
+      &:focus {
+        background-color: #10b981 !important;
+        border-color: #10b981 !important;
+        color: #ffffff !important;
+      }
+    }
   }
 
   /* Info / Plain */
@@ -144,11 +169,11 @@ body,
   }
 }
 
-/* Inputs & Form Elements: Sharp Square */
+/* Inputs & Form Elements: Refined Soft Radius */
 .el-input__wrapper,
 .el-select__wrapper,
 .el-textarea__inner {
-  border-radius: 0 !important;
+  border-radius: 5px !important;
   border: 1px solid #e5e5e5 !important;
   box-shadow: none !important;
   background-color: #ffffff !important;
@@ -165,38 +190,38 @@ body,
 }
 
 .el-input-number {
-  border-radius: 0 !important;
+  border-radius: 5px !important;
   .el-input-number__decrease,
   .el-input-number__increase {
-    border-radius: 0 !important;
+    border-radius: 4px !important;
     background-color: #f5f5f5 !important;
     border-color: #e5e5e5 !important;
   }
 }
 
-/* Radio & Checkbox: Sharp Square */
+/* Radio & Checkbox */
 .el-radio__inner {
-  border-radius: 0 !important;
+  border-radius: 50% !important;
 }
 
 .el-checkbox__inner {
-  border-radius: 0 !important;
+  border-radius: 3px !important;
 }
 
-/* Tags & Badges: Sharp Square */
+/* Tags & Badges */
 .el-tag {
-  border-radius: 0 !important;
+  border-radius: 4px !important;
   font-family: var(--font-sans) !important;
   font-weight: 800 !important;
   font-size: 10px !important;
-  letter-spacing: 0.06em !important;
+  letter-spacing: 0.05em !important;
   text-transform: uppercase !important;
   border: 1px solid transparent !important;
 
   &--primary {
-    background-color: #000000 !important;
+    background-color: #111111 !important;
     color: #ffffff !important;
-    border-color: #000000 !important;
+    border-color: #111111 !important;
   }
 
   &--success {
@@ -224,9 +249,9 @@ body,
   }
 }
 
-/* Table: Sharp Architectural Layout */
+/* Table */
 .el-table {
-  border-radius: 0 !important;
+  border-radius: 6px !important;
   --el-table-header-bg-color: #fafafa;
   --el-table-border-color: #ebebeb;
   font-size: 13px;
@@ -246,11 +271,11 @@ body,
   }
 }
 
-/* Modals & Dialogs: Sharp Square */
+/* Modals & Dialogs */
 .el-dialog {
-  border-radius: 0 !important;
-  border: 1px solid #000000 !important;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25) !important;
+  border-radius: 8px !important;
+  border: 1px solid #e5e5e5 !important;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.18) !important;
 
   .el-dialog__header {
     border-bottom: 1px solid #ebebeb;
@@ -272,51 +297,52 @@ body,
   }
 }
 
-/* Dropdown: Sharp Square */
+/* Dropdown */
 .el-dropdown-menu {
-  border-radius: 0 !important;
-  border: 1px solid #000000 !important;
-  padding: 4px 0 !important;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15) !important;
+  border-radius: 6px !important;
+  border: 1px solid #e5e5e5 !important;
+  padding: 5px 0 !important;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.12) !important;
 
   .el-dropdown-menu__item {
-    font-size: 12px;
+    font-size: 12.5px;
     font-weight: 600;
-    letter-spacing: 0.02em;
+    letter-spacing: 0.01em;
     padding: 8px 16px;
 
     &:hover {
-      background-color: #000000 !important;
-      color: #ffffff !important;
+      background-color: #f5f5f5 !important;
+      color: #000000 !important;
     }
   }
 }
 
-/* Pagination: Sharp Square */
+/* Pagination */
 .el-pagination {
   button,
   .el-pager li {
-    border-radius: 0 !important;
-    font-weight: 800 !important;
+    border-radius: 4px !important;
+    font-weight: 700 !important;
     font-size: 12px !important;
     border: 1px solid #e5e5e5 !important;
     background: #ffffff !important;
-    color: #000000 !important;
+    color: #262626 !important;
 
     &:hover {
       border-color: #000000 !important;
+      color: #000000 !important;
     }
 
     &.is-active {
-      background: #000000 !important;
+      background: #111111 !important;
       color: #ffffff !important;
-      border-color: #000000 !important;
+      border-color: #111111 !important;
     }
   }
 }
 
 /* =========================================================
-   PAGE CONTAINER & CARD STANDARDS (ZERO BORDER RADIUS)
+   PAGE CONTAINER & CARD STANDARDS
    ========================================================= */
 
 .page-container {
@@ -334,7 +360,7 @@ body,
   gap: 16px;
   background: #ffffff;
   padding: 22px 28px;
-  border-radius: 0 !important;
+  border-radius: 6px !important;
   border: 1px solid #e5e5e5;
   box-shadow: none;
 
@@ -358,7 +384,7 @@ body,
 .filter-card {
   background: #ffffff;
   padding: 18px 24px;
-  border-radius: 0 !important;
+  border-radius: 6px !important;
   border: 1px solid #e5e5e5;
   box-shadow: none;
 }
@@ -366,7 +392,7 @@ body,
 .table-card {
   background: #ffffff;
   padding: 22px 24px;
-  border-radius: 0 !important;
+  border-radius: 6px !important;
   border: 1px solid #e5e5e5;
   box-shadow: none;
 }
@@ -390,7 +416,7 @@ body,
   background: #f5f5f5;
   color: #000000;
   padding: 3px 8px;
-  border-radius: 0 !important;
+  border-radius: 4px !important;
   border: 1px solid #d4d4d4;
   letter-spacing: 0.04em;
   display: inline-block;
@@ -403,7 +429,7 @@ body,
   font-weight: 800;
   letter-spacing: 0.06em;
   padding: 3px 8px;
-  border-radius: 0 !important;
+  border-radius: 4px !important;
   text-transform: uppercase;
 }
 
@@ -424,14 +450,14 @@ body,
     height: 28px;
     padding: 0;
     background: #ffffff;
-    border: 1px solid #000000;
-    color: #000000;
+    border: 1px solid #d4d4d4;
+    color: #262626;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    transition: all 0.12s ease;
-    border-radius: 0;
+    transition: all 0.14s ease;
+    border-radius: 4px;
     box-sizing: border-box;
     flex-shrink: 0;
     user-select: none;
@@ -442,37 +468,40 @@ body,
     }
 
     &:hover {
-      background: #000000;
+      background: #111111;
+      border-color: #111111;
       color: #ffffff;
     }
 
     &:disabled,
     &.is-disabled {
       background: #f8fafc;
-      border-color: #cbd5e1;
+      border-color: #e2e8f0;
       color: #94a3b8;
       cursor: not-allowed;
 
       &:hover {
         background: #f8fafc;
         color: #94a3b8;
-        border-color: #cbd5e1;
+        border-color: #e2e8f0;
       }
     }
 
     &.primary {
-      background: #000000;
+      background: #111111;
+      border-color: #111111;
       color: #ffffff;
       &:hover {
-        background: #262626;
+        background: #2b2b2b;
       }
     }
 
     &.danger {
-      border-color: #ef4444;
-      color: #ef4444;
+      border-color: #fca5a5;
+      color: #dc2626;
       &:hover {
         background: #ef4444;
+        border-color: #ef4444;
         color: #ffffff;
       }
     }
@@ -491,6 +520,80 @@ body,
         margin: 0 !important;
       }
     }
+  }
+}
+
+/* =========================================================
+   UNIFIED SOFT-ROUNDED BUTTONS & STUDIO CONTROLS IN ADMIN
+   ========================================================= */
+.admin-layout {
+  button:not(.el-dialog__headerbtn):not(.is-circle):not(.vs-btn):not(.st-btn):not(.qs-clear):not(.el-input__clear) {
+    border-radius: 5px;
+  }
+
+  .studio-topbar,
+  .studio-card,
+  .kpi-box,
+  .profit-box,
+  .quick-inspector-bar,
+  .empty-matrix-box,
+  .empty-box,
+  .upload-zone {
+    border-radius: 6px;
+  }
+
+  .view-switch,
+  .status-toggle-group {
+    border-radius: 5px;
+    overflow: hidden;
+  }
+
+  .btn-back,
+  .btn-ghost,
+  .btn-outline,
+  .btn-toggle-gen,
+  .btn-mini-apply,
+  .btn-secondary-sm,
+  .btn-generate-now,
+  .btn-danger-ghost,
+  .btn-add-variants,
+  .btn-manage-sku,
+  .btn-gen-code,
+  .btn-danger-link,
+  .btn-insp-act,
+  .btn-insp-close,
+  .btn-outline-xs,
+  .mobile-close-btn {
+    border-radius: 5px !important;
+  }
+
+  .badge-black,
+  .mode-pill,
+  .status-pill,
+  .kpi-chip,
+  .row-badge,
+  .filter-chip,
+  .size-chip,
+  .color-chip,
+  .mini-chip,
+  .pending-pill,
+  .cell-box,
+  .cell-card,
+  .cell-add-btn,
+  .m-cell,
+  .btn-row-fill,
+  .btn-fill-axis,
+  .btn-clear-row,
+  .thumb-btn,
+  .g-tile {
+    border-radius: 4px;
+  }
+
+  .preview-stage,
+  .main-img-stage,
+  .live-card-strip,
+  .product-thumb {
+    border-radius: 5px;
   }
 }
 

@@ -805,7 +805,7 @@ async function handleSubmit() {
         display: flex;
         flex-direction: column;
         align-items: center;
-        border-radius: 0;
+        border-radius: 5px;
         transition: all 0.15s ease;
 
         img {
@@ -867,7 +867,7 @@ async function handleSubmit() {
       font-size: 9px;
       font-weight: 800;
       padding: 2px 6px;
-      border-radius: 0;
+      border-radius: 5px;
       text-transform: uppercase;
 
       &.success {
@@ -976,7 +976,7 @@ async function handleSubmit() {
     justify-content: center;
     flex-shrink: 0;
     transition: all 0.12s ease;
-    border-radius: 0;
+    border-radius: 5px;
 
     &:hover {
       background: #000000;
@@ -1008,7 +1008,7 @@ async function handleSubmit() {
     font-weight: 700;
     padding: 2px 7px;
     cursor: pointer;
-    border-radius: 0;
+    border-radius: 5px;
     transition: all 0.12s ease;
 
     &:hover {

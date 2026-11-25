@@ -464,7 +464,7 @@ function handleCommand(cmd) {
       justify-content: center;
       border: 1px solid #d4d4d4;
       background: #ffffff;
-      border-radius: 3px;
+      border-radius: 5px;
       color: #262626;
       cursor: pointer;
       transition: all 0.15s ease;
@@ -502,7 +502,7 @@ function handleCommand(cmd) {
       gap: 6px;
       height: 34px;
       padding: 0 13px;
-      border-radius: 3px;
+      border-radius: 5px;
       font-size: 11.5px;
       font-weight: 700;
       letter-spacing: 0.02em;

@@ -117,7 +117,7 @@ async function handleLogin() {
   max-width: 440px;
   background: #ffffff;
   border: 1px solid #262626;
-  border-radius: 0;
+  border-radius: 5px;
   padding: 44px 38px;
   box-shadow: none;
 }
@@ -140,7 +140,7 @@ async function handleLogin() {
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 0;
+    border-radius: 5px;
     letter-spacing: -0.05em;
     flex-shrink: 0;
   }
@@ -182,7 +182,7 @@ async function handleLogin() {
   background: #000000;
   color: #ffffff;
   border: 1px solid #000000;
-  border-radius: 0;
+  border-radius: 5px;
   font-family: inherit;
   font-size: 12px;
   font-weight: 800;
@@ -226,7 +226,7 @@ async function handleLogin() {
       padding: 8px 12px;
       background: #fafafa;
       border: 1px solid #e5e5e5;
-      border-radius: 0;
+      border-radius: 5px;
       font-family: inherit;
       cursor: pointer;
       transition: all 0.15s ease;
@@ -236,7 +236,7 @@ async function handleLogin() {
         font-weight: 900;
         letter-spacing: 0.08em;
         padding: 3px 6px;
-        border-radius: 0;
+        border-radius: 5px;
 
         &.admin {
           background: #000000;

@@ -551,7 +551,7 @@ onUnmounted(() => {
       align-items: center;
       gap: 6px;
       cursor: pointer;
-      border-radius: 0;
+      border-radius: 5px;
       transition: all 0.12s ease;
       font-family: var(--font-sans);
 
@@ -614,7 +614,7 @@ onUnmounted(() => {
       align-items: center;
       gap: 6px;
       cursor: pointer;
-      border-radius: 0;
+      border-radius: 5px;
       transition: all 0.12s ease;
 
       &:hover {
@@ -630,7 +630,7 @@ onUnmounted(() => {
       align-items: center;
       gap: 6px;
       cursor: pointer;
-      border-radius: 0;
+      border-radius: 5px;
       border: 1px solid transparent;
       transition: all 0.12s ease;
 

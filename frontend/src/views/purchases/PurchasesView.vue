@@ -463,7 +463,7 @@ onMounted(() => {
   gap: 24px;
   background: #ffffff;
   padding: 12px 20px;
-  border-radius: 0;
+  border-radius: 5px;
   border: 1px solid #e5e5e5;
   font-size: 13.5px;
   .strip-item {

@@ -312,7 +312,7 @@ onMounted(() => {
   .btn-refresh {
     font-size: 11px;
     font-weight: 800;
-    border-radius: 0;
+    border-radius: 5px;
   }
 
   .btn-primary-header {
@@ -322,7 +322,7 @@ onMounted(() => {
     color: #ffffff;
     border: 1px solid #000000;
     padding: 0 16px;
-    border-radius: 0;
+    border-radius: 5px;
     font-family: inherit;
     font-size: 11px;
     font-weight: 800;
@@ -344,7 +344,7 @@ onMounted(() => {
 
   .rev-card {
     padding: 24px;
-    border-radius: 0;
+    border-radius: 5px;
     display: flex;
     flex-direction: column;
 
@@ -393,7 +393,7 @@ onMounted(() => {
         background: #171717;
         color: #10b981;
         padding: 2px 6px;
-        border-radius: 0;
+        border-radius: 5px;
 
         .dot {
           width: 5px;
@@ -409,7 +409,7 @@ onMounted(() => {
         background: #f5f5f5;
         color: #525252;
         padding: 2px 6px;
-        border-radius: 0;
+        border-radius: 5px;
       }
     }
 
@@ -437,7 +437,7 @@ onMounted(() => {
   .stat-card {
     background: #ffffff;
     border: 1px solid #e5e5e5;
-    border-radius: 0;
+    border-radius: 5px;
     padding: 16px 18px;
 
     .stat-title {
@@ -475,7 +475,7 @@ onMounted(() => {
 .chart-card {
   background: #ffffff;
   border: 1px solid #e5e5e5;
-  border-radius: 0;
+  border-radius: 5px;
   padding: 24px;
   height: 100%;
   display: flex;
@@ -506,7 +506,7 @@ onMounted(() => {
       display: flex;
       background: #f5f5f5;
       padding: 2px;
-      border-radius: 0;
+      border-radius: 5px;
       border: 1px solid #e5e5e5;
 
       .mode-btn {
@@ -519,7 +519,7 @@ onMounted(() => {
         letter-spacing: 0.06em;
         color: #737373;
         cursor: pointer;
-        border-radius: 0;
+        border-radius: 5px;
         transition: all 0.15s ease;
 
         &.active {
@@ -559,7 +559,7 @@ onMounted(() => {
       width: 36px;
       height: 160px;
       background: #f5f5f5;
-      border-radius: 0;
+      border-radius: 5px;
       display: flex;
       align-items: flex-end;
       overflow: hidden;
@@ -567,7 +567,7 @@ onMounted(() => {
       .bar-fill {
         width: 100%;
         background: #000000;
-        border-radius: 0;
+        border-radius: 5px;
         transition: height 0.3s ease;
 
         &:hover {
@@ -622,12 +622,12 @@ onMounted(() => {
     .status-progress-track {
       height: 8px;
       background: #f5f5f5;
-      border-radius: 0;
+      border-radius: 5px;
       overflow: hidden;
 
       .status-progress-fill {
         height: 100%;
-        border-radius: 0;
+        border-radius: 5px;
         transition: width 0.3s ease;
       }
     }

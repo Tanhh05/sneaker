@@ -913,7 +913,7 @@ onUnmounted(() => {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    border-radius: 0;
+    border-radius: 5px;
 
     &:hover {
       background: #f4f4f5;
@@ -947,7 +947,7 @@ onUnmounted(() => {
       flex: 1;
 
       :deep(.el-input__wrapper) {
-        border-radius: 0 !important;
+        border-radius: 5px !important;
         box-shadow: 0 0 0 1px #000000 inset !important;
         height: 40px;
         background-color: #ffffff;
@@ -975,7 +975,7 @@ onUnmounted(() => {
       background: #000000;
       color: #ffffff;
       border: 1px solid #000000;
-      border-radius: 0;
+      border-radius: 5px;
       font-family: var(--font-sans);
       font-size: 11px;
       font-weight: 800;
@@ -1001,7 +1001,7 @@ onUnmounted(() => {
       background: #ffffff;
       color: #000000;
       border: 1px solid #000000;
-      border-radius: 0;
+      border-radius: 5px;
       font-family: var(--font-sans);
       font-size: 11px;
       font-weight: 800;
@@ -1035,7 +1035,7 @@ onUnmounted(() => {
         width: 135px;
 
         :deep(.el-input__wrapper) {
-          border-radius: 0 !important;
+          border-radius: 5px !important;
           height: 34px;
         }
       }
@@ -1062,7 +1062,7 @@ onUnmounted(() => {
 
       .step-select {
         :deep(.el-input__wrapper) {
-          border-radius: 0 !important;
+          border-radius: 5px !important;
           height: 28px;
           font-size: 11.5px;
         }
@@ -1087,7 +1087,7 @@ onUnmounted(() => {
         background: #000000;
         color: #ffffff;
         border: 1px solid #000000;
-        border-radius: 0;
+        border-radius: 5px;
         font-family: var(--font-sans);
         font-size: 10px;
         font-weight: 800;
@@ -1148,7 +1148,7 @@ onUnmounted(() => {
   .pos-prod-thumb {
     width: 34px;
     height: 34px;
-    border-radius: 0;
+    border-radius: 5px;
     object-fit: cover;
     border: 1px solid #e5e5e5;
     flex-shrink: 0;
@@ -1201,7 +1201,7 @@ onUnmounted(() => {
     color: #000000;
     border: 1px solid #d4d4d4;
     padding: 1px 6px;
-    border-radius: 0;
+    border-radius: 5px;
     flex-shrink: 0;
   }
 
@@ -1230,7 +1230,7 @@ onUnmounted(() => {
   font-size: 11px;
   font-weight: 800;
   padding: 2px 6px;
-  border-radius: 0;
+  border-radius: 5px;
   border: 1px solid;
   letter-spacing: 0.02em;
 
@@ -1302,7 +1302,7 @@ onUnmounted(() => {
         background: #000000;
         color: #ffffff;
         padding: 2px 7px;
-        border-radius: 0;
+        border-radius: 5px;
       }
     }
 
@@ -1326,7 +1326,7 @@ onUnmounted(() => {
   .customer-box {
     background: #fafafa;
     padding: 12px 14px;
-    border-radius: 0;
+    border-radius: 5px;
     border: 1px solid #e5e5e5;
 
     .box-label {
@@ -1343,7 +1343,7 @@ onUnmounted(() => {
       gap: 8px;
 
       :deep(.el-input__wrapper) {
-        border-radius: 0 !important;
+        border-radius: 5px !important;
       }
     }
   }
@@ -1387,7 +1387,7 @@ onUnmounted(() => {
       justify-content: space-between;
       align-items: center;
       padding: 10px 12px;
-      border-radius: 0;
+      border-radius: 5px;
       border: 1px solid #e5e5e5;
       background: #ffffff;
 
@@ -1440,7 +1440,7 @@ onUnmounted(() => {
       }
 
       :deep(.el-input__wrapper) {
-        border-radius: 0 !important;
+        border-radius: 5px !important;
       }
     }
 
@@ -1453,7 +1453,7 @@ onUnmounted(() => {
 
         .el-radio-button__inner {
           width: 100%;
-          border-radius: 0 !important;
+          border-radius: 5px !important;
           font-weight: 800 !important;
           font-size: 11px !important;
           letter-spacing: 0.05em !important;
@@ -1473,7 +1473,7 @@ onUnmounted(() => {
       background: #000000;
       color: #ffffff;
       padding: 16px 18px;
-      border-radius: 0;
+      border-radius: 5px;
       border: 1px solid #000000;
       margin-bottom: 12px;
 
@@ -1513,7 +1513,7 @@ onUnmounted(() => {
   background: #000000;
   color: #ffffff;
   border: 1px solid #000000;
-  border-radius: 0;
+  border-radius: 5px;
   font-family: var(--font-sans);
   font-size: 11px;
   font-weight: 800;
@@ -1536,7 +1536,7 @@ onUnmounted(() => {
   border: 1px solid #ef4444;
   background: #ffffff;
   color: #ef4444;
-  border-radius: 0;
+  border-radius: 5px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1559,7 +1559,7 @@ onUnmounted(() => {
   background: #000000;
   color: #ffffff;
   border: 1px solid #000000;
-  border-radius: 0;
+  border-radius: 5px;
   font-family: var(--font-sans);
   font-size: 13px;
   font-weight: 900;
@@ -1597,7 +1597,7 @@ onUnmounted(() => {
     height: 280px;
     background: #000;
     overflow: hidden;
-    border-radius: 0;
+    border-radius: 5px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1624,7 +1624,7 @@ onUnmounted(() => {
         width: 260px;
         height: 160px;
         border: 2px solid #10b981;
-        border-radius: 0;
+        border-radius: 5px;
         position: relative;
         box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.45);
 

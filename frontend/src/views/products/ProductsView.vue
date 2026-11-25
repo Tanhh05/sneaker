@@ -277,7 +277,7 @@ onMounted(() => {
 .product-thumb {
   width: 40px;
   height: 40px;
-  border-radius: 0;
+  border-radius: 5px;
   object-fit: cover;
   border: 1px solid #e5e5e5;
   display: block;
