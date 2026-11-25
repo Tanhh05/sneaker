@@ -50,27 +50,9 @@
         </button>
       </el-form>
 
-      <div class="demo-accounts">
-        <div class="demo-title">ĐIỀN NHANH TÀI KHOẢN MẪU:</div>
-        <div class="demo-buttons">
-          <button class="demo-pill" @click="fillDemo('admin', '123456')">
-            <span class="pill-role admin">ADMIN</span>
-            <span class="pill-acc">admin / 123456</span>
-          </button>
-          <button class="demo-pill" @click="fillDemo('manager', '123456')">
-            <span class="pill-role manager">MANAGER</span>
-            <span class="pill-acc">manager / 123456</span>
-          </button>
-          <button class="demo-pill" @click="fillDemo('staff', '123456')">
-            <span class="pill-role staff">STAFF</span>
-            <span class="pill-acc">staff / 123456</span>
-          </button>
-        </div>
-      </div>
-
       <div class="back-store-row">
         <router-link to="/" class="back-link">
-          ← Quay lại Website Bán Hàng (Storefront)
+          ← Quay lại Website Bán Hàng (ADHA Sneaker)
         </router-link>
       </div>
     </div>
@@ -91,18 +73,13 @@ const formRef = ref(null)
 const loading = ref(false)
 
 const form = reactive({
-  username: 'admin',
-  password: '123456'
+  username: '',
+  password: ''
 })
 
 const rules = {
   username: [{ required: true, message: 'Vui lòng nhập tên đăng nhập', trigger: 'blur' }],
   password: [{ required: true, message: 'Vui lòng nhập mật khẩu', trigger: 'blur' }]
-}
-
-function fillDemo(u, p) {
-  form.username = u
-  form.password = p
 }
 
 async function handleLogin() {
@@ -111,9 +88,13 @@ async function handleLogin() {
     if (!valid) return
     loading.value = true
     try {
-      await authStore.login(form.username, form.password)
-      ElMessage.success(`Đăng nhập thành công: ${authStore.user?.fullName || form.username}!`)
+      await authStore.login(form.username.trim(), form.password)
+      ElMessage.success(`Đăng nhập Quản trị thành công: ${authStore.user?.fullName || form.username}!`)
       router.push('/admin/dashboard')
+    } catch (err) {
+      if (!err.response && err.message) {
+        ElMessage.error(err.message)
+      }
     } finally {
       loading.value = false
     }

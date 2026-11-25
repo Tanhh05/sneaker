@@ -326,7 +326,7 @@ import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useCartStore } from '@/stores/cart'
-import { useAuthStore } from '@/stores/auth'
+import { useClientAuthStore } from '@/stores/clientAuth'
 import storeService from '@/services/storeService'
 import vnAddressService from '@/services/vnAddressService'
 import { formatCurrency } from '@/utils/formatters'
@@ -334,7 +334,7 @@ import ClientAuthModal from '@/components/store/ClientAuthModal.vue'
 
 const router = useRouter()
 const cartStore = useCartStore()
-const authStore = useAuthStore()
+const authStore = useClientAuthStore()
 const authModalVisible = ref(false)
 
 const formRef = ref(null)

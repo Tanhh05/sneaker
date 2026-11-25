@@ -17,7 +17,7 @@
             <span class="user-greeting">XIN CHÀO BẠN TRỞ LẠI</span>
             <h3 class="user-name">{{ authStore.user?.fullName || authStore.user?.username }}</h3>
             <span class="user-role-badge">
-              {{ isStaffOrAdmin ? 'TÀI KHOẢN HỆ THỐNG (' + authStore.roles.join(', ') + ')' : 'THÀNH VIÊN ADHA SNEAKER' }}
+              THÀNH VIÊN ADHA SNEAKER
             </span>
           </div>
         </div>
@@ -306,7 +306,7 @@
 import { ref, reactive, computed, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { useAuthStore } from '@/stores/auth'
+import { useClientAuthStore } from '@/stores/clientAuth'
 import { vnAddressService } from '@/services/vnAddressService'
 
 const props = defineProps({
@@ -323,7 +323,7 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue', 'authenticated'])
 
 const router = useRouter()
-const authStore = useAuthStore()
+const authStore = useClientAuthStore()
 
 const activeTab = ref(props.initialTab)
 const loading = ref(false)
@@ -469,7 +469,6 @@ watch(
   { deep: true }
 )
 
-const isStaffOrAdmin = computed(() => authStore.isAdmin || authStore.isManager || authStore.isStaff)
 
 const userInitials = computed(() => {
   const name = authStore.user?.fullName || authStore.user?.username || 'U'
@@ -630,7 +629,7 @@ async function handleLogin() {
       emit('update:modelValue', false)
       emit('authenticated', authStore.user)
     } catch (err) {
-      ElMessage.error(err.response?.data?.message || 'Đăng nhập không thành công, vui lòng thử lại!')
+      ElMessage.error(err.response?.data?.message || err.message || 'Đăng nhập không thành công, vui lòng thử lại!')
     } finally {
       loading.value = false
     }

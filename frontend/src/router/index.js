@@ -62,14 +62,17 @@ const routes = [
   { path: '/account/orders', redirect: '/my-orders' },
 
   // ==========================================
-  // AUTHENTICATION
+  // AUTHENTICATION (SEPARATED PORTALS — MODEL 1)
   // ==========================================
   {
-    path: '/login',
-    name: 'Login',
+    path: '/admin/login',
+    name: 'AdminLogin',
     component: () => import('@/views/auth/LoginView.vue'),
-    meta: { title: 'Đăng nhập hệ thống quản lý', public: true, guestOnly: true }
+    meta: { title: 'Đăng nhập Quản trị & POS', public: true, adminGuestOnly: true }
   },
+  // Customer-friendly shortcuts open Storefront Auth Modal
+  { path: '/login', redirect: { path: '/', query: { auth: 'login' } } },
+  { path: '/register', redirect: { path: '/', query: { auth: 'register' } } },
 
   // ==========================================
   // MODEL 1: POINT OF SALE (POS COUNTER)
@@ -252,13 +255,10 @@ router.beforeEach((to, _from, next) => {
   document.title = `${to.meta?.title || 'Trang chủ'} | ADHA Sneaker`
   const authStore = useAuthStore()
 
-  // 1. Guest-only routes like /login
-  if (to.meta?.guestOnly) {
-    if (authStore.isAuthenticated) {
-      if (authStore.isAdmin || authStore.isManager || authStore.isStaff) {
-        return next('/admin/dashboard')
-      }
-      return next('/403')
+  // 1. Admin guest-only route (/admin/login)
+  if (to.meta?.adminGuestOnly) {
+    if (authStore.isAuthenticated && authStore.isInternalStaff) {
+      return next('/admin/dashboard')
     }
     return next()
   }
@@ -268,9 +268,9 @@ router.beforeEach((to, _from, next) => {
     return next()
   }
 
-  // 3. Admin routes: require authentication
+  // 3. Admin & POS routes: require Admin session authentication
   if (!authStore.isAuthenticated) {
-    return next('/login')
+    return next('/admin/login')
   }
 
   // 4. Role check: redirect to 403 page if user does not have permission

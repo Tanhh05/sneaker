@@ -575,13 +575,13 @@ import {
   Star
 } from '@element-plus/icons-vue'
 import CustomerReviewModal from '@/components/store/CustomerReviewModal.vue'
-import { useAuthStore } from '@/stores/auth'
+import { useClientAuthStore } from '@/stores/clientAuth'
 import { useCartStore } from '@/stores/cart'
 import storeService from '@/services/storeService'
 import { formatCurrency, formatDateTime } from '@/utils/formatters'
 
 const router = useRouter()
-const authStore = useAuthStore()
+const authStore = useClientAuthStore()
 const cartStore = useCartStore()
 
 // STATE

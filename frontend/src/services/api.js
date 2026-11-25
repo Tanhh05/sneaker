@@ -1,6 +1,16 @@
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
 
+const ADMIN_TOKEN_KEY = 'adha_admin_token'
+const ADMIN_USER_KEY = 'adha_admin_user'
+const CLIENT_TOKEN_KEY = 'adha_client_token'
+const CLIENT_USER_KEY = 'adha_client_user'
+
+function isAdminContext() {
+  const path = window.location.pathname || ''
+  return path.startsWith('/admin') || path.startsWith('/pos')
+}
+
 const apiClient = axios.create({
   baseURL: '/api',
   timeout: 30000
@@ -8,7 +18,8 @@ const apiClient = axios.create({
 
 apiClient.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('sneaker_token')
+    const tokenKey = isAdminContext() ? ADMIN_TOKEN_KEY : CLIENT_TOKEN_KEY
+    const token = localStorage.getItem(tokenKey)
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }
@@ -23,11 +34,21 @@ apiClient.interceptors.response.use(
     if (error.response) {
       const status = error.response.status
       const msg = error.response.data?.message || 'Có lỗi xảy ra từ máy chủ'
-      if (status === 401 && !window.location.pathname.includes('/login')) {
-        localStorage.removeItem('sneaker_token')
-        localStorage.removeItem('sneaker_user')
-        ElMessage.error(msg)
-        window.location.href = '/login'
+      const inAdmin = isAdminContext()
+
+      if (status === 401) {
+        if (inAdmin && !window.location.pathname.startsWith('/admin/login')) {
+          localStorage.removeItem(ADMIN_TOKEN_KEY)
+          localStorage.removeItem(ADMIN_USER_KEY)
+          ElMessage.error(msg)
+          window.location.href = '/admin/login'
+        } else if (!inAdmin) {
+          localStorage.removeItem(CLIENT_TOKEN_KEY)
+          localStorage.removeItem(CLIENT_USER_KEY)
+          ElMessage.error(msg)
+        } else {
+          ElMessage.error(msg)
+        }
       } else {
         ElMessage.error(msg)
       }
@@ -39,4 +60,3 @@ apiClient.interceptors.response.use(
 )
 
 export default apiClient
-

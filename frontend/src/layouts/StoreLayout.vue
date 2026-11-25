@@ -151,10 +151,6 @@
                   <el-icon><Search /></el-icon>
                   <span>Tra cứu mã vận đơn</span>
                 </el-dropdown-item>
-                <el-dropdown-item v-if="isStaffOrAdmin" command="admin">
-                  <el-icon><Setting /></el-icon>
-                  <span>Kênh quản trị (Admin / POS)</span>
-                </el-dropdown-item>
                 <el-dropdown-item command="profile">
                   <el-icon><User /></el-icon>
                   <span>Thông tin tài khoản</span>
@@ -254,7 +250,7 @@
               <li><router-link to="/tracking">Tra cứu vận đơn</router-link></li>
               <li><a href="javascript:void(0)" @click="showSizeGuide = true">Bảng quy đổi Size giày</a></li>
               <li><router-link to="/cart">Giỏ hàng của bạn</router-link></li>
-              <li><router-link to="/login">Cổng quản trị nội bộ</router-link></li>
+              <li><router-link to="/my-orders">Đơn hàng của tôi</router-link></li>
             </ul>
           </div>
 
@@ -374,10 +370,6 @@
             <span>Bảng quy đổi Size giày</span>
             <span class="arrow">→</span>
           </button>
-          <router-link v-if="isStaffOrAdmin" to="/dashboard" class="drawer-item admin" @click="mobileMenuOpen = false">
-            <span>⚡ Kênh Quản trị (Admin / POS)</span>
-            <span class="arrow">→</span>
-          </router-link>
         </nav>
 
         <div class="drawer-footer-row" v-if="authStore.isAuthenticated">
@@ -392,21 +384,22 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import AdhaLogoMark from '@/components/common/AdhaLogoMark.vue'
 import { useCartStore } from '@/stores/cart'
-import { useAuthStore } from '@/stores/auth'
+import { useClientAuthStore } from '@/stores/clientAuth'
 import { useWishlistStore } from '@/stores/wishlist'
 import { formatCurrency } from '@/utils/formatters'
 import { ElMessage } from 'element-plus'
-import { Tickets, Star, Search, Setting, User, SwitchButton } from '@element-plus/icons-vue'
+import { Tickets, Star, Search, User, SwitchButton } from '@element-plus/icons-vue'
 import ClientAuthModal from '@/components/store/ClientAuthModal.vue'
 import WishlistDrawer from '@/components/store/WishlistDrawer.vue'
 
 const router = useRouter()
+const route = useRoute()
 const cartStore = useCartStore()
-const authStore = useAuthStore()
+const authStore = useClientAuthStore()
 const wishlistStore = useWishlistStore()
 
 const searchKeyword = ref('')
@@ -418,8 +411,6 @@ const mobileSearchOpen = ref(false)
 const authModalVisible = ref(false)
 const authModalTab = ref('login')
 
-const isStaffOrAdmin = computed(() => authStore.isAdmin || authStore.isManager || authStore.isStaff)
-
 const userInitials = computed(() => {
   const name = authStore.user?.fullName || authStore.user?.username || 'U'
   return name.charAt(0).toUpperCase()
@@ -430,6 +421,21 @@ const openAuthModal = (tab = 'login') => {
   authModalVisible.value = true
 }
 
+watch(
+  () => route.query.auth,
+  (authQuery) => {
+    if (authQuery === 'login' || authQuery === 'register') {
+      if (!authStore.isAuthenticated) {
+        openAuthModal(authQuery)
+      }
+      const nextQuery = { ...route.query }
+      delete nextQuery.auth
+      router.replace({ path: route.path, query: nextQuery })
+    }
+  },
+  { immediate: true }
+)
+
 const handleUserMenuCommand = (command) => {
   if (command === 'my-orders') {
     router.push('/my-orders')
@@ -437,8 +443,6 @@ const handleUserMenuCommand = (command) => {
     showWishlist.value = true
   } else if (command === 'tracking') {
     router.push('/tracking')
-  } else if (command === 'admin') {
-    router.push('/admin/dashboard')
   } else if (command === 'profile') {
     openAuthModal('profile')
   } else if (command === 'logout') {

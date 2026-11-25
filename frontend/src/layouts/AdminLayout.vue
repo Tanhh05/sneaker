@@ -179,8 +179,8 @@ function handleCommand(cmd) {
       type: 'warning'
     }).then(async () => {
       await authStore.logout()
-      ElMessage.success('Đã đăng xuất thành công')
-      router.push('/login')
+      ElMessage.success('Đã đăng xuất khỏi cổng quản trị')
+      router.push('/admin/login')
     }).catch(() => {})
   }
 }
