@@ -29,6 +29,7 @@ public class ProductRequest {
     private String description;
     private String thumbnailUrl;
     private List<String> imageUrls;
+    private List<ProductImageRequest> images;
 
     @NotNull(message = "Giá nhập không được để trống")
     @DecimalMin(value = "0.0", message = "Giá nhập phải lớn hơn hoặc bằng 0")
@@ -39,5 +40,13 @@ public class ProductRequest {
     private BigDecimal salePrice;
 
     private String status = "ACTIVE";
+
+    @Data
+    public static class ProductImageRequest {
+        private String imageUrl;
+        private Long colorId;
+        private Integer isPrimary;
+        private Integer displayOrder;
+    }
 }
 

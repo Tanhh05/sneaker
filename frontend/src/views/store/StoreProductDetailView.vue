@@ -31,15 +31,21 @@
           </div>
 
           <!-- Thumbnails Strip -->
-          <div class="thumbnails-strip" v-if="allImages.length > 1">
+          <div class="thumbnails-strip" v-if="galleryItems.length > 1">
             <button
-              v-for="(img, idx) in allImages"
+              v-for="(item, idx) in galleryItems"
               :key="idx"
               class="thumb-btn"
-              :class="{ active: activeImage === img }"
-              @click="activeImage = img"
+              :class="{ active: activeImage === item.url }"
+              :title="item.colorName ? `Màu ${item.colorName}` : `Ảnh ${idx + 1}`"
+              @click="selectGalleryImage(item)"
             >
-              <img :src="img" :alt="`Thumbnail ${idx}`" />
+              <img :src="item.url" :alt="item.colorName || `Thumbnail ${idx + 1}`" />
+              <span
+                v-if="item.hexCode"
+                class="thumb-color-dot"
+                :style="{ backgroundColor: item.hexCode }"
+              ></span>
             </button>
           </div>
         </div>
@@ -65,7 +71,7 @@
           <!-- Pricing Section -->
           <div class="pricing-card">
             <div class="price-main">
-              <span class="price-val">{{ formatCurrency(product.salePrice) }}</span>
+              <span class="price-val">{{ formatCurrency(selectedVariant?.salePrice || product.salePrice) }}</span>
               <span class="price-tax">Đã bao gồm VAT & Hộp chính hãng</span>
             </div>
             <div class="perk-pill">
@@ -656,11 +662,18 @@ const sizeGuideData = [
 const allImages = computed(() => {
   if (!product.value) return []
   const list = []
-  if (product.value.thumbnailUrl) list.push(product.value.thumbnailUrl)
+  if (product.value.images && product.value.images.length) {
+    product.value.images.forEach(img => {
+      if (img?.imageUrl && !list.includes(img.imageUrl)) list.push(img.imageUrl)
+    })
+  }
   if (product.value.imageUrls && product.value.imageUrls.length) {
     product.value.imageUrls.forEach(img => {
-      if (!list.includes(img)) list.push(img)
+      if (img && !list.includes(img)) list.push(img)
     })
+  }
+  if (product.value.thumbnailUrl && !list.includes(product.value.thumbnailUrl)) {
+    list.unshift(product.value.thumbnailUrl)
   }
   if (list.length === 0) {
     list.push('https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?auto=format&fit=crop&w=800&q=80')
@@ -680,6 +693,31 @@ const uniqueColors = computed(() => {
   return Array.from(map.values())
 })
 
+const galleryItems = computed(() => {
+  if (!product.value) return []
+  const colorMap = new Map()
+  uniqueColors.value.forEach(c => colorMap.set(c.id, c))
+
+  if (product.value.images && product.value.images.length) {
+    const seen = new Set()
+    const items = []
+    product.value.images.forEach(img => {
+      if (img?.imageUrl && !seen.has(img.imageUrl)) {
+        seen.add(img.imageUrl)
+        const c = img.colorId ? colorMap.get(img.colorId) : null
+        items.push({
+          url: img.imageUrl,
+          colorId: img.colorId || null,
+          colorName: c?.colorName || '',
+          hexCode: c?.hexCode || null
+        })
+      }
+    })
+    if (items.length > 0) return items
+  }
+  return allImages.value.map(url => ({ url, colorId: null, colorName: '', hexCode: null }))
+})
+
 const availableSizesForColor = computed(() => {
   if (!product.value || !product.value.variants) return []
   return product.value.variants
@@ -691,7 +729,7 @@ const availableSizesForColor = computed(() => {
     .map(v => ({
       id: v.size ? v.size.id : v.sizeId,
       sizeValue: v.size ? v.size.sizeValue : v.sizeValue,
-      stock: v.quantityInStock !== undefined ? v.quantityInStock : 10,
+      stock: v.availableQuantity !== undefined ? v.availableQuantity : (v.quantityInStock !== undefined ? v.quantityInStock : 10),
       variant: v
     }))
 })
@@ -710,20 +748,40 @@ const selectedVariant = computed(() => {
 const currentStock = computed(() => {
   if (!selectedVariant.value) {
     if (product.value && product.value.variants) {
-      return product.value.variants.reduce((acc, v) => acc + (v.quantityInStock || 0), 0)
+      return product.value.variants.reduce((acc, v) => acc + (v.availableQuantity ?? v.quantityInStock ?? 0), 0)
     }
     return 10
   }
-  return selectedVariant.value.quantityInStock !== undefined ? selectedVariant.value.quantityInStock : 10
+  return selectedVariant.value.availableQuantity ?? selectedVariant.value.quantityInStock ?? 10
 })
 
 const isReadyToBuy = computed(() => {
   return selectedVariant.value && currentStock.value > 0
 })
 
+const syncImageToColor = (color) => {
+  if (!color || !galleryItems.value.length) return
+  const matched = galleryItems.value.find(item => item.colorId === color.id)
+  if (matched) {
+    activeImage.value = matched.url
+  }
+}
+
 const selectColor = (color) => {
   selectedColor.value = color
   selectedSize.value = null
+  syncImageToColor(color)
+}
+
+const selectGalleryImage = (item) => {
+  activeImage.value = item.url
+  if (item.colorId) {
+    const matchedColor = uniqueColors.value.find(c => c.id === item.colorId)
+    if (matchedColor && (!selectedColor.value || selectedColor.value.id !== matchedColor.id)) {
+      selectedColor.value = matchedColor
+      selectedSize.value = null
+    }
+  }
 }
 
 const selectSize = (size) => {
@@ -741,6 +799,7 @@ const loadProduct = async () => {
     }
     if (uniqueColors.value.length) {
       selectedColor.value = uniqueColors.value[0]
+      syncImageToColor(uniqueColors.value[0])
     }
   } catch (err) {
     console.error('Lỗi nạp sản phẩm:', err)
@@ -1864,6 +1923,21 @@ onMounted(() => {
       margin: 0;
       line-height: 1.4;
     }
+  }
+}
+
+.thumbnails-strip .thumb-btn {
+  position: relative;
+
+  .thumb-color-dot {
+    position: absolute;
+    right: 4px;
+    bottom: 4px;
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    border: 1.5px solid #ffffff;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35);
   }
 }
 </style>

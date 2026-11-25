@@ -64,11 +64,21 @@ public class ProductServiceImpl implements ProductService {
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy sản phẩm với ID: " + id));
         // Bước 3 & 5: Tải danh sách ảnh + biến thể SKU và map sang ProductDto
         ProductDto dto = productMapper.toSummaryDto(product);
-        List<String> images = productImageRepository.findByProductIdOrderByDisplayOrderAsc(id)
-                .stream()
+        List<ProductImage> productImages = productImageRepository.findByProductIdOrderByDisplayOrderAsc(id);
+        List<String> images = productImages.stream()
                 .map(ProductImage::getImageUrl)
                 .collect(Collectors.toList());
+        List<ProductDto.ProductImageDto> imageDtos = productImages.stream()
+                .map(img -> ProductDto.ProductImageDto.builder()
+                        .id(img.getId())
+                        .imageUrl(img.getImageUrl())
+                        .colorId(img.getColorId())
+                        .isPrimary(img.getIsPrimary())
+                        .displayOrder(img.getDisplayOrder())
+                        .build())
+                .collect(Collectors.toList());
         dto.setImageUrls(images);
+        dto.setImages(imageDtos);
         dto.setVariants(variantService.getVariantsByProduct(id));
         return dto;
     }
@@ -114,7 +124,7 @@ public class ProductServiceImpl implements ProductService {
                 .build();
 
         Product saved = productRepository.save(product);
-        saveImages(saved, primaryImage, request.getImageUrls(), actor);
+        saveImages(saved, primaryImage, request.getImageUrls(), request.getImages(), java.util.Collections.emptyMap(), actor);
 
         // Bước 5: Output Mapping
         return getById(saved.getId());
@@ -159,9 +169,15 @@ public class ProductServiceImpl implements ProductService {
         product.setUpdatedBy(actor);
 
         Product saved = productRepository.save(product);
-        if (request.getImageUrls() != null || request.getThumbnailUrl() != null) {
+        if (request.getImages() != null || request.getImageUrls() != null || request.getThumbnailUrl() != null) {
+            java.util.Map<String, Long> existingColorMap = new java.util.HashMap<>();
+            for (ProductImage pi : productImageRepository.findByProductIdOrderByDisplayOrderAsc(saved.getId())) {
+                if (pi.getImageUrl() != null && pi.getColorId() != null) {
+                    existingColorMap.putIfAbsent(pi.getImageUrl().trim(), pi.getColorId());
+                }
+            }
             productImageRepository.deleteByProductId(saved.getId());
-            saveImages(saved, primaryImage, request.getImageUrls(), actor);
+            saveImages(saved, primaryImage, request.getImageUrls(), request.getImages(), existingColorMap, actor);
         }
 
         // Bước 5: Output Mapping
@@ -182,32 +198,53 @@ public class ProductServiceImpl implements ProductService {
         return productMapper.toSummaryDto(productRepository.save(product));
     }
 
-    private void saveImages(Product product, String thumbnailUrl, List<String> imageUrls, String actor) {
+    private void saveImages(Product product, String thumbnailUrl, List<String> imageUrls,
+                            List<ProductRequest.ProductImageRequest> structuredImages,
+                            java.util.Map<String, Long> fallbackColorMap, String actor) {
         List<ProductImage> toSave = new ArrayList<>();
-        List<String> allImages = new ArrayList<>();
-
-        if (imageUrls != null && !imageUrls.isEmpty()) {
-            for (String u : imageUrls) {
-                if (u != null && !u.isBlank() && !allImages.contains(u.trim())) {
-                    allImages.add(u.trim());
+        if (structuredImages != null && !structuredImages.isEmpty()) {
+            int order = 1;
+            java.util.Set<String> seen = new java.util.HashSet<>();
+            for (ProductRequest.ProductImageRequest item : structuredImages) {
+                if (item == null || item.getImageUrl() == null || item.getImageUrl().isBlank()) continue;
+                String cleanUrl = item.getImageUrl().trim();
+                if (!seen.add(cleanUrl)) continue;
+                toSave.add(ProductImage.builder()
+                        .product(product)
+                        .colorId(item.getColorId())
+                        .imageUrl(cleanUrl)
+                        .isPrimary(order == 1 ? 1 : 0)
+                        .displayOrder(order++)
+                        .status("ACTIVE")
+                        .createdBy(actor)
+                        .updatedBy(actor)
+                        .build());
+            }
+        } else {
+            List<String> allImages = new ArrayList<>();
+            if (imageUrls != null && !imageUrls.isEmpty()) {
+                for (String u : imageUrls) {
+                    if (u != null && !u.isBlank() && !allImages.contains(u.trim())) {
+                        allImages.add(u.trim());
+                    }
                 }
             }
-        }
-        if (thumbnailUrl != null && !thumbnailUrl.isBlank() && !allImages.contains(thumbnailUrl.trim())) {
-            allImages.add(0, thumbnailUrl.trim());
-        }
-
-        int order = 1;
-        for (String url : allImages) {
-            toSave.add(ProductImage.builder()
-                    .product(product)
-                    .imageUrl(url)
-                    .isPrimary(order == 1 ? 1 : 0)
-                    .displayOrder(order++)
-                    .status("ACTIVE")
-                    .createdBy(actor)
-                    .updatedBy(actor)
-                    .build());
+            if (thumbnailUrl != null && !thumbnailUrl.isBlank() && !allImages.contains(thumbnailUrl.trim())) {
+                allImages.add(0, thumbnailUrl.trim());
+            }
+            int order = 1;
+            for (String url : allImages) {
+                toSave.add(ProductImage.builder()
+                        .product(product)
+                        .colorId(fallbackColorMap != null ? fallbackColorMap.get(url) : null)
+                        .imageUrl(url)
+                        .isPrimary(order == 1 ? 1 : 0)
+                        .displayOrder(order++)
+                        .status("ACTIVE")
+                        .createdBy(actor)
+                        .updatedBy(actor)
+                        .build());
+            }
         }
 
         if (!toSave.isEmpty()) {

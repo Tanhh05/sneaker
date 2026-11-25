@@ -148,34 +148,48 @@
               <div
                 v-for="(item, idx) in imageItems"
                 :key="item.id || idx"
-                class="g-tile"
-                :class="{ primary: idx === 0, viewing: currentPreviewUrl === item.previewUrl }"
-                @click="activePreviewImage = item.previewUrl"
+                class="g-tile-wrap"
               >
-                <img :src="item.previewUrl" alt="" />
-                <span v-if="idx === 0" class="g-badge-main">★ CHÍNH</span>
-                <span v-else class="g-badge-num">#{{ idx + 1 }}</span>
-                <span v-if="item.isNew" class="g-badge-new">MỚI</span>
+                <div
+                  class="g-tile"
+                  :class="{ primary: idx === 0, viewing: currentPreviewUrl === item.previewUrl }"
+                  @click="activePreviewImage = item.previewUrl"
+                >
+                  <img :src="item.previewUrl" alt="" />
+                  <span v-if="idx === 0" class="g-badge-main">★ CHÍNH</span>
+                  <span v-else class="g-badge-num">#{{ idx + 1 }}</span>
+                  <span v-if="item.isNew" class="g-badge-new">MỚI</span>
 
-                <div class="g-actions">
-                  <button
-                    v-if="idx !== 0"
-                    type="button"
-                    class="g-act-btn"
-                    title="Đặt làm ảnh chính"
-                    @click.stop="setAsPrimary(idx)"
-                  >
-                    ★
-                  </button>
-                  <button
-                    type="button"
-                    class="g-act-btn del"
-                    title="Xóa ảnh này"
-                    @click.stop="removeImage(idx)"
-                  >
-                    ×
-                  </button>
+                  <div class="g-actions">
+                    <button
+                      v-if="idx !== 0"
+                      type="button"
+                      class="g-act-btn"
+                      title="Đặt làm ảnh chính"
+                      @click.stop="setAsPrimary(idx)"
+                    >
+                      ★
+                    </button>
+                    <button
+                      type="button"
+                      class="g-act-btn del"
+                      title="Xóa ảnh này"
+                      @click.stop="removeImage(idx)"
+                    >
+                      ×
+                    </button>
+                  </div>
                 </div>
+                <select
+                  v-model="item.colorId"
+                  class="g-color-select"
+                  title="Gắn màu sắc cho ảnh này (khách chọn màu sẽ tự đổi sang ảnh này)"
+                >
+                  <option :value="null">Mọi màu</option>
+                  <option v-for="c in colors" :key="c.id" :value="c.id">
+                    {{ c.colorName }}
+                  </option>
+                </select>
               </div>
             </div>
           </div>
@@ -400,6 +414,7 @@ import {
 import { productService } from '@/services/productService'
 import { brandService } from '@/services/brandService'
 import { categoryService } from '@/services/categoryService'
+import { variantService } from '@/services/variantService'
 import { fileService } from '@/services/fileService'
 import { formatCurrency } from '@/utils/formatters'
 
@@ -427,6 +442,7 @@ const productId = computed(() => route.params.id)
 
 const brands = ref([])
 const categories = ref([])
+const colors = ref([])
 const existingVariants = ref([])
 
 const form = reactive({
@@ -563,6 +579,7 @@ function queueSelectedFiles(files) {
     id: `pending-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
     file: f,
     previewUrl: URL.createObjectURL(f),
+    colorId: null,
     isNew: true
   }))
 
@@ -626,12 +643,14 @@ function goToVariantStudio() {
 async function loadInitialData() {
   loadingPage.value = true
   try {
-    const [bRes, cRes] = await Promise.all([
+    const [bRes, cRes, colRes] = await Promise.all([
       brandService.getAllBrands(),
-      categoryService.getAllCategories()
+      categoryService.getAllCategories(),
+      variantService.getColors()
     ])
     brands.value = bRes.data || []
     categories.value = cRes.data || []
+    colors.value = colRes.data || []
 
     if (isEdit.value) {
       const pRes = await productService.getProductById(productId.value)
@@ -643,13 +662,24 @@ async function loadInitialData() {
       form.material = p.material || ''
       form.description = p.description || ''
 
-      const rawImages = p.imageUrls?.length ? p.imageUrls : (p.thumbnailUrl ? [p.thumbnailUrl] : [])
-      imageItems.value = rawImages.map((url, i) => ({
-        id: `existing-${i}-${Date.now()}`,
-        file: null,
-        previewUrl: url,
-        isNew: false
-      }))
+      if (p.images?.length) {
+        imageItems.value = p.images.map((img, i) => ({
+          id: `existing-${img.id || i}-${Date.now()}`,
+          file: null,
+          previewUrl: img.imageUrl,
+          colorId: img.colorId ?? null,
+          isNew: false
+        }))
+      } else {
+        const rawImages = p.imageUrls?.length ? p.imageUrls : (p.thumbnailUrl ? [p.thumbnailUrl] : [])
+        imageItems.value = rawImages.map((url, i) => ({
+          id: `existing-${i}-${Date.now()}`,
+          file: null,
+          previewUrl: url,
+          colorId: null,
+          isNew: false
+        }))
+      }
       activePreviewImage.value = imageItems.value[0]?.previewUrl || ''
 
       form.importPrice = Number(p.importPrice) || 0
@@ -700,10 +730,19 @@ async function submitForm() {
       }
 
       const finalImageUrls = imageItems.value.map((i) => i.previewUrl).filter(Boolean)
+      const structuredImages = imageItems.value
+        .filter((i) => !!i.previewUrl)
+        .map((i, idx) => ({
+          imageUrl: i.previewUrl,
+          colorId: i.colorId || null,
+          isPrimary: idx === 0 ? 1 : 0,
+          displayOrder: idx + 1
+        }))
       const payload = {
         ...form,
         thumbnailUrl: finalImageUrls[0] || '',
-        imageUrls: finalImageUrls
+        imageUrls: finalImageUrls,
+        images: structuredImages
       }
 
       if (isEdit.value) {
@@ -1108,8 +1147,31 @@ onUnmounted(() => {
 
 .gallery-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 6px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.g-tile-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.g-color-select {
+  width: 100%;
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 3px 4px;
+  border: 1px solid #d4d4d4;
+  border-radius: 4px;
+  background: #ffffff;
+  color: #262626;
+  outline: none;
+  cursor: pointer;
+
+  &:focus {
+    border-color: #000000;
+  }
 }
 
 .g-tile {
