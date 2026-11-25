@@ -81,53 +81,62 @@
         </div>
 
         <div class="header-right">
-          <!-- Quick link to storefront -->
-          <router-link to="/" class="header-action-btn btn-store-view" title="Xem Website">
-            <el-icon><Shop /></el-icon>
-            <span class="btn-label">XEM WEBSITE</span>
-          </router-link>
+          <!-- Quick Actions Group -->
+          <div class="header-actions-group">
+            <router-link to="/" class="header-action-btn btn-store-view" title="Mở giao diện cửa hàng">
+              <el-icon><Shop /></el-icon>
+              <span class="btn-label">Xem Website</span>
+            </router-link>
 
-          <!-- POS Quick Button -->
-          <button
-            class="header-action-btn btn-pos"
-            @click="$router.push('/pos')"
-            title="Bán hàng POS"
-          >
-            <el-icon><ShoppingCart /></el-icon>
-            <span class="btn-label">BÁN HÀNG POS</span>
-          </button>
-
-          <!-- Roles Badge -->
-          <div class="role-badges">
-            <span
-              v-for="r in authStore.roles"
-              :key="r"
-              class="role-pill"
-              :class="r.toLowerCase()"
+            <button
+              class="header-action-btn btn-pos"
+              :class="{ 'is-active': $route.path.startsWith('/pos') }"
+              @click="$router.push('/pos')"
+              title="Mở màn hình bán hàng tại quầy (POS)"
             >
-              {{ r }}
-            </span>
+              <el-icon><ShoppingCart /></el-icon>
+              <span class="btn-label">Bán hàng POS</span>
+            </button>
           </div>
 
-          <!-- User Profile Dropdown -->
-          <el-dropdown trigger="click" @command="handleCommand">
+          <div class="header-divider" aria-hidden="true"></div>
+
+          <!-- Unified User Profile Dropdown -->
+          <el-dropdown trigger="click" placement="bottom-end" @command="handleCommand">
             <div class="user-profile">
-              <div class="avatar">{{ (authStore.user?.fullName || 'U').charAt(0).toUpperCase() }}</div>
+              <div class="avatar-wrap">
+                <div class="avatar">{{ (authStore.user?.fullName || 'U').charAt(0).toUpperCase() }}</div>
+                <span class="online-dot" title="Đang hoạt động"></span>
+              </div>
               <div class="user-info">
                 <span class="name">{{ authStore.user?.fullName || authStore.user?.username }}</span>
-                <span class="username">@{{ authStore.user?.username }}</span>
+                <div class="user-sub-row">
+                  <span class="username">@{{ authStore.user?.username }}</span>
+                  <span
+                    v-for="r in authStore.roles"
+                    :key="r"
+                    class="role-micro-badge"
+                    :class="r.toLowerCase()"
+                  >
+                    {{ r }}
+                  </span>
+                </div>
               </div>
               <el-icon class="arrow-icon"><ArrowDown /></el-icon>
             </div>
             <template #dropdown>
               <el-dropdown-menu class="user-dropdown-menu">
+                <div class="dropdown-user-summary">
+                  <strong>{{ authStore.user?.fullName || authStore.user?.username }}</strong>
+                  <span>@{{ authStore.user?.username }} · {{ (authStore.roles || []).join(', ') }}</span>
+                </div>
                 <el-dropdown-item command="profile">
                   <el-icon><User /></el-icon> Thông tin tài khoản
                 </el-dropdown-item>
                 <el-dropdown-item command="password">
                   <el-icon><Key /></el-icon> Đổi mật khẩu
                 </el-dropdown-item>
-                <el-dropdown-item divided command="logout">
+                <el-dropdown-item divided command="logout" class="logout-item">
                   <el-icon><SwitchButton /></el-icon> Đăng xuất hệ thống
                 </el-dropdown-item>
               </el-dropdown-menu>
@@ -448,19 +457,20 @@ function handleCommand(cmd) {
     gap: 16px;
 
     .collapse-btn {
-      width: 36px;
-      height: 36px;
+      width: 34px;
+      height: 34px;
       display: flex;
       align-items: center;
       justify-content: center;
-      border: 1px solid #000000;
+      border: 1px solid #d4d4d4;
       background: #ffffff;
-      border-radius: 0;
-      color: #000000;
+      border-radius: 3px;
+      color: #262626;
       cursor: pointer;
       transition: all 0.15s ease;
 
       &:hover {
+        border-color: #000000;
         background: #000000;
         color: #ffffff;
       }
@@ -477,113 +487,170 @@ function handleCommand(cmd) {
   .header-right {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 14px;
+
+    .header-actions-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
 
     .header-action-btn {
       display: inline-flex;
       align-items: center;
+      justify-content: center;
       gap: 6px;
-      padding: 8px 14px;
-      border-radius: 0;
-      font-size: 11px;
-      font-weight: 800;
-      letter-spacing: 0.06em;
+      height: 34px;
+      padding: 0 13px;
+      border-radius: 3px;
+      font-size: 11.5px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
       text-decoration: none;
       cursor: pointer;
-      text-transform: uppercase;
-      transition: all 0.15s ease;
+      white-space: nowrap;
+      transition: all 0.16s ease;
 
       &.btn-store-view {
         background: #ffffff;
-        border: 1px solid #000000;
-        color: #000000;
+        border: 1px solid #d4d4d4;
+        color: #262626;
 
         &:hover {
-          background: #000000;
-          color: #ffffff;
+          border-color: #000000;
+          background: #fafafa;
+          color: #000000;
         }
       }
 
       &.btn-pos {
-        background: #000000;
-        border: 1px solid #000000;
+        background: #111111;
+        border: 1px solid #111111;
         color: #ffffff;
 
         &:hover {
-          background: #262626;
+          background: #2b2b2b;
+          border-color: #2b2b2b;
+        }
+
+        &.is-active {
+          background: #000000;
+          box-shadow: inset 0 -2px 0 #10b981;
         }
       }
     }
 
-    .role-badges {
-      display: flex;
-      gap: 6px;
-
-      .role-pill {
-        font-size: 9px;
-        font-weight: 900;
-        letter-spacing: 0.08em;
-        padding: 4px 8px;
-        border-radius: 0;
-        border: 1px solid #000000;
-        background: #ffffff;
-        color: #000000;
-        text-transform: uppercase;
-
-        &.admin {
-          background: #000000;
-          color: #ffffff;
-        }
-      }
+    .header-divider {
+      width: 1px;
+      height: 22px;
+      background: #e5e5e5;
+      flex-shrink: 0;
     }
 
     .user-profile {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 9px;
       cursor: pointer;
-      padding: 4px 8px;
-      border-radius: 0;
+      padding: 4px 8px 4px 5px;
+      border-radius: 4px;
       border: 1px solid transparent;
-      transition: all 0.15s ease;
+      transition: background 0.16s ease, border-color 0.16s ease;
 
       &:hover {
-        border-color: #000000;
+        background: #f5f5f5;
+        border-color: #e5e5e5;
+
+        .arrow-icon {
+          color: #000000;
+        }
       }
 
-      .avatar {
-        width: 30px;
-        height: 30px;
-        border-radius: 0;
-        background: #000000;
-        color: #ffffff;
-        font-weight: 900;
-        font-size: 12px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+      .avatar-wrap {
+        position: relative;
+        flex-shrink: 0;
+
+        .avatar {
+          width: 34px;
+          height: 34px;
+          border-radius: 4px;
+          background: #171717;
+          color: #ffffff;
+          font-weight: 800;
+          font-size: 13px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          letter-spacing: 0.02em;
+        }
+
+        .online-dot {
+          position: absolute;
+          right: -2px;
+          bottom: -2px;
+          width: 9px;
+          height: 9px;
+          border-radius: 50%;
+          background: #10b981;
+          border: 2px solid #ffffff;
+        }
       }
 
       .user-info {
         display: flex;
         flex-direction: column;
-        line-height: 1.2;
+        gap: 2px;
+        line-height: 1.15;
 
         .name {
-          font-size: 12px;
-          font-weight: 800;
-          color: #000000;
+          font-size: 12.5px;
+          font-weight: 700;
+          color: #111111;
+          white-space: nowrap;
+        }
+
+        .user-sub-row {
+          display: flex;
+          align-items: center;
+          gap: 6px;
         }
 
         .username {
-          font-size: 10px;
+          font-size: 10.5px;
           color: #737373;
+          font-family: var(--font-mono);
+        }
+
+        .role-micro-badge {
+          font-size: 9px;
+          font-weight: 800;
+          letter-spacing: 0.05em;
+          padding: 1px 5px;
+          border-radius: 2px;
+          background: #f4f4f5;
+          border: 1px solid #d4d4d8;
+          color: #27272a;
+          text-transform: uppercase;
+
+          &.admin {
+            background: #eff6ff;
+            border-color: #bfdbfe;
+            color: #1d4ed8;
+          }
+
+          &.manager {
+            background: #fef3c7;
+            border-color: #fde68a;
+            color: #92400e;
+          }
         }
       }
 
       .arrow-icon {
         font-size: 11px;
-        color: #737373;
+        color: #a3a3a3;
+        margin-left: 2px;
+        transition: color 0.15s ease;
       }
     }
   }
@@ -679,12 +746,12 @@ function handleCommand(cmd) {
       gap: 8px;
       flex-shrink: 0;
 
-      .role-badges {
+      .header-divider {
         display: none;
       }
 
       .user-profile {
-        padding: 4px;
+        padding: 3px;
         .user-info,
         .arrow-icon {
           display: none;
@@ -728,6 +795,38 @@ function handleCommand(cmd) {
         }
       }
     }
+  }
+}
+</style>
+
+<style lang="scss">
+.user-dropdown-menu {
+  min-width: 210px;
+  padding: 6px 0 !important;
+
+  .dropdown-user-summary {
+    padding: 8px 14px 10px;
+    margin-bottom: 4px;
+    border-bottom: 1px solid #f0f0f0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+
+    strong {
+      font-size: 12.5px;
+      font-weight: 800;
+      color: #111111;
+    }
+
+    span {
+      font-size: 11px;
+      color: #737373;
+      font-family: var(--font-mono);
+    }
+  }
+
+  .logout-item {
+    color: #dc2626 !important;
   }
 }
 </style>
