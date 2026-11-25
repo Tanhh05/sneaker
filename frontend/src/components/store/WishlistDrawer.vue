@@ -214,7 +214,7 @@ function clearAll() {
     height: 32px;
     background: transparent;
     border: 1px solid #e4e4e7;
-    border-radius: 0;
+    border-radius: 5px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -340,7 +340,7 @@ function clearAll() {
 
         .action-btn {
           height: 28px;
-          border-radius: 0;
+          border-radius: 5px;
           font-family: var(--font-sans);
           font-size: 10px;
           font-weight: 800;
@@ -434,7 +434,7 @@ function clearAll() {
     background: #000000;
     color: #ffffff;
     border: none;
-    border-radius: 0;
+    border-radius: 5px;
     font-family: var(--font-sans);
     font-size: 11px;
     font-weight: 800;
@@ -460,7 +460,7 @@ function clearAll() {
   .footer-btn {
     width: 100%;
     height: 38px;
-    border-radius: 0;
+    border-radius: 5px;
     font-family: var(--font-sans);
     font-size: 11px;
     font-weight: 800;

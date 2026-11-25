@@ -915,7 +915,7 @@ onUnmounted(() => {
     color: #0a0a0a;
     font-family: inherit;
     transition: all 0.15s ease;
-    border-radius: 0;
+    border-radius: 5px;
 
     &:hover {
       background: #000000;
@@ -979,7 +979,7 @@ onUnmounted(() => {
     color: #0a0a0a;
     font-family: inherit;
     transition: all 0.15s ease;
-    border-radius: 0;
+    border-radius: 5px;
 
     &:hover {
       background: #000000;
@@ -1015,7 +1015,7 @@ onUnmounted(() => {
       display: flex;
       align-items: center;
       justify-content: center;
-      border-radius: 0;
+      border-radius: 5px;
     }
 
     .user-name-short {

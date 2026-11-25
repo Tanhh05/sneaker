@@ -597,6 +597,34 @@ body,
   }
 }
 
+/* =========================================================
+   UNIFIED SOFT-ROUNDED BUTTONS & CONTROLS IN CLIENT STOREFRONT
+   ========================================================= */
+.store-layout {
+  button:not(.el-dialog__headerbtn):not(.el-drawer__close-btn):not(.is-circle) {
+    border-radius: 5px;
+  }
+
+  a[class*="btn-"],
+  .btn-primary-action,
+  .btn-outline-action,
+  .brand-pill,
+  .cat-pill,
+  .active-chip,
+  .filter-input,
+  .mini-filter-search,
+  .sort-select,
+  .pag-btn,
+  .pag-num-btn {
+    border-radius: 5px;
+  }
+}
+
+.el-dialog button:not(.el-dialog__headerbtn):not(.is-circle),
+.el-drawer button:not(.el-drawer__close-btn):not(.is-circle) {
+  border-radius: 5px;
+}
+
 /* Ensure action column cells never clip or overflow buttons */
 .el-table .el-table-fixed-column--right,
 .el-table .el-table__cell:has(.row-actions) {

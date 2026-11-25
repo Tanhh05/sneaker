@@ -748,7 +748,7 @@ async function handleUpdateProfile() {
     height: 44px;
     background: #ffffff;
     border: 1.5px solid #18181b;
-    border-radius: 0;
+    border-radius: 5px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -816,7 +816,7 @@ async function handleUpdateProfile() {
     }
 
     .el-input__wrapper {
-      border-radius: 0;
+      border-radius: 5px;
       box-shadow: 0 0 0 1px #d4d4d8 inset;
       padding: 8px 12px;
 
@@ -832,7 +832,7 @@ async function handleUpdateProfile() {
     background: #000000;
     color: #ffffff;
     border: none;
-    border-radius: 0;
+    border-radius: 5px;
     font-family: var(--font-sans);
     font-size: 12px;
     font-weight: 800;
@@ -894,7 +894,7 @@ async function handleUpdateProfile() {
       display: flex;
       align-items: center;
       justify-content: center;
-      border-radius: 0;
+      border-radius: 5px;
       flex-shrink: 0;
     }
 
@@ -991,7 +991,7 @@ async function handleUpdateProfile() {
 
         .el-input__wrapper,
         .el-textarea__inner {
-          border-radius: 0;
+          border-radius: 5px;
           box-shadow: 0 0 0 1px #cbd5e1 inset;
           font-size: 12px;
           padding: 6px 10px;
@@ -1090,7 +1090,7 @@ async function handleUpdateProfile() {
         background: #000000;
         color: #ffffff;
         border: 1px solid #000000;
-        border-radius: 0;
+        border-radius: 5px;
         font-family: var(--font-sans);
         font-size: 11px;
         font-weight: 800;

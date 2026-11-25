@@ -835,7 +835,7 @@ const submitOrder = async () => {
     background: #000000;
     color: #ffffff;
     border: 1px solid #000000;
-    border-radius: 0;
+    border-radius: 5px;
     font-size: 11px;
     font-weight: 800;
     letter-spacing: 0.06em;
