@@ -63,10 +63,14 @@
         </el-table-column>
         <el-table-column label="Mã SP" width="115" align="center">
           <template #default="{ row }">
-            <span class="code-badge">{{ row.productCode }}</span>
+            <span class="code-badge clickable-link" @click="openDetail(row)">{{ row.productCode }}</span>
           </template>
         </el-table-column>
-        <el-table-column prop="productName" label="Tên sản phẩm Sneaker" min-width="170" />
+        <el-table-column prop="productName" label="Tên sản phẩm Sneaker" min-width="170">
+          <template #default="{ row }">
+            <span class="product-name-link" @click="openDetail(row)">{{ row.productName }}</span>
+          </template>
+        </el-table-column>
         <el-table-column prop="brandName" label="Thương hiệu" width="110" />
         <el-table-column prop="categoryName" label="Danh mục" width="110" />
         <el-table-column prop="material" label="Chất liệu" min-width="130" show-overflow-tooltip />
@@ -95,7 +99,7 @@
                 <el-icon><Edit /></el-icon>
               </button>
               <el-dropdown
-                v-if="canManageCatalog && row.status === 'ACTIVE'"
+                v-if="canManageCatalog"
                 trigger="click"
                 @command="(cmd) => handleProductAction(cmd, row)"
               >
@@ -104,8 +108,13 @@
                 </button>
                 <template #dropdown>
                   <el-dropdown-menu>
+                    <el-dropdown-item command="variants">
+                      ⚡ Quản lý biến thể SKU
+                    </el-dropdown-item>
                     <el-dropdown-item
+                      v-if="row.status === 'ACTIVE'"
                       command="discontinue"
+                      divided
                       style="color: #ef4444"
                     >
                       ✕ Ngừng KD
@@ -113,15 +122,6 @@
                   </el-dropdown-menu>
                 </template>
               </el-dropdown>
-              <button
-                v-else-if="canManageCatalog"
-                type="button"
-                class="action-btn action-more is-disabled"
-                disabled
-                title="Sản phẩm đã ngừng kinh doanh"
-              >
-                <el-icon><MoreFilled /></el-icon>
-              </button>
             </div>
           </template>
         </el-table-column>
@@ -139,13 +139,6 @@
         />
       </div>
     </div>
-
-    <!-- Product Detail & Variants Quick View Dialog -->
-    <ProductDetailDialog
-      v-model="detailVisible"
-      :product="selectedProduct"
-      @manage-variants="goToVariants"
-    />
   </div>
 </template>
 
@@ -160,7 +153,6 @@ import { categoryService } from '@/services/categoryService'
 import { formatCurrency } from '@/utils/formatters'
 import { usePermission } from '@/composables/usePermission'
 import { useDebouncedWatch } from '@/composables/useDebounce'
-import ProductDetailDialog from './components/ProductDetailDialog.vue'
 
 const router = useRouter()
 const { canManageCatalog } = usePermission()
@@ -191,9 +183,6 @@ useDebouncedWatch(
   },
   350
 )
-
-const detailVisible = ref(false)
-const selectedProduct = ref(null)
 
 async function loadMeta() {
   const [bRes, cRes] = await Promise.all([
@@ -239,19 +228,14 @@ function openEdit(row) {
   router.push(`/admin/products/${row.id}/edit`)
 }
 
-async function openDetail(row) {
-  const res = await productService.getProductById(row.id)
-  selectedProduct.value = res.data
-  detailVisible.value = true
-}
-
-function goToVariants() {
-  detailVisible.value = false
-  router.push('/admin/variants')
+function openDetail(row) {
+  router.push(`/admin/products/${row.id}`)
 }
 
 function handleProductAction(cmd, row) {
-  if (cmd === 'discontinue') {
+  if (cmd === 'variants') {
+    router.push({ path: '/admin/variants/create', query: { productId: row.id } })
+  } else if (cmd === 'discontinue') {
     handleDiscontinue(row)
   }
 }
@@ -292,6 +276,23 @@ onMounted(() => {
     font-size: 10px;
     font-weight: 800;
     letter-spacing: 0.05em;
+  }
+}
+
+.clickable-link {
+  cursor: pointer;
+  &:hover {
+    background: #000000;
+    color: #ffffff;
+  }
+}
+
+.product-name-link {
+  font-weight: 700;
+  color: #171717;
+  cursor: pointer;
+  &:hover {
+    text-decoration: underline;
   }
 }
 </style>

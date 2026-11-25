@@ -142,6 +142,12 @@ const routes = [
         meta: { title: 'Chỉnh sửa sản phẩm Sneaker', roles: ['ADMIN', 'MANAGER'] }
       },
       {
+        path: 'products/:id',
+        name: 'ProductDetail',
+        component: () => import('@/views/products/ProductDetailView.vue'),
+        meta: { title: 'Chi tiết sản phẩm Sneaker', roles: ['ADMIN', 'MANAGER', 'STAFF'] }
+      },
+      {
         path: 'variants',
         name: 'Variants',
         component: () => import('@/views/variants/VariantsView.vue'),
@@ -217,6 +223,7 @@ const routes = [
   { path: '/products', redirect: '/admin/products' },
   { path: '/products/create', redirect: '/admin/products/create' },
   { path: '/products/:id/edit', redirect: (to) => `/admin/products/${to.params.id}/edit` },
+  { path: '/products/:id', redirect: (to) => `/admin/products/${to.params.id}` },
   { path: '/variants', redirect: '/admin/variants' },
   { path: '/categories', redirect: '/admin/categories' },
   { path: '/brands', redirect: '/admin/brands' },
