@@ -2,7 +2,7 @@
   <div class="login-page">
     <div class="login-card">
       <div class="login-brand">
-        <div class="logo-mark">A</div>
+        <AdhaLogoMark :size="44" variant="dark" />
         <div class="brand-text">
           <h1>ADHA SNEAKER</h1>
           <p>HỆ THỐNG QUẢN LÝ CỬA HÀNG & BÁN LẺ POS</p>
@@ -80,6 +80,7 @@
 <script setup>
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
+import AdhaLogoMark from '@/components/common/AdhaLogoMark.vue'
 import { ElMessage } from 'element-plus'
 import { User, Lock } from '@element-plus/icons-vue'
 import { useAuthStore } from '@/stores/auth'

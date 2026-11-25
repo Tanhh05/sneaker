@@ -4,7 +4,7 @@
     <aside class="sidebar" :class="{ collapsed: isCollapsed }">
       <!-- Brand Logo -->
       <div class="brand-logo" @click="$router.push('/admin/dashboard')">
-        <div class="logo-mark">A</div>
+        <AdhaLogoMark :size="34" variant="light" />
         <div v-if="!isCollapsed" class="logo-text">
           <span class="title">ADHA SNEAKER</span>
           <span class="subtitle">MANAGEMENT SYSTEM</span>
@@ -135,6 +135,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import AdhaLogoMark from '@/components/common/AdhaLogoMark.vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   ShoppingCart,

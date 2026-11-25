@@ -58,7 +58,7 @@
 
           <!-- Brand Logo -->
           <router-link to="/" class="store-logo">
-            <span class="logo-mark">A</span>
+            <AdhaLogoMark :size="36" variant="dark" />
             <div class="logo-text">
               <span class="brand-title">ADHA SNEAKER</span>
               <span class="brand-sub">ARCHIVE & STREETWEAR</span>
@@ -224,7 +224,7 @@
         <div class="footer-top-grid">
           <div class="footer-col brand-col">
             <div class="footer-brand">
-              <span class="footer-logo-mark">A</span>
+              <AdhaLogoMark :size="34" variant="light" />
               <span class="footer-logo-title">ADHA SNEAKER</span>
             </div>
             <p class="footer-desc">
@@ -323,7 +323,7 @@
       <div class="mobile-drawer-inner">
         <div class="drawer-header">
           <div class="store-logo">
-            <span class="logo-mark">A</span>
+            <AdhaLogoMark :size="36" variant="dark" />
             <div class="logo-text">
               <span class="brand-title">ADHA SNEAKER</span>
               <span class="brand-sub">ARCHIVE & STREETWEAR</span>
@@ -394,6 +394,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
+import AdhaLogoMark from '@/components/common/AdhaLogoMark.vue'
 import { useCartStore } from '@/stores/cart'
 import { useAuthStore } from '@/stores/auth'
 import { useWishlistStore } from '@/stores/wishlist'
