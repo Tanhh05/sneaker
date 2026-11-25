@@ -619,6 +619,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 12px;
+  flex-shrink: 0;
 }
 
 .mobile-menu-btn {
@@ -756,21 +757,24 @@ onUnmounted(() => {
   .logo-text {
     display: flex;
     flex-direction: column;
+    min-width: 0;
 
     .brand-title {
-      font-size: 17px;
+      font-size: 15.5px;
       font-weight: 900;
-      letter-spacing: 0.08em;
+      letter-spacing: 0.06em;
       line-height: 1.1;
       color: #000000;
+      white-space: nowrap;
     }
 
     .brand-sub {
-      font-size: 9px;
+      font-size: 8.5px;
       font-weight: 700;
-      letter-spacing: 0.16em;
+      letter-spacing: 0.14em;
       color: #737373;
       margin-top: 2px;
+      white-space: nowrap;
     }
   }
 }
@@ -779,13 +783,14 @@ onUnmounted(() => {
 .nav-links {
   display: flex;
   align-items: center;
-  gap: 32px;
+  gap: 24px;
+  flex-shrink: 0;
 
   .nav-item {
-    font-size: 13px;
+    font-size: 12.5px;
     font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.05em;
     color: #262626;
     text-decoration: none;
     background: none;
@@ -793,6 +798,8 @@ onUnmounted(() => {
     padding: 6px 0;
     position: relative;
     cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
     transition: color 0.15s ease;
 
     &::after {
@@ -1481,7 +1488,32 @@ onUnmounted(() => {
 }
 
 /* RESPONSIVE MEDIA QUERIES (TABLET & MOBILE) */
-@media (max-width: 1024px) {
+@media (max-width: 1280px) {
+  .store-header .header-container {
+    gap: 16px;
+  }
+
+  .nav-links {
+    gap: 16px;
+
+    .nav-item {
+      font-size: 12px;
+    }
+  }
+
+  .header-actions {
+    gap: 10px;
+
+    .desktop-search .search-input {
+      width: 145px;
+      &:focus {
+        width: 175px;
+      }
+    }
+  }
+}
+
+@media (max-width: 1100px) {
   .mobile-menu-btn {
     display: flex;
   }
