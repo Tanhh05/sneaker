@@ -881,7 +881,7 @@ function printSingleVariant(row) {
     sizeValue: row.sizeValue,
     colorName: row.colorName,
     salePrice: row.salePrice,
-    brandName: row.brandName || 'SNEAKERHUB',
+    brandName: row.brandName || 'ADHA SNEAKER',
     printQuantity: 1
   }]
   printBarcodeVisible.value = true

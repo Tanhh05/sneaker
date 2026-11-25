@@ -39,7 +39,7 @@ public class WebhookController {
     public ResponseEntity<Map<String, Object>> pingSepayWebhook() {
         return ResponseEntity.ok(Map.of(
                 "success", true,
-                "service", "SneakerHub SePay Auto-Reconciliation Webhook Gateway",
+                "service", "ADHA Sneaker SePay Auto-Reconciliation Webhook Gateway",
                 "status", "READY",
                 "timestamp", LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
                 "instruction", "Cấu hình URL webhook trên my.sepay.vn là: POST https://<domain>/api/webhooks/sepay"

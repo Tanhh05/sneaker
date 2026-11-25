@@ -95,7 +95,7 @@
             </svg>
           </div>
           <h3 class="empty-title">
-            {{ allOrders.length === 0 ? 'Bạn chưa có đơn hàng nào tại SneakerHub' : 'Không có đơn hàng nào khớp với bộ lọc' }}
+            {{ allOrders.length === 0 ? 'Bạn chưa có đơn hàng nào tại ADHA Sneaker' : 'Không có đơn hàng nào khớp với bộ lọc' }}
           </h3>
           <p class="empty-desc">
             {{ allOrders.length === 0
@@ -469,7 +469,7 @@
             </div>
             <div class="bank-row">
               <span class="bank-lbl">Chủ tài khoản:</span>
-              <strong class="bank-val">{{ qrOrder.accountName || 'SNEAKERHUB PRO' }}</strong>
+              <strong class="bank-val">{{ qrOrder.accountName || 'ADHA SNEAKER' }}</strong>
             </div>
             <div class="bank-row">
               <span class="bank-lbl">Số tiền:</span>

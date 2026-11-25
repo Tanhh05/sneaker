@@ -502,7 +502,7 @@ const marginClass = computed(() => {
 })
 
 function getBrandName(brandId) {
-  if (!brandId) return 'SNEAKERHUB'
+  if (!brandId) return 'ADHA SNEAKER'
   const b = props.brands.find((item) => item.id === brandId)
   return b ? b.brandName : 'SNEAKER'
 }

@@ -58,9 +58,9 @@
 
           <!-- Brand Logo -->
           <router-link to="/" class="store-logo">
-            <span class="logo-mark">S</span>
+            <span class="logo-mark">A</span>
             <div class="logo-text">
-              <span class="brand-title">SNEAKERHUB</span>
+              <span class="brand-title">ADHA SNEAKER</span>
               <span class="brand-sub">ARCHIVE & STREETWEAR</span>
             </div>
           </router-link>
@@ -137,7 +137,7 @@
               <el-dropdown-menu class="store-user-dropdown">
                 <div class="dropdown-user-header">
                   <strong>{{ authStore.user?.fullName || authStore.user?.username }}</strong>
-                  <span class="dropdown-user-sub">{{ authStore.user?.phone || authStore.user?.email || "Thành viên SneakerHub" }}</span>
+                  <span class="dropdown-user-sub">{{ authStore.user?.phone || authStore.user?.email || "Thành viên ADHA Sneaker" }}</span>
                 </div>
                 <el-dropdown-item command="my-orders" divided>
                   <el-icon><Tickets /></el-icon>
@@ -224,8 +224,8 @@
         <div class="footer-top-grid">
           <div class="footer-col brand-col">
             <div class="footer-brand">
-              <span class="footer-logo-mark">S</span>
-              <span class="footer-logo-title">SNEAKERHUB</span>
+              <span class="footer-logo-mark">A</span>
+              <span class="footer-logo-title">ADHA SNEAKER</span>
             </div>
             <p class="footer-desc">
               Không gian phân phối và tuyển chọn Sneaker chính hãng, kết nối văn hóa đường phố và tinh thần thiết kế đương đại. Mọi đôi giày xuất kho đều được kiểm định nguồn gốc nghiêm ngặt.
@@ -261,10 +261,10 @@
           <div class="footer-col contact-col">
             <h4 class="col-heading">CỬA HÀNG</h4>
             <p class="address-text">
-              SneakerHub Flagship Store<br />
+              ADHA Sneaker Flagship Store<br />
               123 Phố Huế, Hai Bà Trưng, Hà Nội<br />
               Hotline: 1900 6868 (09:00 - 22:00)<br />
-              Email: contact@sneakerhub.vn
+              Email: contact@adhasneaker.vn
             </p>
             <div class="payment-badges">
               <span class="pay-tag">VIETQR</span>
@@ -276,7 +276,7 @@
         </div>
 
         <div class="footer-bottom">
-          <p>© 2026 SNEAKERHUB PRO. All rights reserved. Designed for sneakerheads with passion & precision.</p>
+          <p>© 2026 ADHA Sneaker. All rights reserved. Designed for sneakerheads with passion & precision.</p>
           <div class="legal-links">
             <span>Chính sách bảo mật</span>
             <span>Điều khoản dịch vụ</span>
@@ -323,9 +323,9 @@
       <div class="mobile-drawer-inner">
         <div class="drawer-header">
           <div class="store-logo">
-            <span class="logo-mark">S</span>
+            <span class="logo-mark">A</span>
             <div class="logo-text">
-              <span class="brand-title">SNEAKERHUB</span>
+              <span class="brand-title">ADHA SNEAKER</span>
               <span class="brand-sub">ARCHIVE & STREETWEAR</span>
             </div>
           </div>
@@ -337,7 +337,7 @@
           <div class="user-chip-avatar">{{ userInitials }}</div>
           <div class="user-chip-info">
             <strong>{{ authStore.user?.fullName || authStore.user?.username }}</strong>
-            <span>{{ authStore.user?.phone || authStore.user?.email || 'Thành viên SneakerHub' }}</span>
+            <span>{{ authStore.user?.phone || authStore.user?.email || 'Thành viên ADHA Sneaker' }}</span>
           </div>
         </div>
         <div v-else class="drawer-guest-box" @click="openAuthModal('login'); mobileMenuOpen = false">

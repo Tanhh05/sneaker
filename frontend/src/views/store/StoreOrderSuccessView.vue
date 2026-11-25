@@ -101,7 +101,7 @@
                     </div>
                     <div class="spec-line">
                       <span class="lbl">Chủ tài khoản:</span>
-                      <span class="val strong">{{ order.accountName || 'SNEAKERHUB PRO' }}</span>
+                      <span class="val strong">{{ order.accountName || 'ADHA SNEAKER' }}</span>
                     </div>
                     <div class="spec-line">
                       <span class="lbl">Số tài khoản:</span>

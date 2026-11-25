@@ -40,7 +40,7 @@ app:
 sepay:
   api-key: ${SEPAY_API_KEY:}
   bank-account: ${SEPAY_BANK_ACCOUNT:0346771322}
-  account-name: ${SEPAY_ACCOUNT_NAME:SNEAKERHUB PRO}
+  account-name: ${SEPAY_ACCOUNT_NAME:ADHA SNEAKER}
   bank-name: ${SEPAY_BANK_NAME:MBBank}
 
 minio:

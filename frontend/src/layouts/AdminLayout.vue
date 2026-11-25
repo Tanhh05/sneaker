@@ -4,9 +4,9 @@
     <aside class="sidebar" :class="{ collapsed: isCollapsed }">
       <!-- Brand Logo -->
       <div class="brand-logo" @click="$router.push('/admin/dashboard')">
-        <div class="logo-mark">S</div>
+        <div class="logo-mark">A</div>
         <div v-if="!isCollapsed" class="logo-text">
-          <span class="title">SNEAKERHUB</span>
+          <span class="title">ADHA SNEAKER</span>
           <span class="subtitle">MANAGEMENT SYSTEM</span>
         </div>
       </div>

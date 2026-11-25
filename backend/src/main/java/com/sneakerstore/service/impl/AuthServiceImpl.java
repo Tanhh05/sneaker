@@ -116,7 +116,7 @@ public class AuthServiceImpl implements AuthService {
                 .orElseGet(() -> roleRepository.save(Role.builder()
                         .roleCode("CUSTOMER")
                         .roleName("Khách hàng")
-                        .description("Khách hàng đăng ký tài khoản mua sắm SneakerHub")
+                        .description("Khách hàng đăng ký tài khoản mua sắm ADHA Sneaker")
                         .status("ACTIVE")
                         .build()));
 

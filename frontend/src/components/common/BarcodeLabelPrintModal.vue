@@ -52,7 +52,7 @@
             <div class="shoe-box-label" :class="`size-${labelSize}`">
               <!-- Label Header -->
               <div class="lbl-header">
-                <span class="lbl-brand">{{ item.brandName || 'SNEAKERHUB' }}</span>
+                <span class="lbl-brand">{{ item.brandName || 'ADHA SNEAKER' }}</span>
                 <span class="lbl-kicker">AUTHENTIC ARCHIVE</span>
               </div>
 

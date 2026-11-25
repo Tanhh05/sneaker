@@ -249,7 +249,7 @@ const router = createRouter({
 })
 
 router.beforeEach((to, _from, next) => {
-  document.title = `${to.meta?.title || 'Trang chủ'} | SNEAKERHUB PRO`
+  document.title = `${to.meta?.title || 'Trang chủ'} | ADHA Sneaker`
   const authStore = useAuthStore()
 
   // 1. Guest-only routes like /login

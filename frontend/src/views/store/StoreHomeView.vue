@@ -238,7 +238,7 @@
             <span class="standards-eyebrow">OUR COMMITMENT</span>
             <h2 class="standards-title">TIÊU CHUẨN XUẤT SẮC TRONG TỪNG ĐÔI GIÀY</h2>
             <p class="standards-desc">
-              Tại SneakerHub, chúng tôi không chỉ bán giày — chúng tôi gìn giữ văn hóa sneakerhead với cam kết chuẩn mực cao nhất từ khâu nhập khẩu, bảo quản kho chuyên dụng cho đến đóng gói giao hàng tận tay bạn.
+              Tại ADHA Sneaker, chúng tôi không chỉ bán giày — chúng tôi gìn giữ văn hóa sneakerhead với cam kết chuẩn mực cao nhất từ khâu nhập khẩu, bảo quản kho chuyên dụng cho đến đóng gói giao hàng tận tay bạn.
             </p>
 
             <div class="pillars-grid">

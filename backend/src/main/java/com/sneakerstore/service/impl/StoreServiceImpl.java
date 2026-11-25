@@ -53,7 +53,7 @@ public class StoreServiceImpl implements StoreService {
     @Value("${sepay.bank-account:0346771322}")
     private String configuredBankAccount;
 
-    @Value("${sepay.account-name:SNEAKERHUB PRO}")
+    @Value("${sepay.account-name:ADHA SNEAKER}")
     private String configuredAccountName;
 
     @Value("${sepay.bank-name:MBBank}")
@@ -258,7 +258,7 @@ public class StoreServiceImpl implements StoreService {
         String bankInfo = null;
         String accountNo = configuredBankAccount != null ? configuredBankAccount : "0346771322";
         String bankId = configuredBankName != null ? configuredBankName : "MBBank";
-        String accountName = configuredAccountName != null ? configuredAccountName : "SNEAKERHUB PRO";
+        String accountName = configuredAccountName != null ? configuredAccountName : "ADHA SNEAKER";
         if (AppConstants.PAYMENT_BANK_TRANSFER.equals(paymentMethod)) {
             long amount = totalAmount.longValue();
             String memo = URLEncoder.encode(orderCode, StandardCharsets.UTF_8);
@@ -491,7 +491,7 @@ public class StoreServiceImpl implements StoreService {
         if (dto == null) return;
         String accountNo = configuredBankAccount != null ? configuredBankAccount : "0346771322";
         String bankId = configuredBankName != null ? configuredBankName : "MBBank";
-        String accountName = configuredAccountName != null ? configuredAccountName : "SNEAKERHUB PRO";
+        String accountName = configuredAccountName != null ? configuredAccountName : "ADHA SNEAKER";
         dto.setBankAccount(accountNo);
         dto.setBankName(bankId);
         dto.setAccountName(accountName);
@@ -613,7 +613,7 @@ public class StoreServiceImpl implements StoreService {
             photos = String.join(",", request.getPhotoUrls());
         }
 
-        String custName = order.getCustomer() != null ? order.getCustomer().getFullName() : "Khách hàng SneakerHub";
+        String custName = order.getCustomer() != null ? order.getCustomer().getFullName() : "Khách hàng ADHA Sneaker";
         String custPhone = order.getCustomer() != null ? order.getCustomer().getPhone() : request.getCustomerPhone();
 
         ProductReview review = ProductReview.builder()

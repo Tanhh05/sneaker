@@ -17,7 +17,7 @@
             <span class="user-greeting">XIN CHÀO BẠN TRỞ LẠI</span>
             <h3 class="user-name">{{ authStore.user?.fullName || authStore.user?.username }}</h3>
             <span class="user-role-badge">
-              {{ isStaffOrAdmin ? 'TÀI KHOẢN HỆ THỐNG (' + authStore.roles.join(', ') + ')' : 'THÀNH VIÊN SNEAKERHUB' }}
+              {{ isStaffOrAdmin ? 'TÀI KHOẢN HỆ THỐNG (' + authStore.roles.join(', ') + ')' : 'THÀNH VIÊN ADHA SNEAKER' }}
             </span>
           </div>
         </div>
@@ -178,7 +178,7 @@
       <!-- NOT LOGGED IN: TABS LOGIN / REGISTER -->
       <div v-else class="auth-guest">
         <div class="auth-modal-header">
-          <span class="auth-brand-kicker">SNEAKERHUB CLUB ARCHIVE</span>
+          <span class="auth-brand-kicker">ADHA SNEAKER CLUB ARCHIVE</span>
           <div class="auth-tabs">
             <button
               class="auth-tab"
@@ -236,7 +236,7 @@
             </el-form-item>
 
             <button class="auth-submit-btn" :disabled="loading" @click.prevent="handleLogin">
-              {{ loading ? 'ĐANG ĐĂNG NHẬP...' : 'ĐĂNG NHẬP VÀO SNEAKERHUB' }}
+              {{ loading ? 'ĐANG ĐĂNG NHẬP...' : 'ĐĂNG NHẬP VÀO ADHA SNEAKER' }}
             </button>
           </el-form>
 
@@ -651,7 +651,7 @@ async function handleRegister() {
         address: regForm.address || undefined,
         password: regForm.password
       })
-      ElMessage.success('Đăng ký tài khoản thành viên thành công! Chào mừng bạn gia nhập SneakerHub.')
+      ElMessage.success('Đăng ký tài khoản thành viên thành công! Chào mừng bạn gia nhập ADHA Sneaker.')
       emit('update:modelValue', false)
       emit('authenticated', authStore.user)
     } catch (err) {

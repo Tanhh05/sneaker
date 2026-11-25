@@ -8,7 +8,7 @@
     <div v-if="order" id="printable-invoice" class="invoice-wrapper">
       <div class="invoice-header">
         <div>
-          <h2 class="brand-title">SNEAKERHUB PRO STORE</h2>
+          <h2 class="brand-title">ADHA SNEAKER STORE</h2>
           <p>Địa chỉ: 120 Nguyễn Huệ, Quận 1, TP. Hồ Chí Minh</p>
           <p>Hotline: 0901 000 001 | Website: internal.sneakerstore.vn</p>
         </div>
@@ -70,7 +70,7 @@
       </div>
 
       <div class="invoice-footer">
-        <p>Cảm ơn Quý khách đã mua sắm tại SNEAKERHUB PRO STORE!</p>
+        <p>Cảm ơn Quý khách đã mua sắm tại ADHA SNEAKER STORE!</p>
         <p class="sub">Vui lòng giữ hóa đơn để được hỗ trợ bảo hành keo chỉ chính hãng.</p>
       </div>
     </div>

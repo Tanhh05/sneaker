@@ -298,7 +298,7 @@ async function exportExcel() {
     const url = window.URL.createObjectURL(new Blob([blobData]))
     const link = document.createElement('a')
     link.href = url
-    link.setAttribute('download', `BaoCao_SneakerStore_${filters.groupBy}.xlsx`)
+    link.setAttribute('download', `BaoCao_ADHA_Sneaker_${filters.groupBy}.xlsx`)
     document.body.appendChild(link)
     link.click()
     link.remove()

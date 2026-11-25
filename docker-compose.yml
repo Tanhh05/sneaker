@@ -70,7 +70,7 @@ services:
       - MINIO_BUCKET_NAME=sneaker-products
       - MINIO_PUBLIC_URL=${MINIO_PUBLIC_URL:-http://localhost:9000/sneaker-products}
       - SEPAY_BANK_ACCOUNT=0346771322
-      - SEPAY_ACCOUNT_NAME=SNEAKERHUB PRO
+      - SEPAY_ACCOUNT_NAME=ADHA SNEAKER
       - SEPAY_BANK_NAME=MBBank
     networks:
       - sneaker-net

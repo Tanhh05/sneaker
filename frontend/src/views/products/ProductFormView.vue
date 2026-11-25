@@ -510,7 +510,7 @@ const materialChips = [
 ]
 
 function getBrandName(brandId) {
-  if (!brandId) return 'SNEAKERHUB'
+  if (!brandId) return 'ADHA SNEAKER'
   const b = brands.value.find((item) => item.id === brandId)
   return b ? b.brandName : 'SNEAKER'
 }

@@ -2,9 +2,9 @@
   <div class="login-page">
     <div class="login-card">
       <div class="login-brand">
-        <div class="logo-mark">S</div>
+        <div class="logo-mark">A</div>
         <div class="brand-text">
-          <h1>SNEAKERHUB</h1>
+          <h1>ADHA SNEAKER</h1>
           <p>HỆ THỐNG QUẢN LÝ CỬA HÀNG & BÁN LẺ POS</p>
         </div>
       </div>

@@ -34,7 +34,7 @@
       </div>
 
       <div class="footer-brand">
-        <span>SNEAKERHUB ARCHIVE • NAVIGATION ASSIST</span>
+        <span>ADHA SNEAKER ARCHIVE • NAVIGATION ASSIST</span>
       </div>
     </div>
   </div>
