@@ -191,14 +191,14 @@
 
       <el-table :data="data.topSellingProducts" stripe style="width: 100%">
         <el-table-column type="index" label="#" width="50" align="center" />
-        <el-table-column prop="productCode" label="Mã SKU" width="110">
+        <el-table-column prop="productCode" label="Mã SP" width="110">
           <template #default="{ row }">
             <span class="code-badge">{{ row.productCode }}</span>
           </template>
         </el-table-column>
         <el-table-column prop="productName" label="Tên sản phẩm Sneaker" min-width="200">
           <template #default="{ row }">
-            <span class="product-link" @click="$router.push('/admin/products')">{{ row.productName }}</span>
+            <span class="product-link" @click="$router.push(row.productId ? `/admin/products/${row.productId}` : '/admin/products')">{{ row.productName }}</span>
           </template>
         </el-table-column>
         <el-table-column prop="quantitySold" label="Số lượng bán" width="130" align="right">
@@ -206,9 +206,9 @@
             <strong>{{ row.quantitySold }}</strong> đôi
           </template>
         </el-table-column>
-        <el-table-column prop="totalRevenue" label="Doanh thu mang lại" width="180" align="right">
+        <el-table-column prop="revenue" label="Doanh thu mang lại" width="180" align="right">
           <template #default="{ row }">
-            <span class="price-text">{{ formatCurrency(row.totalRevenue) }}</span>
+            <span class="price-text">{{ formatCurrency(row.revenue ?? row.totalRevenue ?? 0) }}</span>
           </template>
         </el-table-column>
       </el-table>
