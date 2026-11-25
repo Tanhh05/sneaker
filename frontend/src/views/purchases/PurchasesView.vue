@@ -34,12 +34,20 @@
           />
         </el-col>
         <el-col :xs="12" :sm="6" :md="6">
-          <el-select v-model="filters.supplierId" placeholder="Nhà cung cấp" clearable style="width: 100%" @change="loadData">
-            <el-option v-for="s in suppliers" :key="s.id" :label="s.supplierName" :value="s.id" />
-          </el-select>
+          <QuickSelect
+            v-model="filters.supplierId"
+            :options="suppliers"
+            value-key="id"
+            label-key="supplierName"
+            :search-keys="['supplierCode', 'supplierName']"
+            placeholder="Nhà cung cấp"
+            search-placeholder="Tìm nhanh nhà cung cấp..."
+            clearable
+            @change="loadData"
+          />
         </el-col>
         <el-col :xs="12" :sm="5" :md="5">
-          <el-select v-model="filters.status" placeholder="Trạng thái phiếu" clearable style="width: 100%" @change="loadData">
+          <el-select v-model="filters.status" placeholder="Trạng thái phiếu" filterable clearable style="width: 100%" @change="loadData">
             <el-option label="Nháp (DRAFT)" value="DRAFT" />
             <el-option label="Đã xác nhận (CONFIRMED)" value="CONFIRMED" />
             <el-option label="Đã hủy (CANCELLED)" value="CANCELLED" />
@@ -146,9 +154,15 @@
         <el-row :gutter="14">
           <el-col :span="12">
             <el-form-item label="Chọn Nhà cung cấp (*)">
-              <el-select v-model="form.supplierId" placeholder="Chọn nhà cung cấp" style="width: 100%">
-                <el-option v-for="s in suppliers" :key="s.id" :label="`${s.supplierCode} - ${s.supplierName}`" :value="s.id" />
-              </el-select>
+              <QuickSelect
+                v-model="form.supplierId"
+                :options="suppliers"
+                value-key="id"
+                :label-key="(s) => `${s.supplierCode} - ${s.supplierName}`"
+                :search-keys="['supplierCode', 'supplierName', 'phone']"
+                placeholder="Chọn nhà cung cấp"
+                search-placeholder="Tìm nhanh mã hoặc tên NCC..."
+              />
             </el-form-item>
           </el-col>
           <el-col :span="12">
@@ -168,20 +182,16 @@
         <el-table :data="form.items" border size="small" style="width: 100%">
           <el-table-column label="Biến thể Sản phẩm (SKU - Tên giày - Size - Màu)" min-width="320">
             <template #default="{ row }">
-              <el-select
+              <QuickSelect
                 v-model="row.productVariantId"
-                filterable
-                placeholder="Gõ tìm SKU hoặc tên giày..."
-                style="width: 100%"
+                :options="variants"
+                value-key="id"
+                :label-key="(v) => `${v.sku} | ${v.productName} (Size ${v.sizeValue} - ${v.colorName})`"
+                :search-keys="['sku', 'productName', 'sizeValue', 'colorName']"
+                placeholder="Chọn biến thể SKU..."
+                search-placeholder="Tìm nhanh SKU, tên giày, size, màu..."
                 @change="(val) => onVariantSelect(row, val)"
-              >
-                <el-option
-                  v-for="v in variants"
-                  :key="v.id"
-                  :label="`${v.sku} | ${v.productName} (Size ${v.sizeValue} - ${v.colorName})`"
-                  :value="v.id"
-                />
-              </el-select>
+              />
             </template>
           </el-table-column>
 

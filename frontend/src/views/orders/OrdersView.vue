@@ -27,7 +27,7 @@
           />
         </el-col>
         <el-col :xs="12" :sm="6" :md="5">
-          <el-select v-model="filters.status" placeholder="Tất cả trạng thái" clearable style="width: 100%" @change="loadData">
+          <el-select filterable v-model="filters.status" placeholder="Tất cả trạng thái" clearable style="width: 100%" @change="loadData">
             <el-option label="Tất cả trạng thái" value="" />
             <el-option label="Chờ xác nhận (PENDING)" value="PENDING" />
             <el-option label="Đơn nháp (DRAFT)" value="DRAFT" />

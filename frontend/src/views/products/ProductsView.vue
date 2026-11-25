@@ -22,17 +22,32 @@
           />
         </el-col>
         <el-col :xs="12" :sm="5" :md="5">
-          <el-select v-model="filters.brandId" placeholder="Thương hiệu" clearable style="width: 100%" @change="loadData">
-            <el-option v-for="b in brands" :key="b.id" :label="b.brandName" :value="b.id" />
-          </el-select>
+          <QuickSelect
+            v-model="filters.brandId"
+            :options="brands"
+            value-key="id"
+            label-key="brandName"
+            :search-keys="['brandName', 'country']"
+            placeholder="Thương hiệu"
+            search-placeholder="Tìm nhanh thương hiệu..."
+            clearable
+            @change="loadData"
+          />
         </el-col>
         <el-col :xs="12" :sm="5" :md="5">
-          <el-select v-model="filters.categoryId" placeholder="Danh mục" clearable style="width: 100%" @change="loadData">
-            <el-option v-for="c in categories" :key="c.id" :label="c.categoryName" :value="c.id" />
-          </el-select>
+          <QuickSelect
+            v-model="filters.categoryId"
+            :options="categories"
+            value-key="id"
+            label-key="categoryName"
+            placeholder="Danh mục"
+            search-placeholder="Tìm nhanh danh mục..."
+            clearable
+            @change="loadData"
+          />
         </el-col>
         <el-col :xs="12" :sm="6" :md="4">
-          <el-select v-model="filters.status" placeholder="Trạng thái" clearable style="width: 100%" @change="loadData">
+          <el-select v-model="filters.status" placeholder="Trạng thái" filterable clearable style="width: 100%" @change="loadData">
             <el-option label="ACTIVE" value="ACTIVE" />
             <el-option label="INACTIVE" value="INACTIVE" />
           </el-select>

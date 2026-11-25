@@ -22,7 +22,7 @@
           />
         </el-col>
         <el-col :xs="12" :sm="6" :md="6">
-          <el-select v-model="filters.status" placeholder="Trạng thái" clearable style="width: 100%" @change="loadData">
+          <el-select filterable v-model="filters.status" placeholder="Trạng thái" clearable style="width: 100%" @change="loadData">
             <el-option label="Đang làm việc (ACTIVE)" value="ACTIVE" />
             <el-option label="Ngừng hoạt động (INACTIVE)" value="INACTIVE" />
           </el-select>
@@ -181,7 +181,7 @@
           </el-col>
           <el-col :span="12">
             <el-form-item label="Giới tính" prop="gender">
-              <el-select v-model="form.gender" style="width: 100%">
+              <el-select filterable v-model="form.gender" style="width: 100%">
                 <el-option label="Nam (MALE)" value="MALE" />
                 <el-option label="Nữ (FEMALE)" value="FEMALE" />
                 <el-option label="Khác (OTHER)" value="OTHER" />
@@ -193,19 +193,21 @@
         <el-row :gutter="14">
           <el-col :span="14">
             <el-form-item label="Liên kết tài khoản đăng nhập" prop="userId">
-              <el-select v-model="form.userId" clearable placeholder="Chọn tài khoản User (Tùy chọn)" style="width: 100%">
-                <el-option
-                  v-for="u in users"
-                  :key="u.id"
-                  :label="`@${u.username} - ${u.fullName}`"
-                  :value="u.id"
-                />
-              </el-select>
+              <QuickSelect
+                v-model="form.userId"
+                :options="users"
+                value-key="id"
+                :label-key="(u) => `@${u.username} - ${u.fullName}`"
+                :search-keys="['username', 'fullName', 'email']"
+                clearable
+                placeholder="Chọn tài khoản User (Tùy chọn)"
+                search-placeholder="Tìm nhanh @username hoặc họ tên..."
+              />
             </el-form-item>
           </el-col>
           <el-col :span="10">
             <el-form-item label="Trạng thái" prop="status">
-              <el-select v-model="form.status" style="width: 100%">
+              <el-select filterable v-model="form.status" style="width: 100%">
                 <el-option label="ACTIVE (Đang làm việc)" value="ACTIVE" />
                 <el-option label="INACTIVE (Ngừng hoạt động)" value="INACTIVE" />
               </el-select>

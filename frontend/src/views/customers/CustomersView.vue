@@ -22,7 +22,7 @@
           />
         </el-col>
         <el-col :xs="12" :sm="6" :md="6">
-          <el-select v-model="filters.status" placeholder="Trạng thái" clearable style="width: 100%" @change="loadData">
+          <el-select filterable v-model="filters.status" placeholder="Trạng thái" clearable style="width: 100%" @change="loadData">
             <el-option label="Đang hoạt động (ACTIVE)" value="ACTIVE" />
             <el-option label="Ngừng hoạt động (INACTIVE)" value="INACTIVE" />
           </el-select>
@@ -130,7 +130,7 @@
         <el-row :gutter="14">
           <el-col :span="8">
             <el-form-item label="Giới tính" prop="gender">
-              <el-select v-model="form.gender" style="width: 100%">
+              <el-select filterable v-model="form.gender" style="width: 100%">
                 <el-option label="Nam (MALE)" value="MALE" />
                 <el-option label="Nữ (FEMALE)" value="FEMALE" />
                 <el-option label="Khác (OTHER)" value="OTHER" />
@@ -150,7 +150,7 @@
           </el-col>
           <el-col :span="8">
             <el-form-item label="Trạng thái" prop="status">
-              <el-select v-model="form.status" style="width: 100%">
+              <el-select filterable v-model="form.status" style="width: 100%">
                 <el-option label="ACTIVE" value="ACTIVE" />
                 <el-option label="INACTIVE" value="INACTIVE" />
               </el-select>

@@ -223,7 +223,7 @@
               </el-col>
               <el-col :span="8">
                 <el-form-item label="Trạng thái kinh doanh" prop="status">
-                  <el-select v-model="form.status" style="width: 100%">
+                  <el-select filterable v-model="form.status" style="width: 100%">
                     <el-option label="Đang kinh doanh" value="ACTIVE" />
                     <el-option label="Tạm ngừng KD" value="INACTIVE" />
                   </el-select>

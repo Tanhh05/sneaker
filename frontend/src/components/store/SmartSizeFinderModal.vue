@@ -37,38 +37,38 @@
         <div class="form-grid">
           <div class="form-col">
             <label class="form-label">Thương hiệu đang đi:</label>
-            <el-select v-model="compareBrand" style="width: 100%">
-              <el-option
-                v-for="b in brandOptions"
-                :key="b.value"
-                :label="b.label"
-                :value="b.value"
-              />
-            </el-select>
+            <QuickSelect
+              v-model="compareBrand"
+              :options="brandOptions"
+              label-key="label"
+              value-key="value"
+              placeholder="Chọn thương hiệu"
+              search-placeholder="Tìm nhanh thương hiệu..."
+            />
           </div>
 
           <div class="form-col">
             <label class="form-label">Dòng giày đang đi:</label>
-            <el-select v-model="compareModel" style="width: 100%">
-              <el-option
-                v-for="m in currentModelOptions"
-                :key="m.value"
-                :label="m.label"
-                :value="m.value"
-              />
-            </el-select>
+            <QuickSelect
+              v-model="compareModel"
+              :options="currentModelOptions"
+              label-key="label"
+              value-key="value"
+              placeholder="Chọn dòng giày"
+              search-placeholder="Tìm nhanh dòng giày..."
+            />
           </div>
 
           <div class="form-col">
             <label class="form-label">Size EU bạn đang đi:</label>
-            <el-select v-model="compareSize" style="width: 100%">
-              <el-option
-                v-for="sz in sizeOptions"
-                :key="sz"
-                :label="`EU ${sz}`"
-                :value="sz"
-              />
-            </el-select>
+            <QuickSelect
+              v-model="compareSize"
+              :options="sizeOptions"
+              :label-key="(sz) => `EU ${sz}`"
+              :value-key="(sz) => sz"
+              placeholder="Chọn size"
+              search-placeholder="Tìm nhanh size..."
+            />
           </div>
         </div>
 

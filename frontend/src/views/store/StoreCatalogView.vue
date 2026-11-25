@@ -43,11 +43,18 @@
         <!-- Brand Filter -->
         <div class="filter-section">
           <div class="heading-with-action">
-            <label class="filter-heading">THƯƠNG HIỆU</label>
+            <label class="filter-heading">THƯƠNG HIỆU ({{ brands.length }})</label>
             <span v-if="filters.brandId" class="clear-link" @click="selectBrand(null)">Bỏ chọn</span>
           </div>
+          <input
+            v-model="brandQuickQuery"
+            type="text"
+            placeholder="Tìm nhanh thương hiệu..."
+            class="mini-filter-search"
+          />
           <div class="brand-options-list">
             <button
+              v-if="!brandQuickQuery.trim()"
               class="brand-option-item"
               :class="{ active: filters.brandId === null }"
               @click="selectBrand(null)"
@@ -56,7 +63,7 @@
               <span class="opt-indicator"></span>
             </button>
             <button
-              v-for="b in brands"
+              v-for="b in filteredBrands"
               :key="b.id"
               class="brand-option-item"
               :class="{ active: filters.brandId === b.id }"
@@ -71,11 +78,18 @@
         <!-- Category Filter -->
         <div class="filter-section">
           <div class="heading-with-action">
-            <label class="filter-heading">DÒNG SẢN PHẨM</label>
+            <label class="filter-heading">DÒNG SẢN PHẨM ({{ categories.length }})</label>
             <span v-if="filters.categoryId" class="clear-link" @click="selectCategory(null)">Bỏ chọn</span>
           </div>
+          <input
+            v-model="categoryQuickQuery"
+            type="text"
+            placeholder="Tìm nhanh dòng sản phẩm..."
+            class="mini-filter-search"
+          />
           <div class="category-pills">
             <button
+              v-if="!categoryQuickQuery.trim()"
               class="cat-pill"
               :class="{ active: filters.categoryId === null }"
               @click="selectCategory(null)"
@@ -83,7 +97,7 @@
               Tất cả
             </button>
             <button
-              v-for="c in categories"
+              v-for="c in filteredCategories"
               :key="c.id"
               class="cat-pill"
               :class="{ active: filters.categoryId === c.id }"
@@ -250,10 +264,32 @@ const wishlistStore = useWishlistStore()
 const loading = ref(false)
 const brands = ref([])
 const categories = ref([])
+const brandQuickQuery = ref('')
+const categoryQuickQuery = ref('')
 const products = ref([])
 const totalElements = ref(0)
 const totalPages = ref(0)
 const sortBy = ref('newest')
+
+const normalizeVi = (str) =>
+  String(str ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[đĐ]/g, 'd')
+    .toLowerCase()
+    .trim()
+
+const filteredBrands = computed(() => {
+  const q = normalizeVi(brandQuickQuery.value)
+  if (!q) return brands.value
+  return brands.value.filter((b) => normalizeVi(b.brandName).includes(q))
+})
+
+const filteredCategories = computed(() => {
+  const q = normalizeVi(categoryQuickQuery.value)
+  if (!q) return categories.value
+  return categories.value.filter((c) => normalizeVi(c.categoryName).includes(q))
+})
 
 const toggleWishlist = (product) => {
   const isAdded = wishlistStore.toggleFavorite(product)
@@ -1044,6 +1080,28 @@ onMounted(() => {
         }
       }
     }
+  }
+}
+
+.mini-filter-search {
+  width: 100%;
+  padding: 7px 10px;
+  margin-bottom: 8px;
+  border: 1px solid #d4d4d4;
+  background: #fafafa;
+  font-size: 12px;
+  color: #171717;
+  outline: none;
+  font-family: inherit;
+  transition: border-color 0.14s ease, background 0.14s ease;
+
+  &:focus {
+    border-color: #000000;
+    background: #ffffff;
+  }
+
+  &::placeholder {
+    color: #a3a3a3;
   }
 }
 </style>

@@ -63,7 +63,7 @@
         </div>
 
         <div class="filter-right-controls">
-          <el-select v-model="paymentFilter" placeholder="Phương thức thanh toán" clearable style="width: 200px">
+          <el-select filterable v-model="paymentFilter" placeholder="Phương thức thanh toán" clearable style="width: 200px">
             <el-option label="Tất cả phương thức" value="" />
             <el-option label="Thanh toán COD (Tiền mặt)" value="CASH" />
             <el-option label="Chuyển khoản VietQR" value="BANK_TRANSFER" />

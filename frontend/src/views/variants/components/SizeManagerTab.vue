@@ -37,7 +37,7 @@
           <el-input v-model="sizeForm.description" />
         </el-form-item>
         <el-form-item label="Trạng thái">
-          <el-select v-model="sizeForm.status" style="width: 100%">
+          <el-select filterable v-model="sizeForm.status" style="width: 100%">
             <el-option label="ACTIVE" value="ACTIVE" />
             <el-option label="INACTIVE" value="INACTIVE" />
           </el-select>

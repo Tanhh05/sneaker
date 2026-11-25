@@ -80,62 +80,47 @@
               <div v-if="showAddressSelects" class="cascade-address-container">
                 <div class="cascade-row-3col">
                   <el-form-item label="Tỉnh / Thành phố (*)" class="cascade-item">
-                    <el-select
+                    <QuickSelect
                       v-model="selectedProvinceCode"
+                      :options="provincesList"
+                      value-key="code"
+                      label-key="name"
                       placeholder="Chọn Tỉnh / TP"
-                      filterable
+                      search-placeholder="Tìm nhanh Tỉnh / TP..."
                       clearable
                       :loading="loadingProvinces"
                       @change="handleProvinceChange"
-                      style="width: 100%"
-                    >
-                      <el-option
-                        v-for="p in provincesList"
-                        :key="p.code"
-                        :label="p.name"
-                        :value="p.code"
-                      />
-                    </el-select>
+                    />
                   </el-form-item>
 
                   <el-form-item label="Quận / Huyện (*)" class="cascade-item">
-                    <el-select
+                    <QuickSelect
                       v-model="selectedDistrictCode"
+                      :options="districtsList"
+                      value-key="code"
+                      label-key="name"
                       placeholder="Chọn Quận / Huyện"
-                      filterable
+                      search-placeholder="Tìm nhanh Quận / Huyện..."
                       clearable
                       :disabled="!selectedProvinceCode"
                       :loading="loadingDistricts"
                       @change="handleDistrictChange"
-                      style="width: 100%"
-                    >
-                      <el-option
-                        v-for="d in districtsList"
-                        :key="d.code"
-                        :label="d.name"
-                        :value="d.code"
-                      />
-                    </el-select>
+                    />
                   </el-form-item>
 
                   <el-form-item label="Phường / Xã (*)" class="cascade-item">
-                    <el-select
+                    <QuickSelect
                       v-model="selectedWardCode"
+                      :options="wardsList"
+                      value-key="code"
+                      label-key="name"
                       placeholder="Chọn Phường / Xã"
-                      filterable
+                      search-placeholder="Tìm nhanh Phường / Xã..."
                       clearable
                       :disabled="!selectedDistrictCode"
                       :loading="loadingWards"
                       @change="handleWardChange"
-                      style="width: 100%"
-                    >
-                      <el-option
-                        v-for="w in wardsList"
-                        :key="w.code"
-                        :label="w.name"
-                        :value="w.code"
-                      />
-                    </el-select>
+                    />
                   </el-form-item>
                 </div>
 

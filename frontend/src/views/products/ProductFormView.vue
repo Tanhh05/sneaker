@@ -228,21 +228,28 @@
             <el-row :gutter="12">
               <el-col :xs="24" :sm="12">
                 <el-form-item label="Thương hiệu (*)" prop="brandId">
-                  <el-select v-model="form.brandId" placeholder="Chọn hãng giày" filterable style="width: 100%">
-                    <el-option
-                      v-for="b in brands"
-                      :key="b.id"
-                      :label="`${b.brandName}${b.country ? ` (${b.country})` : ''}`"
-                      :value="b.id"
-                    />
-                  </el-select>
+                  <QuickSelect
+                    v-model="form.brandId"
+                    :options="brands"
+                    value-key="id"
+                    :label-key="(b) => `${b.brandName}${b.country ? ` (${b.country})` : ''}`"
+                    :search-keys="['brandName', 'country']"
+                    placeholder="Chọn hãng giày"
+                    search-placeholder="Tìm nhanh thương hiệu, quốc gia..."
+                  />
                 </el-form-item>
               </el-col>
               <el-col :xs="24" :sm="12">
                 <el-form-item label="Danh mục giày (*)" prop="categoryId">
-                  <el-select v-model="form.categoryId" placeholder="Chọn danh mục" filterable style="width: 100%">
-                    <el-option v-for="c in categories" :key="c.id" :label="c.categoryName" :value="c.id" />
-                  </el-select>
+                  <QuickSelect
+                    v-model="form.categoryId"
+                    :options="categories"
+                    value-key="id"
+                    label-key="categoryName"
+                    :search-keys="['categoryName', 'categoryCode']"
+                    placeholder="Chọn danh mục"
+                    search-placeholder="Tìm nhanh danh mục..."
+                  />
                 </el-form-item>
               </el-col>
             </el-row>

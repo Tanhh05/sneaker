@@ -14,7 +14,7 @@
     <div class="filter-card">
       <el-row :gutter="12">
         <el-col :xs="12" :sm="5" :md="4">
-          <el-select v-model="filters.groupBy" style="width: 100%" @change="loadReport">
+          <el-select filterable v-model="filters.groupBy" style="width: 100%" @change="loadReport">
             <el-option label="Theo Ngày (DAY)" value="DAY" />
             <el-option label="Theo Tháng (MONTH)" value="MONTH" />
             <el-option label="Theo Năm (YEAR)" value="YEAR" />
@@ -41,14 +41,28 @@
           />
         </el-col>
         <el-col :xs="12" :sm="5" :md="4">
-          <el-select v-model="filters.brandId" placeholder="Lọc Thương hiệu" clearable style="width: 100%" @change="loadReport">
-            <el-option v-for="b in brands" :key="b.id" :label="b.brandName" :value="b.id" />
-          </el-select>
+          <QuickSelect
+            v-model="filters.brandId"
+            :options="brands"
+            value-key="id"
+            label-key="brandName"
+            placeholder="Lọc Thương hiệu"
+            search-placeholder="Tìm nhanh thương hiệu..."
+            clearable
+            @change="loadReport"
+          />
         </el-col>
         <el-col :xs="12" :sm="5" :md="4">
-          <el-select v-model="filters.categoryId" placeholder="Lọc Danh mục" clearable style="width: 100%" @change="loadReport">
-            <el-option v-for="c in categories" :key="c.id" :label="c.categoryName" :value="c.id" />
-          </el-select>
+          <QuickSelect
+            v-model="filters.categoryId"
+            :options="categories"
+            value-key="id"
+            label-key="categoryName"
+            placeholder="Lọc Danh mục"
+            search-placeholder="Tìm nhanh danh mục..."
+            clearable
+            @change="loadReport"
+          />
         </el-col>
         <el-col :xs="12" :sm="24" :md="4">
           <el-button type="primary" @click="loadReport">Tổng hợp</el-button>

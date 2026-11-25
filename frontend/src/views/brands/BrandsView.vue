@@ -22,7 +22,7 @@
           />
         </el-col>
         <el-col :xs="12" :sm="6" :md="6">
-          <el-select v-model="filters.status" placeholder="Trạng thái" clearable style="width: 100%" @change="loadData">
+          <el-select filterable v-model="filters.status" placeholder="Trạng thái" clearable style="width: 100%" @change="loadData">
             <el-option label="Đang sử dụng (ACTIVE)" value="ACTIVE" />
             <el-option label="Ngừng sử dụng (INACTIVE)" value="INACTIVE" />
           </el-select>
@@ -135,7 +135,7 @@
           <el-input v-model="form.description" type="textarea" :rows="3" />
         </el-form-item>
         <el-form-item label="Trạng thái" prop="status">
-          <el-select v-model="form.status" style="width: 100%">
+          <el-select filterable v-model="form.status" style="width: 100%">
             <el-option label="ACTIVE (Đang sử dụng)" value="ACTIVE" />
             <el-option label="INACTIVE (Ngừng sử dụng)" value="INACTIVE" />
           </el-select>

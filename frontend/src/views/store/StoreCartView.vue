@@ -136,62 +136,47 @@
               <!-- TỈNH / THÀNH PHỐ, QUẬN / HUYỆN, PHƯỜNG / XÃ (VIETNAM API) -->
               <div class="form-row-3 address-cascade-row">
                 <el-form-item label="Tỉnh / Thành phố (*)" prop="provinceCode">
-                  <el-select
+                  <QuickSelect
                     v-model="form.provinceCode"
+                    :options="provinces"
+                    value-key="code"
+                    label-key="name"
                     placeholder="Chọn Tỉnh / TP"
-                    filterable
+                    search-placeholder="Tìm nhanh Tỉnh / TP..."
                     clearable
                     :loading="loadingProvinces"
-                    style="width: 100%"
                     @change="handleProvinceChange"
-                  >
-                    <el-option
-                      v-for="p in provinces"
-                      :key="p.code"
-                      :label="p.name"
-                      :value="p.code"
-                    />
-                  </el-select>
+                  />
                 </el-form-item>
 
                 <el-form-item label="Quận / Huyện (*)" prop="districtCode">
-                  <el-select
+                  <QuickSelect
                     v-model="form.districtCode"
+                    :options="districts"
+                    value-key="code"
+                    label-key="name"
                     placeholder="Chọn Quận / Huyện"
-                    filterable
+                    search-placeholder="Tìm nhanh Quận / Huyện..."
                     clearable
                     :disabled="!form.provinceCode"
                     :loading="loadingDistricts"
-                    style="width: 100%"
                     @change="handleDistrictChange"
-                  >
-                    <el-option
-                      v-for="d in districts"
-                      :key="d.code"
-                      :label="d.name"
-                      :value="d.code"
-                    />
-                  </el-select>
+                  />
                 </el-form-item>
 
                 <el-form-item label="Phường / Xã (*)" prop="wardCode">
-                  <el-select
+                  <QuickSelect
                     v-model="form.wardCode"
+                    :options="wards"
+                    value-key="code"
+                    label-key="name"
                     placeholder="Chọn Phường / Xã"
-                    filterable
+                    search-placeholder="Tìm nhanh Phường / Xã..."
                     clearable
                     :disabled="!form.districtCode"
                     :loading="loadingWards"
-                    style="width: 100%"
                     @change="handleWardChange"
-                  >
-                    <el-option
-                      v-for="w in wards"
-                      :key="w.code"
-                      :label="w.name"
-                      :value="w.code"
-                    />
-                  </el-select>
+                  />
                 </el-form-item>
               </div>
 

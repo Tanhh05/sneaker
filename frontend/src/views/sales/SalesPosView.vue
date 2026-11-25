@@ -50,71 +50,67 @@
             <!-- Filter Controls + Inline Quick Step Selector -->
             <div class="sub-controls-row">
               <div class="filter-dropdowns">
-                <el-select
+                <QuickSelect
                   v-model="selectedSizeFilter"
+                  :options="sizes"
+                  value-key="id"
+                  :label-key="(s) => `Size EU ${s.sizeValue}`"
                   placeholder="Lọc Size EU"
+                  search-placeholder="Tìm size..."
                   clearable
                   class="filter-select"
-                >
-                  <el-option v-for="s in sizes" :key="s.id" :label="`Size EU ${s.sizeValue}`" :value="s.id" />
-                </el-select>
-                <el-select
+                />
+                <QuickSelect
                   v-model="selectedColorFilter"
+                  :options="colors"
+                  value-key="id"
+                  label-key="colorName"
+                  :search-keys="['colorName', 'colorCode']"
                   placeholder="Lọc Màu sắc"
+                  search-placeholder="Tìm màu sắc..."
                   clearable
                   class="filter-select"
-                >
-                  <el-option v-for="c in colors" :key="c.id" :label="c.colorName" :value="c.id" />
-                </el-select>
+                />
               </div>
 
               <!-- Compact Step Picker Strip -->
               <div class="quick-step-strip">
                 <span class="strip-label">CHỌN NHANH:</span>
-                <el-select
+                <QuickSelect
                   v-model="stepProductId"
+                  :options="activeProducts"
+                  value-key="id"
+                  :label-key="(p) => `${p.productCode} - ${p.productName}`"
+                  :search-keys="['productCode', 'productName']"
                   placeholder="Mẫu giày..."
-                  filterable
+                  search-placeholder="Tìm mã SP hoặc tên giày..."
                   clearable
                   class="step-select prod"
                   @change="onStepProductChange"
-                >
-                  <el-option
-                    v-for="p in activeProducts"
-                    :key="p.id"
-                    :label="`${p.productCode} - ${p.productName}`"
-                    :value="p.id"
-                  />
-                </el-select>
-                <el-select
+                />
+                <QuickSelect
                   v-model="stepSizeId"
+                  :options="availableSizesForStepProduct"
+                  value-key="sizeId"
+                  :label-key="(s) => `EU ${s.sizeValue}`"
                   placeholder="Size"
+                  search-placeholder="Tìm size..."
                   :disabled="!stepProductId"
                   clearable
                   class="step-select size"
                   @change="onStepSizeChange"
-                >
-                  <el-option
-                    v-for="s in availableSizesForStepProduct"
-                    :key="s.sizeId"
-                    :label="`EU ${s.sizeValue}`"
-                    :value="s.sizeId"
-                  />
-                </el-select>
-                <el-select
+                />
+                <QuickSelect
                   v-model="stepColorId"
+                  :options="availableColorsForStep"
+                  value-key="colorId"
+                  label-key="colorName"
                   placeholder="Màu"
+                  search-placeholder="Tìm màu..."
                   :disabled="!stepSizeId"
                   clearable
                   class="step-select color"
-                >
-                  <el-option
-                    v-for="c in availableColorsForStep"
-                    :key="c.colorId"
-                    :label="c.colorName"
-                    :value="c.colorId"
-                  />
-                </el-select>
+                />
                 <button
                   class="step-add-btn"
                   :disabled="!matchedStepVariant || matchedStepVariant.availableQuantity <= 0"
@@ -244,20 +240,17 @@
           <div class="customer-box">
             <div class="box-label">Khách hàng mua tại quầy:</div>
             <div class="cust-row">
-              <el-select
+              <QuickSelect
                 v-model="checkoutForm.customerId"
-                filterable
+                :options="customers"
+                value-key="id"
+                :label-key="(c) => `${c.fullName} - ${c.phone} (${c.customerCode})`"
+                :search-keys="['fullName', 'phone', 'customerCode']"
                 clearable
                 placeholder="Khách lẻ tại quầy (Hoặc tìm theo tên/SĐT)"
+                search-placeholder="Tìm nhanh tên, SĐT hoặc mã KH..."
                 style="flex: 1"
-              >
-                <el-option
-                  v-for="c in customers"
-                  :key="c.id"
-                  :label="`${c.fullName} - ${c.phone} (${c.customerCode})`"
-                  :value="c.id"
-                />
-              </el-select>
+              />
               <button class="pos-cust-btn" @click="quickCustVisible = true">
                 + Khách mới
               </button>
@@ -323,7 +316,7 @@
                 </el-col>
                 <el-col :span="12">
                   <el-form-item label="TRẠNG THÁI XÁC NHẬN">
-                    <el-select v-model="checkoutForm.status" style="width: 100%">
+                    <el-select filterable v-model="checkoutForm.status" style="width: 100%">
                       <el-option label="Hoàn thành ngay (COMPLETED)" value="COMPLETED" />
                       <el-option label="Xác nhận giữ đơn (CONFIRMED)" value="CONFIRMED" />
                       <el-option label="Lưu đơn nháp (DRAFT)" value="DRAFT" />

@@ -15,27 +15,25 @@
         </div>
 
         <div class="product-picker-inline">
-          <el-select
+          <QuickSelect
             v-model="selectedProductId"
+            :options="products"
+            value-key="id"
+            :label-key="(p) => `${p.productCode} — ${p.productName}`"
+            :search-keys="['productCode', 'productName', 'brandName']"
             placeholder="Tìm & chọn sản phẩm Sneaker..."
-            filterable
-            size="default"
+            search-placeholder="Gõ mã SP hoặc tên giày..."
             class="product-select"
             @change="handleProductChange"
           >
-            <el-option
-              v-for="p in products"
-              :key="p.id"
-              :label="`${p.productCode} — ${p.productName}`"
-              :value="p.id"
-            >
+            <template #option="{ item }">
               <div class="product-option-row">
-                <span class="code-badge">{{ p.productCode }}</span>
-                <span class="p-name">{{ p.productName }}</span>
-                <span class="p-price">{{ formatCurrency(p.salePrice) }}</span>
+                <span class="code-badge">{{ item.productCode }}</span>
+                <span class="p-name">{{ item.productName }}</span>
+                <span class="p-price">{{ formatCurrency(item.salePrice) }}</span>
               </div>
-            </el-option>
-          </el-select>
+            </template>
+          </QuickSelect>
         </div>
 
         <div v-if="selectedProduct" class="product-mini-meta">
@@ -138,7 +136,7 @@
             </div>
             <div class="compact-field status-field">
               <label>Trạng thái</label>
-              <el-select v-model="defaults.status" size="small">
+              <el-select filterable v-model="defaults.status" size="small">
                 <el-option label="ACTIVE" value="ACTIVE" />
                 <el-option label="INACTIVE" value="INACTIVE" />
               </el-select>
@@ -146,7 +144,7 @@
           </div>
 
           <div class="bulk-apply-group">
-            <el-select v-model="bulkScope" size="small" class="scope-select" title="Phạm vi áp dụng">
+            <el-select filterable v-model="bulkScope" size="small" class="scope-select" title="Phạm vi áp dụng">
               <el-option label="Áp dụng: Tất cả SKU" value="all" />
               <el-option label="Chỉ SKU mới thêm" value="new" />
               <el-option
@@ -356,7 +354,7 @@
             </div>
             <div class="insp-field status-f">
               <label>Trạng thái</label>
-              <el-select v-model="inspectedRow.status" size="small" style="width: 100%">
+              <el-select filterable v-model="inspectedRow.status" size="small" style="width: 100%">
                 <el-option label="ACTIVE" value="ACTIVE" />
                 <el-option label="INACTIVE" value="INACTIVE" />
               </el-select>
@@ -626,24 +624,32 @@
                 </template>
               </el-table-column>
 
-              <el-table-column label="Size" width="102">
+              <el-table-column label="Size" width="112">
                 <template #default="{ row }">
-                  <el-select v-model="row.sizeId" size="small" style="width: 100%" @change="refreshRowSku(row)">
-                    <el-option v-for="s in sizes" :key="s.id" :label="`Size ${s.sizeValue}`" :value="s.id" />
-                  </el-select>
+                  <QuickSelect
+                    v-model="row.sizeId"
+                    :options="sizes"
+                    value-key="id"
+                    :label-key="(s) => `Size ${s.sizeValue}`"
+                    size="small"
+                    search-placeholder="Tìm size..."
+                    @change="refreshRowSku(row)"
+                  />
                 </template>
               </el-table-column>
 
-              <el-table-column label="Màu sắc" min-width="155">
+              <el-table-column label="Màu sắc" min-width="165">
                 <template #default="{ row }">
-                  <el-select v-model="row.colorId" size="small" style="width: 100%" @change="refreshRowSku(row)">
-                    <el-option
-                      v-for="c in colors"
-                      :key="c.id"
-                      :label="`${c.colorName} (${c.colorCode})`"
-                      :value="c.id"
-                    />
-                  </el-select>
+                  <QuickSelect
+                    v-model="row.colorId"
+                    :options="colors"
+                    value-key="id"
+                    :label-key="(c) => `${c.colorName} (${c.colorCode})`"
+                    :search-keys="['colorName', 'colorCode']"
+                    size="small"
+                    search-placeholder="Tìm màu..."
+                    @change="refreshRowSku(row)"
+                  />
                 </template>
               </el-table-column>
 
@@ -674,7 +680,7 @@
 
               <el-table-column label="Trạng thái" width="108">
                 <template #default="{ row }">
-                  <el-select v-model="row.status" size="small" style="width: 100%">
+                  <el-select filterable v-model="row.status" size="small" style="width: 100%">
                     <el-option label="ACTIVE" value="ACTIVE" />
                     <el-option label="INACTIVE" value="INACTIVE" />
                   </el-select>

@@ -35,19 +35,47 @@
               />
             </el-col>
             <el-col :xs="12" :sm="6" :md="6">
-              <el-select v-model="vFilters.productId" placeholder="Lọc theo sản phẩm" clearable style="width: 100%" @change="loadVariants">
-                <el-option v-for="p in products" :key="p.id" :label="`${p.productCode} - ${p.productName}`" :value="p.id" />
-              </el-select>
+              <QuickSelect
+                v-model="vFilters.productId"
+                :options="products"
+                value-key="id"
+                :label-key="(p) => `${p.productCode} - ${p.productName}`"
+                :search-keys="['productCode', 'productName']"
+                placeholder="Lọc theo sản phẩm"
+                search-placeholder="Tìm nhanh mã SP, tên giày..."
+                clearable
+                @change="loadVariants"
+              />
             </el-col>
             <el-col :xs="12" :sm="5" :md="4">
-              <el-select v-model="vFilters.sizeId" placeholder="Size EU" clearable style="width: 100%" @change="loadVariants">
-                <el-option v-for="s in sizes" :key="s.id" :label="`Size ${s.sizeValue}`" :value="s.id" />
-              </el-select>
+              <QuickSelect
+                v-model="vFilters.sizeId"
+                :options="sizes"
+                value-key="id"
+                :label-key="(s) => `Size ${s.sizeValue}`"
+                placeholder="Size EU"
+                search-placeholder="Tìm size..."
+                clearable
+                @change="loadVariants"
+              />
             </el-col>
             <el-col :xs="12" :sm="5" :md="4">
-              <el-select v-model="vFilters.colorId" placeholder="Màu sắc" clearable style="width: 100%" @change="loadVariants">
-                <el-option v-for="c in colors" :key="c.id" :label="c.colorName" :value="c.id" />
-              </el-select>
+              <QuickSelect
+                v-model="vFilters.colorId"
+                :options="colors"
+                value-key="id"
+                label-key="colorName"
+                :search-keys="['colorName', 'colorCode']"
+                placeholder="Màu sắc"
+                search-placeholder="Tìm nhanh màu sắc..."
+                clearable
+                @change="loadVariants"
+              >
+                <template #option="{ item }">
+                  <span class="color-dot" :style="{ backgroundColor: item.hexCode }"></span>
+                  <span>{{ item.colorName }}</span>
+                </template>
+              </QuickSelect>
             </el-col>
             <el-col :xs="12" :sm="24" :md="4">
               <el-button type="primary" @click="loadVariants">Tìm SKU</el-button>
