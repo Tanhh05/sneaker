@@ -1,28 +1,29 @@
 services:
   # -------------------------------------------------------------
-  # 1. Oracle Database 23ai Free (Auto-creates schema & seed data)
+  # 1. PostgreSQL 16 Alpine (Lightweight ~100MB RAM, Auto-init DB)
   # -------------------------------------------------------------
-  sneaker-oracle:
-    image: container-registry.oracle.com/database/free:latest
-    container_name: sneaker-oracle
+  sneaker-postgres:
+    image: postgres:16-alpine
+    container_name: sneaker-postgres
     restart: unless-stopped
+    mem_limit: 384m
     ports:
-      - "${ORACLE_PORT:-1521}:1521"
+      - "${POSTGRES_PORT:-5432}:5432"
     environment:
-      - ORACLE_PWD=SneakerStore123
-      - ORACLE_CHARACTERSET=AL32UTF8
+      - POSTGRES_DB=sneaker_store
+      - POSTGRES_USER=sneaker_store
+      - POSTGRES_PASSWORD=SneakerStore123
+      - TZ=Asia/Ho_Chi_Minh
     volumes:
-      - oracle-data:/opt/oracle/oradata
-      - ./backend/database:/opt/sneaker-db-scripts:ro
-      - ./backend/database/docker-init:/opt/oracle/scripts/setup:ro
+      - postgres-data:/var/lib/postgresql/data
+      - ./backend/database/postgres:/docker-entrypoint-initdb.d:ro
     networks:
       - sneaker-net
     healthcheck:
-      test: ["CMD-SHELL", "\"$$SCRIPT_BASE_DIR/$$CHECK_DB_FILE\" >/dev/null || exit 1"]
-      interval: 15s
-      timeout: 10s
-      retries: 30
-      start_period: 60s
+      test: ["CMD-SHELL", "pg_isready -U sneaker_store -d sneaker_store"]
+      interval: 5s
+      timeout: 5s
+      retries: 15
 
   # -------------------------------------------------------------
   # 2. MinIO Object Storage (S3 API: 9000 & Web Console: 9001)
@@ -31,6 +32,7 @@ services:
     image: elestio/minio:latest
     container_name: sneaker-minio
     restart: unless-stopped
+    mem_limit: 256m
     ports:
       - "9000:9000"
       - "9001:9001"
@@ -44,7 +46,7 @@ services:
       - sneaker-net
 
   # -------------------------------------------------------------
-  # 3. Spring Boot 3 Backend (Java 17)
+  # 3. Spring Boot 3 Backend (Java 17, RAM capped for 2GB VPS)
   # -------------------------------------------------------------
   sneaker-backend:
     build:
@@ -52,25 +54,28 @@ services:
       dockerfile: Dockerfile
     container_name: sneaker-backend
     restart: unless-stopped
+    mem_limit: 768m
     ports:
       - "8080:8080"
     environment:
+      - JAVA_TOOL_OPTIONS=-Xms128m -Xmx512m -XX:+UseSerialGC
+      - TZ=Asia/Ho_Chi_Minh
       - SERVER_PORT=8080
-      - DB_URL=jdbc:oracle:thin:@//sneaker-oracle:1521/FREEPDB1
-      - DB_USERNAME=SNEAKER_STORE
+      - DB_URL=jdbc:postgresql://sneaker-postgres:5432/sneaker_store
+      - DB_USERNAME=sneaker_store
       - DB_PASSWORD=SneakerStore123
       - MINIO_ENDPOINT=http://sneaker-minio:9000
       - MINIO_ACCESS_KEY=minioadmin
       - MINIO_SECRET_KEY=minioadmin
       - MINIO_BUCKET_NAME=sneaker-products
-      - MINIO_PUBLIC_URL=http://localhost:9000/sneaker-products
+      - MINIO_PUBLIC_URL=${MINIO_PUBLIC_URL:-http://localhost:9000/sneaker-products}
       - SEPAY_BANK_ACCOUNT=0346771322
       - SEPAY_ACCOUNT_NAME=SNEAKERHUB PRO
       - SEPAY_BANK_NAME=MBBank
     networks:
       - sneaker-net
     depends_on:
-      sneaker-oracle:
+      sneaker-postgres:
         condition: service_healthy
       sneaker-minio:
         condition: service_started
@@ -84,6 +89,7 @@ services:
       dockerfile: Dockerfile
     container_name: sneaker-frontend
     restart: unless-stopped
+    mem_limit: 128m
     ports:
       - "5173:80"
       - "80:80"
@@ -93,8 +99,8 @@ services:
       - sneaker-backend
 
 volumes:
-  oracle-data:
-    name: sneaker-oracle-data
+  postgres-data:
+    name: sneaker-postgres-data
   minio-data:
     name: sneaker-minio-data
 

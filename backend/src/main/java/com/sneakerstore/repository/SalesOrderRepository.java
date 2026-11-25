@@ -29,8 +29,8 @@ public interface SalesOrderRepository extends JpaRepository<SalesOrder, Long> {
     @EntityGraph(attributePaths = {"customer", "employee"})
     @Query("SELECT DISTINCT so FROM SalesOrder so " +
            "LEFT JOIN so.customer c " +
-           "WHERE (:phone IS NOT NULL AND :phone <> '' AND TRIM(c.phone) = TRIM(:phone)) " +
-           "   OR (:email IS NOT NULL AND :email <> '' AND LOWER(TRIM(c.email)) = LOWER(TRIM(:email))) " +
+           "WHERE (:phone IS NOT NULL AND :phone <> '' AND TRIM(c.phone) = TRIM(CAST(:phone AS string))) " +
+           "   OR (:email IS NOT NULL AND :email <> '' AND LOWER(TRIM(c.email)) = LOWER(TRIM(CAST(:email AS string)))) " +
            "ORDER BY so.orderDate DESC")
     List<SalesOrder> findOrdersByPhoneOrEmail(@Param("phone") String phone, @Param("email") String email);
 
@@ -39,21 +39,21 @@ public interface SalesOrderRepository extends JpaRepository<SalesOrder, Long> {
            "LEFT JOIN so.customer c " +
            "LEFT JOIN so.employee e " +
            "WHERE (:keyword IS NULL OR :keyword = '' " +
-           "OR LOWER(so.orderCode) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
-           "OR (:altKeyword IS NOT NULL AND LOWER(so.orderCode) = LOWER(:altKeyword)) " +
-           "OR (c IS NOT NULL AND (LOWER(c.fullName) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(c.phone) LIKE LOWER(CONCAT('%', :keyword, '%'))))) " +
+           "OR LOWER(so.orderCode) LIKE LOWER(CONCAT('%', CAST(:keyword AS string), '%')) " +
+           "OR (:altKeyword IS NOT NULL AND LOWER(so.orderCode) = LOWER(CAST(:altKeyword AS string))) " +
+           "OR (c IS NOT NULL AND (LOWER(c.fullName) LIKE LOWER(CONCAT('%', CAST(:keyword AS string), '%')) OR LOWER(c.phone) LIKE LOWER(CONCAT('%', CAST(:keyword AS string), '%'))))) " +
            "AND (:status IS NULL OR :status = '' OR so.status = :status) " +
-           "AND (:fromDate IS NULL OR so.orderDate >= :fromDate) " +
-           "AND (:toDate IS NULL OR so.orderDate <= :toDate)",
+           "AND (CAST(:fromDate AS timestamp) IS NULL OR so.orderDate >= :fromDate) " +
+           "AND (CAST(:toDate AS timestamp) IS NULL OR so.orderDate <= :toDate)",
            countQuery = "SELECT COUNT(so) FROM SalesOrder so " +
            "LEFT JOIN so.customer c " +
            "WHERE (:keyword IS NULL OR :keyword = '' " +
-           "OR LOWER(so.orderCode) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
-           "OR (:altKeyword IS NOT NULL AND LOWER(so.orderCode) = LOWER(:altKeyword)) " +
-           "OR (c IS NOT NULL AND (LOWER(c.fullName) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(c.phone) LIKE LOWER(CONCAT('%', :keyword, '%'))))) " +
+           "OR LOWER(so.orderCode) LIKE LOWER(CONCAT('%', CAST(:keyword AS string), '%')) " +
+           "OR (:altKeyword IS NOT NULL AND LOWER(so.orderCode) = LOWER(CAST(:altKeyword AS string))) " +
+           "OR (c IS NOT NULL AND (LOWER(c.fullName) LIKE LOWER(CONCAT('%', CAST(:keyword AS string), '%')) OR LOWER(c.phone) LIKE LOWER(CONCAT('%', CAST(:keyword AS string), '%'))))) " +
            "AND (:status IS NULL OR :status = '' OR so.status = :status) " +
-           "AND (:fromDate IS NULL OR so.orderDate >= :fromDate) " +
-           "AND (:toDate IS NULL OR so.orderDate <= :toDate)")
+           "AND (CAST(:fromDate AS timestamp) IS NULL OR so.orderDate >= :fromDate) " +
+           "AND (CAST(:toDate AS timestamp) IS NULL OR so.orderDate <= :toDate)")
     Page<SalesOrder> searchOrders(@Param("keyword") String keyword,
                                   @Param("altKeyword") String altKeyword,
                                   @Param("status") String status,
@@ -64,8 +64,8 @@ public interface SalesOrderRepository extends JpaRepository<SalesOrder, Long> {
     long countByStatusIn(List<String> statuses);
 
     @Query("SELECT COALESCE(SUM(so.finalAmount), 0) FROM SalesOrder so WHERE so.status = 'COMPLETED' " +
-           "AND (:fromDate IS NULL OR so.orderDate >= :fromDate) " +
-           "AND (:toDate IS NULL OR so.orderDate <= :toDate)")
+           "AND (CAST(:fromDate AS timestamp) IS NULL OR so.orderDate >= :fromDate) " +
+           "AND (CAST(:toDate AS timestamp) IS NULL OR so.orderDate <= :toDate)")
     BigDecimal sumCompletedRevenue(@Param("fromDate") LocalDateTime fromDate,
                                    @Param("toDate") LocalDateTime toDate);
 }

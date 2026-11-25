@@ -127,8 +127,7 @@ public class ReportQueryRepositoryImpl implements ReportQueryRepository {
             params.addValue("categoryId", categoryId);
         }
 
-        String sql = "SELECT * FROM ( " +
-                "SELECT p.ID AS product_id, " +
+        String sql = "SELECT p.ID AS product_id, " +
                 "       p.PRODUCT_CODE AS product_code, " +
                 "       p.PRODUCT_NAME AS product_name, " +
                 "       b.BRAND_NAME AS brand_name, " +
@@ -143,7 +142,7 @@ public class ReportQueryRepositoryImpl implements ReportQueryRepository {
                 "LEFT JOIN SALES_ORDERS so ON " + dateJoinCond +
                 whereCond +
                 "GROUP BY p.ID, p.PRODUCT_CODE, p.PRODUCT_NAME, b.BRAND_NAME, c.CATEGORY_NAME " +
-                orderClause + " ) WHERE ROWNUM <= :limit";
+                orderClause + " LIMIT :limit";
 
         return jdbcTemplate.query(sql, params, (rs, rowNum) -> DashboardResponse.ProductSalesStatDto.builder()
                 .productId(rs.getLong("product_id"))

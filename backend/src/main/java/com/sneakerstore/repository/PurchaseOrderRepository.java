@@ -20,12 +20,12 @@ public interface PurchaseOrderRepository extends JpaRepository<PurchaseOrder, Lo
 
     @EntityGraph(attributePaths = {"supplier", "employee"})
     @Query("SELECT po FROM PurchaseOrder po WHERE " +
-           "(:keyword IS NULL OR :keyword = '' OR LOWER(po.purchaseCode) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
-           "OR LOWER(po.supplier.supplierName) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
+           "(:keyword IS NULL OR :keyword = '' OR LOWER(po.purchaseCode) LIKE LOWER(CONCAT('%', CAST(:keyword AS string), '%')) " +
+           "OR LOWER(po.supplier.supplierName) LIKE LOWER(CONCAT('%', CAST(:keyword AS string), '%'))) " +
            "AND (:supplierId IS NULL OR po.supplier.id = :supplierId) " +
            "AND (:status IS NULL OR :status = '' OR po.status = :status) " +
-           "AND (:fromDate IS NULL OR po.purchaseDate >= :fromDate) " +
-           "AND (:toDate IS NULL OR po.purchaseDate <= :toDate)")
+           "AND (CAST(:fromDate AS timestamp) IS NULL OR po.purchaseDate >= :fromDate) " +
+           "AND (CAST(:toDate AS timestamp) IS NULL OR po.purchaseDate <= :toDate)")
     Page<PurchaseOrder> searchPurchaseOrders(@Param("keyword") String keyword,
                                              @Param("supplierId") Long supplierId,
                                              @Param("status") String status,
