@@ -253,7 +253,7 @@
                   :disabled="selectedSizeIds.length === 0 || selectedColorIds.length === 0"
                   @click="generateMatrixVariants"
                 >
-                  ⚡ TẠO {{ pendingGenerateCount > 0 ? pendingGenerateCount : selectedSizeIds.length * selectedColorIds.length }} BIẾN THỂ
+                  TẠO {{ pendingGenerateCount > 0 ? pendingGenerateCount : selectedSizeIds.length * selectedColorIds.length }} BIẾN THỂ
                 </button>
               </div>
             </div>

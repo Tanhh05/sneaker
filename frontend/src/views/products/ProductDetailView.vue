@@ -205,7 +205,7 @@
             <p class="empty-title">Sản phẩm này chưa có biến thể Size / Màu nào</p>
             <p class="empty-sub">Bấm nút bên dưới để mở Ma trận SKU và khởi tạo hàng loạt biến thể ngay.</p>
             <button v-if="canManageCatalog" type="button" class="btn-add-variants" @click="goToVariantStudio">
-              ⚡ Tạo tổ hợp biến thể ngay
+              Tạo tổ hợp biến thể ngay
             </button>
           </div>
 

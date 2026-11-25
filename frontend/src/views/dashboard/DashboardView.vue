@@ -4,7 +4,7 @@
     <div class="page-header">
       <div class="page-title-group">
         <h2 class="page-title">TỔNG QUAN HOẠT ĐỘNG KINH DOANH</h2>
-        <p class="page-subtitle">Dữ liệu doanh thu & chỉ số vận hành thời gian thực từ PostgreSQL Database</p>
+        <p class="page-subtitle">Dữ liệu doanh thu & chỉ số vận hành thời gian thực của hệ thống</p>
       </div>
       <div class="header-actions-group">
         <el-button @click="loadDashboard" class="btn-refresh">

@@ -109,7 +109,7 @@
                 <template #dropdown>
                   <el-dropdown-menu>
                     <el-dropdown-item command="variants">
-                      ⚡ Quản lý biến thể SKU
+                      Quản lý biến thể SKU
                     </el-dropdown-item>
                     <el-dropdown-item
                       v-if="row.status === 'ACTIVE'"

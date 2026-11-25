@@ -213,7 +213,7 @@
                   <div class="code-input-group">
                     <el-input v-model="form.productCode" placeholder="VD: SP012" class="mono-input" />
                     <button type="button" class="btn-gen-code" title="Tạo mã nhanh" @click="autoGenerateCode">
-                      ⚡ Tạo
+                      Tạo mã
                     </button>
                   </div>
                 </el-form-item>
@@ -328,7 +328,7 @@
             <div class="card-head-row">
               <span class="badge-black">04. BIẾN THỂ SKU HIỆN CÓ ({{ existingVariants.length }} SKU · {{ totalVariantStock }} ĐÔI)</span>
               <button type="button" class="btn-manage-sku" @click="goToVariantStudio">
-                ⚡ Mở Ma trận sửa / thêm SKU →
+                Mở Ma trận sửa / thêm SKU →
               </button>
             </div>
 

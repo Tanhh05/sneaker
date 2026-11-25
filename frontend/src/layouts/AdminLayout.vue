@@ -56,14 +56,6 @@
           </div>
         </nav>
       </el-scrollbar>
-
-      <!-- Sidebar Footer -->
-      <div class="sidebar-footer" v-if="!isCollapsed || isMobile">
-        <div class="db-status">
-          <span class="dot"></span>
-          <span class="db-name">PostgreSQL 16 Connected</span>
-        </div>
-      </div>
     </aside>
 
     <!-- Main Content Area -->

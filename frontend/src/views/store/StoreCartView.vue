@@ -111,7 +111,7 @@
                   @click="fillCustomerFromAuth(true); ElMessage.success('Đã điền nhanh thông tin nhận hàng từ tài khoản!')"
                   title="Điền lại thông tin mới nhất từ tài khoản"
                 >
-                  ⚡ Điền nhanh từ tài khoản
+                  Điền nhanh từ tài khoản
                 </button>
                 <span class="member-tag">✓ ĐÃ ĐĂNG NHẬP</span>
               </div>

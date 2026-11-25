@@ -102,7 +102,7 @@
               <span class="group-title">CHỌN KÍCH CỠ (SIZE EU / VN)</span>
               <div class="size-action-links">
                 <button type="button" class="btn-smart-finder" @click="showSmartSizeFinder = true">
-                  ⚡ Gợi ý size ↗
+                  Gợi ý size ↗
                 </button>
                 <button type="button" class="size-chart-link" @click="showSizeGuide = true">
                   Bảng size ↗
