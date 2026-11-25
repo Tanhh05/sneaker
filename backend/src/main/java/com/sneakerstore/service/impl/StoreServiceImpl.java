@@ -139,7 +139,7 @@ public class StoreServiceImpl implements StoreService {
         log.info("Khách hàng đang đặt hàng online: {}", request.getCustomerName());
 
         // 1. Tìm hoặc tạo mới thông tin khách hàng theo số điện thoại
-        Customer customer = customerRepository.findByPhone(request.getCustomerPhone().trim())
+        Customer customer = customerRepository.findFirstByPhoneOrderByIdAsc(request.getCustomerPhone().trim())
                 .orElseGet(() -> {
                     String customerCode = generateCustomerCode();
                     Customer newCustomer = Customer.builder()
@@ -341,22 +341,27 @@ public class StoreServiceImpl implements StoreService {
         List<SalesOrder> orders = new ArrayList<>();
         Set<Long> seenOrderIds = new HashSet<>();
 
-        // 1. Tìm theo Customer ID thông qua Số điện thoại hoặc Email
+        // 1. Tìm theo tất cả Customer ID khớp Số điện thoại hoặc Email (tránh lỗi NonUniqueResultException nếu có nhiều bản ghi trùng)
+        Set<Long> matchedCustomerIds = new HashSet<>();
         if (queryPhone != null && !queryPhone.isEmpty()) {
-            customerRepository.findByPhone(queryPhone).ifPresent(cust -> {
-                List<SalesOrder> list = salesOrderRepository.findByCustomerIdOrderByOrderDateDesc(cust.getId());
-                for (SalesOrder o : list) {
-                    if (seenOrderIds.add(o.getId())) orders.add(o);
+            for (Customer cust : customerRepository.findAllByPhone(queryPhone)) {
+                if (matchedCustomerIds.add(cust.getId())) {
+                    List<SalesOrder> list = salesOrderRepository.findByCustomerIdOrderByOrderDateDesc(cust.getId());
+                    for (SalesOrder o : list) {
+                        if (seenOrderIds.add(o.getId())) orders.add(o);
+                    }
                 }
-            });
+            }
         }
         if (queryEmail != null && !queryEmail.isEmpty()) {
-            customerRepository.findByEmail(queryEmail).ifPresent(cust -> {
-                List<SalesOrder> list = salesOrderRepository.findByCustomerIdOrderByOrderDateDesc(cust.getId());
-                for (SalesOrder o : list) {
-                    if (seenOrderIds.add(o.getId())) orders.add(o);
+            for (Customer cust : customerRepository.findAllByEmailIgnoreCase(queryEmail)) {
+                if (matchedCustomerIds.add(cust.getId())) {
+                    List<SalesOrder> list = salesOrderRepository.findByCustomerIdOrderByOrderDateDesc(cust.getId());
+                    for (SalesOrder o : list) {
+                        if (seenOrderIds.add(o.getId())) orders.add(o);
+                    }
                 }
-            });
+            }
         }
 
         // 2. Dự phòng thêm query trực tiếp trên SalesOrder

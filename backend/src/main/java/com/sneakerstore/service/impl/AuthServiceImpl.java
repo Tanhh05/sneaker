@@ -365,7 +365,7 @@ public class AuthServiceImpl implements AuthService {
 
     private void syncCustomerRecord(User user, String email, String fullName) {
         try {
-            Optional<Customer> existingCustomer = customerRepository.findByEmail(email);
+            Optional<Customer> existingCustomer = customerRepository.findFirstByEmailIgnoreCaseOrderByIdAsc(email);
             if (existingCustomer.isEmpty()) {
                 long phoneSuffix = Math.abs((email + user.getId()).hashCode()) % 100000000L;
                 String generatedPhone = String.format("09%08d", phoneSuffix);
@@ -457,11 +457,13 @@ public class AuthServiceImpl implements AuthService {
         user.setUpdatedBy(username);
         User savedUser = userRepository.save(user);
 
-        // Đồng bộ dữ liệu sang bản ghi Customer tương ứng (theo SĐT mới hoặc SĐT cũ)
+        // Đồng bộ dữ liệu sang bản ghi Customer tương ứng (theo SĐT mới, SĐT cũ hoặc Email)
         String activePhone = savedUser.getPhone();
         if (activePhone != null && !activePhone.isBlank()) {
-            Customer customer = customerRepository.findByPhone(activePhone)
-                    .or(() -> (oldPhone != null && !oldPhone.isBlank()) ? customerRepository.findByPhone(oldPhone) : Optional.empty())
+            Customer customer = customerRepository.findFirstByPhoneOrderByIdAsc(activePhone)
+                    .or(() -> (oldPhone != null && !oldPhone.isBlank()) ? customerRepository.findFirstByPhoneOrderByIdAsc(oldPhone) : Optional.empty())
+                    .or(() -> (savedUser.getEmail() != null && !savedUser.getEmail().isBlank()) ? customerRepository.findFirstByEmailIgnoreCaseOrderByIdAsc(savedUser.getEmail()) : Optional.empty())
+                    .or(() -> (oldEmail != null && !oldEmail.isBlank()) ? customerRepository.findFirstByEmailIgnoreCaseOrderByIdAsc(oldEmail) : Optional.empty())
                     .orElseGet(() -> {
                         long count = customerRepository.count() + 1;
                         String code = String.format("KH%04d", count);

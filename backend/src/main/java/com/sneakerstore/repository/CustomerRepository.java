@@ -19,6 +19,14 @@ public interface CustomerRepository extends JpaRepository<Customer, Long> {
 
     java.util.Optional<Customer> findByEmail(String email);
 
+    java.util.Optional<Customer> findFirstByPhoneOrderByIdAsc(String phone);
+
+    java.util.Optional<Customer> findFirstByEmailIgnoreCaseOrderByIdAsc(String email);
+
+    List<Customer> findAllByPhone(String phone);
+
+    List<Customer> findAllByEmailIgnoreCase(String email);
+
     boolean existsByEmail(String email);
 
     @Query("SELECT c FROM Customer c WHERE " +
