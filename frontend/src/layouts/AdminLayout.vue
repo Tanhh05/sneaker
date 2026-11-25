@@ -1,14 +1,35 @@
 <template>
   <div class="admin-layout">
+    <!-- Mobile Backdrop Overlay -->
+    <transition name="fade-backdrop">
+      <div
+        v-if="mobileDrawerOpen"
+        class="mobile-sidebar-backdrop"
+        @click="mobileDrawerOpen = false"
+      />
+    </transition>
+
     <!-- Sidebar -->
-    <aside class="sidebar" :class="{ collapsed: isCollapsed }">
+    <aside
+      class="sidebar"
+      :class="{ collapsed: isCollapsed && !isMobile, 'mobile-open': mobileDrawerOpen }"
+    >
       <!-- Brand Logo -->
-      <div class="brand-logo" @click="$router.push('/admin/dashboard')">
+      <div class="brand-logo" @click="goDashboard">
         <AdhaLogoMark :size="34" variant="light" />
-        <div v-if="!isCollapsed" class="logo-text">
+        <div v-if="!isCollapsed || isMobile" class="logo-text">
           <span class="title">ADHA SNEAKER</span>
           <span class="subtitle">MANAGEMENT SYSTEM</span>
         </div>
+        <button
+          v-if="isMobile"
+          type="button"
+          class="mobile-close-btn"
+          @click.stop="mobileDrawerOpen = false"
+          aria-label="Đóng menu"
+        >
+          ✕
+        </button>
       </div>
 
       <!-- Navigation Menu -->
@@ -19,27 +40,28 @@
             :key="group.groupTitle"
             class="menu-group"
           >
-            <div v-if="!isCollapsed" class="group-label">{{ group.groupTitle }}</div>
+            <div v-if="!isCollapsed || isMobile" class="group-label">{{ group.groupTitle }}</div>
             <router-link
               v-for="item in group.items"
               :key="item.path"
               :to="item.path"
               class="menu-item"
               :class="{ active: $route.path.startsWith(item.path) }"
+              @click="mobileDrawerOpen = false"
             >
               <el-icon class="menu-icon"><component :is="item.icon" /></el-icon>
-              <span v-if="!isCollapsed" class="menu-title">{{ item.title }}</span>
-              <span v-if="!isCollapsed && item.badge" class="menu-badge">{{ item.badge }}</span>
+              <span v-if="!isCollapsed || isMobile" class="menu-title">{{ item.title }}</span>
+              <span v-if="(!isCollapsed || isMobile) && item.badge" class="menu-badge">{{ item.badge }}</span>
             </router-link>
           </div>
         </nav>
       </el-scrollbar>
 
       <!-- Sidebar Footer -->
-      <div class="sidebar-footer" v-if="!isCollapsed">
+      <div class="sidebar-footer" v-if="!isCollapsed || isMobile">
         <div class="db-status">
           <span class="dot"></span>
-          <span class="db-name">Oracle 19c+ Connected</span>
+          <span class="db-name">PostgreSQL 16 Connected</span>
         </div>
       </div>
     </aside>
@@ -51,32 +73,36 @@
         <div class="header-left">
           <button
             class="collapse-btn"
-            @click="isCollapsed = !isCollapsed"
-            title="Thu gọn / Mở rộng menu"
+            @click="toggleSidebar"
+            title="Mở / Thu gọn menu"
           >
-            <el-icon :size="18"><Fold v-if="!isCollapsed" /><Expand v-else /></el-icon>
+            <el-icon :size="18">
+              <Expand v-if="(isMobile && !mobileDrawerOpen) || (!isMobile && isCollapsed)" />
+              <Fold v-else />
+            </el-icon>
           </button>
 
           <el-breadcrumb separator="/" class="admin-breadcrumb">
-            <el-breadcrumb-item :to="{ path: '/admin/dashboard' }">QUẢN TRỊ</el-breadcrumb-item>
-            <el-breadcrumb-item>{{ $route.meta?.title ? $route.meta.title.toUpperCase() : 'TỔNG QUAN' }}</el-breadcrumb-item>
+            <el-breadcrumb-item :to="{ path: '/admin/dashboard' }" class="crumb-root">QUẢN TRỊ</el-breadcrumb-item>
+            <el-breadcrumb-item class="crumb-current">{{ $route.meta?.title ? $route.meta.title.toUpperCase() : 'TỔNG QUAN' }}</el-breadcrumb-item>
           </el-breadcrumb>
         </div>
 
         <div class="header-right">
           <!-- Quick link to storefront -->
-          <router-link to="/" class="header-action-btn btn-store-view">
+          <router-link to="/" class="header-action-btn btn-store-view" title="Xem Website">
             <el-icon><Shop /></el-icon>
-            <span>XEM WEBSITE</span>
+            <span class="btn-label">XEM WEBSITE</span>
           </router-link>
 
-          <!-- POS Quick Button (Model 1) -->
+          <!-- POS Quick Button -->
           <button
             class="header-action-btn btn-pos"
             @click="$router.push('/pos')"
+            title="Bán hàng POS"
           >
             <el-icon><ShoppingCart /></el-icon>
-            <span>BÁN HÀNG POS</span>
+            <span class="btn-label">BÁN HÀNG POS</span>
           </button>
 
           <!-- Roles Badge -->
@@ -133,8 +159,8 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import AdhaLogoMark from '@/components/common/AdhaLogoMark.vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
@@ -153,10 +179,50 @@ import ChangePasswordDialog from './components/ChangePasswordDialog.vue'
 import UserProfileDialog from './components/UserProfileDialog.vue'
 
 const router = useRouter()
+const route = useRoute()
 const authStore = useAuthStore()
 const isCollapsed = ref(false)
+const isMobile = ref(typeof window !== 'undefined' ? window.innerWidth <= 1024 : false)
+const mobileDrawerOpen = ref(false)
 const profileDialogVisible = ref(false)
 const pwdDialogVisible = ref(false)
+
+function handleResize() {
+  const mobile = window.innerWidth <= 1024
+  isMobile.value = mobile
+  if (!mobile) {
+    mobileDrawerOpen.value = false
+  }
+}
+
+function toggleSidebar() {
+  if (isMobile.value) {
+    mobileDrawerOpen.value = !mobileDrawerOpen.value
+  } else {
+    isCollapsed.value = !isCollapsed.value
+  }
+}
+
+function goDashboard() {
+  mobileDrawerOpen.value = false
+  router.push('/admin/dashboard')
+}
+
+watch(
+  () => route.fullPath,
+  () => {
+    mobileDrawerOpen.value = false
+  }
+)
+
+onMounted(() => {
+  handleResize()
+  window.addEventListener('resize', handleResize)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', handleResize)
+})
 
 const visibleMenuGroups = computed(() => {
   return MENU_GROUPS
@@ -534,6 +600,142 @@ function handleCommand(cmd) {
 .content-area {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   background-color: #fafafa;
+}
+
+.mobile-sidebar-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 1000;
+  backdrop-filter: blur(2px);
+}
+
+.fade-backdrop-enter-active,
+.fade-backdrop-leave-active {
+  transition: opacity 0.2s ease;
+}
+.fade-backdrop-enter-from,
+.fade-backdrop-leave-to {
+  opacity: 0;
+}
+
+.mobile-close-btn {
+  margin-left: auto;
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid #333333;
+  color: #ffffff;
+  font-size: 14px;
+  cursor: pointer;
+  flex-shrink: 0;
+
+  &:hover {
+    background: #ffffff;
+    color: #000000;
+  }
+}
+
+/* =========================================================
+   ADMIN RESPONSIVE (TABLET & MOBILE)
+   ========================================================= */
+@media (max-width: 1024px) {
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 264px !important;
+    z-index: 1001;
+    transform: translateX(-100%);
+    transition: transform 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: none;
+
+    &.mobile-open {
+      transform: translateX(0);
+      box-shadow: 12px 0 40px rgba(0, 0, 0, 0.35);
+    }
+  }
+
+  .top-header {
+    padding: 0 16px;
+    height: 58px;
+    gap: 10px;
+
+    .header-left {
+      gap: 10px;
+      min-width: 0;
+      flex: 1;
+
+      .collapse-btn {
+        flex-shrink: 0;
+      }
+
+      .admin-breadcrumb {
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+      }
+    }
+
+    .header-right {
+      gap: 8px;
+      flex-shrink: 0;
+
+      .role-badges {
+        display: none;
+      }
+
+      .user-profile {
+        padding: 4px;
+        .user-info,
+        .arrow-icon {
+          display: none;
+        }
+      }
+    }
+  }
+}
+
+@media (max-width: 640px) {
+  .top-header {
+    padding: 0 12px;
+    height: 54px;
+
+    .header-left {
+      .collapse-btn {
+        width: 34px;
+        height: 34px;
+      }
+
+      .admin-breadcrumb {
+        font-size: 10.5px;
+
+        :deep(.crumb-root) {
+          display: none;
+        }
+      }
+    }
+
+    .header-right {
+      gap: 6px;
+
+      .header-action-btn {
+        padding: 0;
+        width: 34px;
+        height: 34px;
+        justify-content: center;
+
+        .btn-label {
+          display: none;
+        }
+      }
+    }
+  }
 }
 </style>

@@ -4,7 +4,7 @@
     <div class="page-header">
       <div class="page-title-group">
         <h2 class="page-title">TỔNG QUAN HOẠT ĐỘNG KINH DOANH</h2>
-        <p class="page-subtitle">Dữ liệu doanh thu & chỉ số vận hành thời gian thực từ Oracle Database</p>
+        <p class="page-subtitle">Dữ liệu doanh thu & chỉ số vận hành thời gian thực từ PostgreSQL Database</p>
       </div>
       <div class="header-actions-group">
         <el-button @click="loadDashboard" class="btn-refresh">
@@ -667,5 +667,49 @@ onMounted(() => {
 
 .empty-box {
   padding: 40px 0;
+}
+
+@media (max-width: 768px) {
+  .header-actions-group {
+    width: 100%;
+    flex-wrap: wrap;
+
+    .btn-refresh,
+    .btn-primary-header {
+      flex: 1;
+      justify-content: center;
+      min-height: 38px;
+      padding: 0 12px;
+    }
+  }
+
+  .revenue-kpi-row {
+    grid-template-columns: 1fr;
+    gap: 12px;
+
+    .rev-card {
+      padding: 18px 16px;
+
+      .rev-value {
+        font-size: 24px;
+      }
+    }
+  }
+
+  .stat-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
+  }
+
+  .bar-chart-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .section-head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
 }
 </style>
