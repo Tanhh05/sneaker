@@ -83,6 +83,7 @@
           <input
             ref="fileInputRef"
             type="file"
+            multiple
             accept="image/*"
             style="display: none"
             @change="handleFileUpload"
@@ -109,10 +110,10 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import storeService from '@/services/storeService'
-import api from '@/services/api'
+import { fileService } from '@/services/fileService'
 
 const props = defineProps({
   modelValue: {
@@ -159,6 +160,18 @@ const ratingLabel = computed(() => {
   return map[rating.value] || 'Tuyệt vời'
 })
 
+watch(
+  () => props.modelValue,
+  (isOpen) => {
+    if (isOpen) {
+      rating.value = 5
+      fitFeedback.value = 'TRUE_TO_SIZE'
+      comment.value = ''
+      photoUrls.value = []
+    }
+  }
+)
+
 const triggerFileInput = () => {
   if (fileInputRef.value) {
     fileInputRef.value.click()
@@ -166,30 +179,46 @@ const triggerFileInput = () => {
 }
 
 const handleFileUpload = async (event) => {
-  const file = event.target.files?.[0]
-  if (!file) return
+  const files = Array.from(event.target.files || [])
+  if (!files.length) return
 
-  if (file.size > 10 * 1024 * 1024) {
-    ElMessage.error('Kích thước ảnh tối đa là 10MB!')
-    return
+  const remainingSlots = Math.max(0, 3 - photoUrls.value.length)
+  const selectedFiles = files.slice(0, remainingSlots)
+  if (!selectedFiles.length) return
+
+  for (const file of selectedFiles) {
+    if (!file.type.startsWith('image/')) {
+      ElMessage.error(`Tệp "${file.name}" không phải hình ảnh hợp lệ!`)
+      if (fileInputRef.value) fileInputRef.value.value = ''
+      return
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      ElMessage.error(`Ảnh "${file.name}" vượt quá giới hạn 10MB!`)
+      if (fileInputRef.value) fileInputRef.value.value = ''
+      return
+    }
   }
 
   uploading.value = true
-  const formData = new FormData()
-  formData.append('file', file)
+  let uploadedCount = 0
 
   try {
-    const res = await api.post('/files/upload', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
-    })
-    const uploadedUrl = res.data?.data?.fileUrl || res.data?.fileUrl
-    if (uploadedUrl) {
-      photoUrls.value.push(uploadedUrl)
-      ElMessage.success('Đã tải ảnh on-feet thành công!')
+    for (const file of selectedFiles) {
+      const uploaded = await fileService.uploadImage(file)
+      const uploadedUrl = uploaded?.url || uploaded?.fileUrl || uploaded?.data?.url
+      if (uploadedUrl) {
+        photoUrls.value.push(uploadedUrl)
+        uploadedCount++
+      }
+    }
+    if (uploadedCount > 0) {
+      ElMessage.success(`Đã tải ${uploadedCount} ảnh on-feet thành công!`)
+    } else {
+      ElMessage.error('Máy chủ không trả về đường dẫn ảnh, vui lòng thử lại!')
     }
   } catch (err) {
     console.warn('Lỗi tải ảnh:', err)
-    ElMessage.error('Không thể tải ảnh lên máy chủ, vui lòng thử lại!')
+    ElMessage.error(err.response?.data?.message || 'Không thể tải ảnh lên máy chủ, vui lòng thử lại!')
   } finally {
     uploading.value = false
     if (fileInputRef.value) fileInputRef.value.value = ''
