@@ -15,7 +15,7 @@
           {{
             isEdit
               ? 'Chỉnh sửa chi tiết mã SKU, kích cỡ, màu sắc, giá bán và tồn kho cho biến thể'
-              : 'Chọn 1 sản phẩm Sneaker rồi tick nhiều Size & Màu sắc để sinh hàng loạt biến thể cùng lúc, hoặc thêm từng dòng thủ công'
+              : 'Chọn 1 sản phẩm Sneaker → tick nhiều Size & Màu → xem toàn bộ biến thể trên 1 màn hình dạng Ma trận gọn gàng'
           }}
         </p>
       </div>
@@ -91,11 +91,11 @@
                   <strong>{{ selectedProduct.productName }}</strong>
                 </div>
                 <div class="summary-meta">
-                  <span>Giá nhập gốc: <strong>{{ formatCurrency(selectedProduct.importPrice) }}</strong></span>
+                  <span>Giá nhập: <strong>{{ formatCurrency(selectedProduct.importPrice) }}</strong></span>
                   <span>•</span>
-                  <span>Giá bán gốc: <strong class="price-text">{{ formatCurrency(selectedProduct.salePrice) }}</strong></span>
+                  <span>Giá bán: <strong class="price-text">{{ formatCurrency(selectedProduct.salePrice) }}</strong></span>
                   <span>•</span>
-                  <span>Hiện có: <strong>{{ existingVariants.length }} biến thể</strong></span>
+                  <span>Đang có: <strong>{{ existingVariants.length }} SKU</strong></span>
                 </div>
               </div>
             </div>
@@ -202,112 +202,265 @@
         </div>
       </div>
 
-      <!-- STEP 3: EDITABLE DRAFT VARIANTS TABLE -->
+      <!-- STEP 3: COMPACT MATRIX & FILTERED TABLE PREVIEW -->
       <div class="form-section-card" v-if="selectedProduct">
         <div class="section-header between">
           <div class="header-left-group">
             <span class="step-badge">BƯỚC 3</span>
             <div>
               <h3>Danh sách biến thể chuẩn bị lưu ({{ draftVariants.length }} biến thể)</h3>
-              <p>Anh có thể sửa trực tiếp mã SKU, giá nhập, giá bán, tồn kho của từng dòng trước khi bấm Lưu tất cả</p>
+              <p>
+                {{
+                  viewMode === 'matrix'
+                    ? 'Xem trọn toàn bộ biến thể trên 1 khung Ma trận (Màu × Size) — gõ trực tiếp tồn kho hoặc bấm + / ✕ từng ô'
+                    : 'Chế độ bảng chi tiết có lọc theo từng Màu & Size — tùy chỉnh riêng lẻ SKU, giá nhập, giá bán'
+                }}
+              </p>
             </div>
           </div>
+
           <div class="table-tools">
+            <div class="view-mode-switch">
+              <button
+                type="button"
+                class="mode-btn"
+                :class="{ active: viewMode === 'matrix' }"
+                @click="viewMode = 'matrix'"
+              >
+                <el-icon><Grid /></el-icon> Ma trận gọn
+              </button>
+              <button
+                type="button"
+                class="mode-btn"
+                :class="{ active: viewMode === 'table' }"
+                @click="viewMode = 'table'"
+              >
+                <el-icon><List /></el-icon> Bảng chi tiết
+              </button>
+            </div>
             <el-button size="small" :disabled="draftVariants.length === 0" @click="applyDefaultsToAll">
-              Áp dụng giá &amp; SL mặc định cho tất cả
+              Áp dụng giá &amp; SL mặc định
             </el-button>
             <el-button size="small" type="danger" plain :disabled="draftVariants.length === 0" @click="draftVariants = []">
-              Xóa hết danh sách
+              Xóa hết
             </el-button>
           </div>
         </div>
 
-        <div v-if="existingVariants.length > 0" class="existing-variants-bar">
-          <span class="ex-label">Đã tồn tại trên sản phẩm này ({{ existingVariants.length }}):</span>
-          <span v-for="ev in existingVariants" :key="ev.id" class="ex-chip">
-            {{ ev.sku }} (Size {{ ev.sizeValue }} / {{ ev.colorName }})
-          </span>
+        <!-- ========================================= -->
+        <!-- VIEW A: COMPACT MATRIX GRID (ZERO SCROLL) -->
+        <!-- ========================================= -->
+        <div v-if="viewMode === 'matrix'" class="matrix-view-wrap">
+          <div v-if="matrixColors.length === 0 || matrixSizes.length === 0" class="empty-matrix-box">
+            <el-empty
+              description="Chưa có biến thể nào. Hãy chọn Size & Màu ở Bước 2 rồi bấm Tạo tổ hợp để hiển thị Ma trận gọn!"
+              :image-size="72"
+            />
+          </div>
+
+          <div v-else class="matrix-table-scroll">
+            <div class="matrix-legend">
+              <span class="legend-item"><i class="dot dot-new"></i> Ô có số = Biến thể mới sẽ tạo (gõ để đổi SL tồn)</span>
+              <span class="legend-item"><i class="dot dot-exist"></i> Đã có = Tổ hợp đã tồn tại trong DB</span>
+              <span class="legend-item"><i class="dot dot-empty"></i> + = Bấm để thêm nhanh biến thể vào ô trống</span>
+            </div>
+
+            <table class="variant-matrix-table">
+              <thead>
+                <tr>
+                  <th class="sticky-color-col">MÀU SẮC ({{ matrixColors.length }})</th>
+                  <th v-for="s in matrixSizes" :key="s.id" class="size-col-head">
+                    <div>{{ s.sizeValue }}</div>
+                    <span class="col-count">{{ countBySize(s.id) }}</span>
+                  </th>
+                  <th class="row-total-head">TỔNG</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="c in matrixColors" :key="c.id">
+                  <td class="sticky-color-col">
+                    <div class="matrix-color-cell">
+                      <span class="color-swatch" :style="{ backgroundColor: c.hexCode }"></span>
+                      <div class="color-meta">
+                        <strong>{{ c.colorName }}</strong>
+                        <span>{{ c.colorCode }} • {{ countByColor(c.id) }} size</span>
+                      </div>
+                      <button
+                        v-if="countByColor(c.id) > 0"
+                        type="button"
+                        class="btn-clear-row"
+                        title="Bỏ tất cả biến thể của màu này"
+                        @click="removeColorRows(c.id)"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  </td>
+
+                  <td v-for="s in matrixSizes" :key="s.id" class="matrix-cell">
+                    <!-- Already exists in DB -->
+                    <div v-if="comboExistsInDb(s.id, c.id)" class="cell-existing" :title="getExistingSku(s.id, c.id)">
+                      <span>Đã có</span>
+                    </div>
+
+                    <!-- Draft variant in matrix -->
+                    <div v-else-if="findDraft(s.id, c.id)" class="cell-draft">
+                      <input
+                        type="number"
+                        min="0"
+                        class="cell-qty-input"
+                        :value="findDraft(s.id, c.id).availableQuantity"
+                        :title="`SKU: ${findDraft(s.id, c.id).sku} | Giá bán: ${formatCurrency(findDraft(s.id, c.id).salePrice)}`"
+                        @input="onMatrixQtyInput(s.id, c.id, $event.target.value)"
+                      />
+                      <button
+                        type="button"
+                        class="cell-remove-btn"
+                        title="Xóa biến thể này"
+                        @click="removeDraftByCombo(s.id, c.id)"
+                      >
+                        ×
+                      </button>
+                    </div>
+
+                    <!-- Empty slot: click to add instantly -->
+                    <button
+                      v-else
+                      type="button"
+                      class="cell-add-btn"
+                      title="Bấm để thêm biến thể này"
+                      @click="addSingleCombo(s.id, c.id)"
+                    >
+                      +
+                    </button>
+                  </td>
+
+                  <td class="row-total-cell">
+                    <strong>{{ countByColor(c.id) }}</strong>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
 
-        <div class="table-scroll-wrap">
-          <el-table :data="draftVariants" border stripe style="width: 100%">
-            <template #empty>
-              <el-empty
-                description="Chưa có biến thể nào trong danh sách. Hãy chọn Size & Màu ở Bước 2 rồi bấm Tạo tổ hợp, hoặc bấm Thêm 1 dòng thủ công."
-                :image-size="72"
-              />
-            </template>
+        <!-- ================================================ -->
+        <!-- VIEW B: FILTERED COMPACT TABLE (PER-ROW EDITING) -->
+        <!-- ================================================ -->
+        <div v-else>
+          <!-- Quick Color Filter Pills -->
+          <div v-if="draftVariants.length > 0" class="table-filter-bar">
+            <div class="filter-chips">
+              <button
+                type="button"
+                class="filter-chip"
+                :class="{ active: tableFilterColorId === null }"
+                @click="tableFilterColorId = null"
+              >
+                Tất cả ({{ draftVariants.length }})
+              </button>
+              <button
+                v-for="c in draftColorTabs"
+                :key="c.id"
+                type="button"
+                class="filter-chip"
+                :class="{ active: tableFilterColorId === c.id }"
+                @click="tableFilterColorId = c.id"
+              >
+                <span class="chip-dot" :style="{ backgroundColor: c.hexCode }"></span>
+                {{ c.colorName }} ({{ countByColor(c.id) }})
+              </button>
+            </div>
+            <el-input
+              v-model="tableSearchSku"
+              size="small"
+              placeholder="Lọc nhanh SKU / Size..."
+              clearable
+              style="width: 190px"
+            />
+          </div>
 
-            <el-table-column type="index" label="#" width="50" align="center" />
-
-            <el-table-column label="Size EU" width="135">
-              <template #default="{ row }">
-                <el-select v-model="row.sizeId" size="small" style="width: 100%" @change="refreshRowSku(row)">
-                  <el-option v-for="s in sizes" :key="s.id" :label="`Size ${s.sizeValue}`" :value="s.id" />
-                </el-select>
+          <div class="table-scroll-wrap">
+            <el-table :data="filteredDraftVariants" border stripe max-height="420" style="width: 100%">
+              <template #empty>
+                <el-empty
+                  description="Chưa có biến thể nào phù hợp."
+                  :image-size="64"
+                />
               </template>
-            </el-table-column>
 
-            <el-table-column label="Màu sắc" min-width="180">
-              <template #default="{ row }">
-                <el-select v-model="row.colorId" size="small" style="width: 100%" @change="refreshRowSku(row)">
-                  <el-option
-                    v-for="c in colors"
-                    :key="c.id"
-                    :label="`${c.colorName} (${c.colorCode})`"
-                    :value="c.id"
-                  />
-                </el-select>
-              </template>
-            </el-table-column>
+              <el-table-column type="index" label="#" width="48" align="center" />
 
-            <el-table-column label="Mã SKU" min-width="175">
-              <template #default="{ row }">
-                <el-input v-model="row.sku" size="small" placeholder="VD: AF1-41-W" />
-                <div v-if="getRowError(row)" class="row-error-text">{{ getRowError(row) }}</div>
-              </template>
-            </el-table-column>
+              <el-table-column label="Size EU" width="125">
+                <template #default="{ row }">
+                  <el-select v-model="row.sizeId" size="small" style="width: 100%" @change="refreshRowSku(row)">
+                    <el-option v-for="s in sizes" :key="s.id" :label="`Size ${s.sizeValue}`" :value="s.id" />
+                  </el-select>
+                </template>
+              </el-table-column>
 
-            <el-table-column label="Giá nhập (VNĐ)" width="155">
-              <template #default="{ row }">
-                <el-input-number v-model="row.importPrice" :min="0" :step="50000" size="small" controls-position="right" style="width: 100%" />
-              </template>
-            </el-table-column>
+              <el-table-column label="Màu sắc" min-width="170">
+                <template #default="{ row }">
+                  <el-select v-model="row.colorId" size="small" style="width: 100%" @change="refreshRowSku(row)">
+                    <el-option
+                      v-for="c in colors"
+                      :key="c.id"
+                      :label="`${c.colorName} (${c.colorCode})`"
+                      :value="c.id"
+                    />
+                  </el-select>
+                </template>
+              </el-table-column>
 
-            <el-table-column label="Giá bán (VNĐ)" width="155">
-              <template #default="{ row }">
-                <el-input-number v-model="row.salePrice" :min="0" :step="50000" size="small" controls-position="right" style="width: 100%" />
-              </template>
-            </el-table-column>
+              <el-table-column label="Mã SKU" min-width="165">
+                <template #default="{ row }">
+                  <el-input v-model="row.sku" size="small" placeholder="VD: AF1-41-W" />
+                  <div v-if="getRowError(row)" class="row-error-text">{{ getRowError(row) }}</div>
+                </template>
+              </el-table-column>
 
-            <el-table-column label="SL sẵn có" width="115">
-              <template #default="{ row }">
-                <el-input-number v-model="row.availableQuantity" :min="0" size="small" controls-position="right" style="width: 100%" />
-              </template>
-            </el-table-column>
+              <el-table-column label="Giá nhập (VNĐ)" width="145">
+                <template #default="{ row }">
+                  <el-input-number v-model="row.importPrice" :min="0" :step="50000" size="small" controls-position="right" style="width: 100%" />
+                </template>
+              </el-table-column>
 
-            <el-table-column label="Trạng thái" width="125">
-              <template #default="{ row }">
-                <el-select v-model="row.status" size="small" style="width: 100%">
-                  <el-option label="ACTIVE" value="ACTIVE" />
-                  <el-option label="INACTIVE" value="INACTIVE" />
-                </el-select>
-              </template>
-            </el-table-column>
+              <el-table-column label="Giá bán (VNĐ)" width="145">
+                <template #default="{ row }">
+                  <el-input-number v-model="row.salePrice" :min="0" :step="50000" size="small" controls-position="right" style="width: 100%" />
+                </template>
+              </el-table-column>
 
-            <el-table-column label="Xóa" width="68" align="center" fixed="right">
-              <template #default="{ $index }">
-                <button type="button" class="action-btn danger" title="Xóa dòng này" @click="removeRow($index)">
-                  <el-icon><Delete /></el-icon>
-                </button>
-              </template>
-            </el-table-column>
-          </el-table>
+              <el-table-column label="SL sẵn có" width="105">
+                <template #default="{ row }">
+                  <el-input-number v-model="row.availableQuantity" :min="0" size="small" controls-position="right" style="width: 100%" />
+                </template>
+              </el-table-column>
+
+              <el-table-column label="Trạng thái" width="115">
+                <template #default="{ row }">
+                  <el-select v-model="row.status" size="small" style="width: 100%">
+                    <el-option label="ACTIVE" value="ACTIVE" />
+                    <el-option label="INACTIVE" value="INACTIVE" />
+                  </el-select>
+                </template>
+              </el-table-column>
+
+              <el-table-column label="Xóa" width="60" align="center" fixed="right">
+                <template #default="{ row }">
+                  <button type="button" class="action-btn danger" title="Xóa dòng này" @click="removeRowByRef(row)">
+                    <el-icon><Delete /></el-icon>
+                  </button>
+                </template>
+              </el-table-column>
+            </el-table>
+          </div>
         </div>
 
         <div class="bottom-submit-bar" v-if="draftVariants.length > 0">
           <span class="summary-count">
             Sẵn sàng tạo mới <strong>{{ draftVariants.length }}</strong> biến thể cho <strong>{{ selectedProduct.productName }}</strong>
+            (Tổng tồn thêm: <strong>{{ totalDraftQty }}</strong> đôi)
           </span>
           <div class="bottom-btns">
             <el-button @click="$router.push('/admin/variants')">Quay lại</el-button>
@@ -397,7 +550,7 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { Plus, Delete, Check } from '@element-plus/icons-vue'
+import { Plus, Delete, Check, Grid, List } from '@element-plus/icons-vue'
 import { variantService } from '@/services/variantService'
 import { productService } from '@/services/productService'
 import { formatCurrency } from '@/utils/formatters'
@@ -420,6 +573,11 @@ const selectedSizeIds = ref([])
 const selectedColorIds = ref([])
 const draftVariants = ref([])
 
+// View Mode & Table Filters (default: compact zero-scroll Matrix)
+const viewMode = ref('matrix')
+const tableFilterColorId = ref(null)
+const tableSearchSku = ref('')
+
 const defaults = reactive({
   importPrice: 1800000,
   salePrice: 2950000,
@@ -429,6 +587,52 @@ const defaults = reactive({
 
 const selectedProduct = computed(() =>
   products.value.find((p) => p.id === selectedProductId.value) || null
+)
+
+// Matrix axes: show all sizes & colors present in drafts, existing variants, or selected pills
+const matrixSizes = computed(() => {
+  const idSet = new Set([
+    ...selectedSizeIds.value,
+    ...draftVariants.value.map((r) => r.sizeId),
+    ...existingVariants.value.map((e) => e.sizeId)
+  ])
+  if (idSet.size === 0) return []
+  return sizes.value.filter((s) => idSet.has(s.id))
+})
+
+const matrixColors = computed(() => {
+  const idSet = new Set([
+    ...selectedColorIds.value,
+    ...draftVariants.value.map((r) => r.colorId),
+    ...existingVariants.value.map((e) => e.colorId)
+  ])
+  if (idSet.size === 0) return []
+  return colors.value.filter((c) => idSet.has(c.id))
+})
+
+const draftColorTabs = computed(() => {
+  const idSet = new Set(draftVariants.value.map((r) => r.colorId))
+  return colors.value.filter((c) => idSet.has(c.id))
+})
+
+const filteredDraftVariants = computed(() => {
+  return draftVariants.value.filter((row) => {
+    if (tableFilterColorId.value !== null && row.colorId !== tableFilterColorId.value) {
+      return false
+    }
+    if (tableSearchSku.value && tableSearchSku.value.trim()) {
+      const q = tableSearchSku.value.trim().toLowerCase()
+      const s = sizes.value.find((x) => x.id === row.sizeId)
+      const c = colors.value.find((x) => x.id === row.colorId)
+      const hay = `${row.sku || ''} ${s?.sizeValue || ''} ${c?.colorName || ''}`.toLowerCase()
+      return hay.includes(q)
+    }
+    return true
+  })
+})
+
+const totalDraftQty = computed(() =>
+  draftVariants.value.reduce((acc, r) => acc + Number(r.availableQuantity || 0), 0)
 )
 
 // Single Edit State
@@ -489,6 +693,64 @@ function comboExistsInDb(sizeId, colorId) {
   return existingVariants.value.some((ev) => ev.sizeId === sizeId && ev.colorId === colorId)
 }
 
+function getExistingSku(sizeId, colorId) {
+  const found = existingVariants.value.find((ev) => ev.sizeId === sizeId && ev.colorId === colorId)
+  return found ? `Đã có sẵn: ${found.sku} (Tồn: ${found.availableQuantity})` : 'Đã có'
+}
+
+function findDraft(sizeId, colorId) {
+  return draftVariants.value.find((r) => r.sizeId === sizeId && r.colorId === colorId)
+}
+
+function countByColor(colorId) {
+  return draftVariants.value.filter((r) => r.colorId === colorId).length
+}
+
+function countBySize(sizeId) {
+  return draftVariants.value.filter((r) => r.sizeId === sizeId).length
+}
+
+function onMatrixQtyInput(sizeId, colorId, rawVal) {
+  const row = findDraft(sizeId, colorId)
+  if (!row) return
+  const num = Number(rawVal)
+  row.availableQuantity = Number.isFinite(num) && num >= 0 ? Math.floor(num) : 0
+}
+
+function addSingleCombo(sizeId, colorId) {
+  if (!selectedProduct.value || comboExistsInDb(sizeId, colorId) || findDraft(sizeId, colorId)) return
+  draftVariants.value.push({
+    sizeId,
+    colorId,
+    sku: buildSku(selectedProduct.value, sizeId, colorId),
+    importPrice: defaults.importPrice,
+    salePrice: defaults.salePrice,
+    availableQuantity: defaults.availableQuantity,
+    status: defaults.status
+  })
+}
+
+function removeDraftByCombo(sizeId, colorId) {
+  const idx = draftVariants.value.findIndex((r) => r.sizeId === sizeId && r.colorId === colorId)
+  if (idx >= 0) {
+    draftVariants.value.splice(idx, 1)
+  }
+}
+
+function removeColorRows(colorId) {
+  draftVariants.value = draftVariants.value.filter((r) => r.colorId !== colorId)
+  if (tableFilterColorId.value === colorId) {
+    tableFilterColorId.value = null
+  }
+}
+
+function removeRowByRef(row) {
+  const idx = draftVariants.value.indexOf(row)
+  if (idx >= 0) {
+    draftVariants.value.splice(idx, 1)
+  }
+}
+
 function getRowError(row) {
   if (!row.sizeId || !row.colorId) return 'Thiếu Size hoặc Màu'
   if (!row.sku || !row.sku.trim()) return 'Chưa nhập mã SKU'
@@ -511,6 +773,7 @@ function getRowError(row) {
 async function handleProductChange(productId) {
   draftVariants.value = []
   existingVariants.value = []
+  tableFilterColorId.value = null
   if (!productId) return
 
   const p = products.value.find((x) => x.id === productId)
@@ -565,7 +828,7 @@ function generateMatrixVariants() {
   if (added > 0) {
     const notes = []
     if (skippedExisting > 0) notes.push(`bỏ qua ${skippedExisting} tổ hợp đã có sẵn`)
-    if (skippedDuplicate > 0) notes.push(`bỏ qua ${skippedDuplicate} dòng đã có trong bảng`)
+    if (skippedDuplicate > 0) notes.push(`bỏ qua ${skippedDuplicate} dòng đã có`)
     ElMessage.success(
       `Đã tạo ${added} biến thể mới` + (notes.length ? ` (${notes.join(', ')})` : '')
     )
@@ -579,7 +842,6 @@ function addManualRow() {
     ElMessage.warning('Vui lòng chọn sản phẩm trước')
     return
   }
-  // Pick first unused Size + Color combo if available
   let pickSize = sizes.value[0]?.id || null
   let pickColor = colors.value[0]?.id || null
   outer: for (const s of sizes.value) {
@@ -603,6 +865,7 @@ function addManualRow() {
     availableQuantity: defaults.availableQuantity,
     status: defaults.status
   })
+  viewMode.value = 'table'
 }
 
 function applyDefaultsToAll() {
@@ -613,10 +876,6 @@ function applyDefaultsToAll() {
     row.status = defaults.status
   })
   ElMessage.success('Đã áp dụng giá và số lượng mặc định cho toàn bộ danh sách')
-}
-
-function removeRow(index) {
-  draftVariants.value.splice(index, 1)
 }
 
 async function submitBatchVariants() {
@@ -631,6 +890,7 @@ async function submitBatchVariants() {
 
   const invalidRow = draftVariants.value.find((row) => !!getRowError(row))
   if (invalidRow) {
+    viewMode.value = 'table'
     ElMessage.error(`Vui lòng kiểm tra lại dòng SKU "${invalidRow.sku || '(trống)'}": ${getRowError(invalidRow)}`)
     return
   }
@@ -662,9 +922,9 @@ async function submitBatchVariants() {
       ElMessage.success(`Đã thêm thành công ${successCount} biến thể SKU mới!`)
       router.push('/admin/variants')
     } else {
-      draftVariants.value = failedRows
       await handleProductChange(selectedProductId.value)
       draftVariants.value = failedRows
+      viewMode.value = 'table'
       ElMessage.warning(
         `Đã lưu ${successCount} biến thể, còn ${failedRows.length} dòng bị lỗi — vui lòng kiểm tra và lưu lại.`
       )
@@ -766,7 +1026,7 @@ onMounted(async () => {
 .form-section-card {
   background: #ffffff;
   border: 1px solid #e5e5e5;
-  padding: 22px 24px;
+  padding: 20px 22px;
 }
 
 .edit-single-card {
@@ -777,8 +1037,8 @@ onMounted(async () => {
   display: flex;
   align-items: flex-start;
   gap: 12px;
-  margin-bottom: 18px;
-  padding-bottom: 14px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
   border-bottom: 1px solid #f0f0f0;
 
   &.between {
@@ -805,7 +1065,7 @@ onMounted(async () => {
 
   h3 {
     margin: 0;
-    font-size: 15px;
+    font-size: 14.5px;
     font-weight: 900;
     color: #000000;
     text-transform: uppercase;
@@ -813,8 +1073,8 @@ onMounted(async () => {
   }
 
   p {
-    margin: 4px 0 0;
-    font-size: 12.5px;
+    margin: 3px 0 0;
+    font-size: 12px;
     color: #737373;
   }
 }
@@ -847,8 +1107,8 @@ onMounted(async () => {
   padding: 10px 14px;
 
   .summary-thumb {
-    width: 52px;
-    height: 52px;
+    width: 48px;
+    height: 48px;
     object-fit: cover;
     border: 1px solid #e5e5e5;
     flex-shrink: 0;
@@ -867,7 +1127,7 @@ onMounted(async () => {
     }
 
     .summary-meta {
-      margin-top: 5px;
+      margin-top: 4px;
       font-size: 12px;
       color: #525252;
       display: flex;
@@ -878,17 +1138,17 @@ onMounted(async () => {
 }
 
 .picker-col {
-  margin-bottom: 16px;
+  margin-bottom: 14px;
 }
 
 .picker-label-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 
   .picker-label {
-    font-size: 12px;
+    font-size: 11.5px;
     font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 0.05em;
@@ -921,14 +1181,14 @@ onMounted(async () => {
 .pill-grid {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 7px;
 }
 
 .option-pill {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  padding: 7px 12px;
+  gap: 6px;
+  padding: 6px 11px;
   background: #ffffff;
   border: 1px solid #d4d4d4;
   color: #171717;
@@ -948,8 +1208,8 @@ onMounted(async () => {
   }
 
   .color-swatch {
-    width: 12px;
-    height: 12px;
+    width: 11px;
+    height: 11px;
     border: 1px solid rgba(0, 0, 0, 0.25);
     display: inline-block;
     flex-shrink: 0;
@@ -959,18 +1219,18 @@ onMounted(async () => {
 .defaults-row {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 14px;
-  padding-top: 16px;
+  gap: 12px;
+  padding-top: 14px;
   border-top: 1px dashed #e5e5e5;
-  margin-top: 6px;
+  margin-top: 4px;
 
   .default-field {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 5px;
 
     label {
-      font-size: 11px;
+      font-size: 10.5px;
       font-weight: 800;
       text-transform: uppercase;
       letter-spacing: 0.04em;
@@ -984,13 +1244,13 @@ onMounted(async () => {
   align-items: center;
   gap: 12px;
   flex-wrap: wrap;
-  margin-top: 18px;
+  margin-top: 16px;
 
   .btn-generate-matrix {
     background: #000000;
     color: #ffffff;
     border: 1px solid #000000;
-    padding: 10px 20px;
+    padding: 9px 18px;
     font-size: 12px;
     font-weight: 800;
     letter-spacing: 0.06em;
@@ -1011,35 +1271,317 @@ onMounted(async () => {
 
 .table-tools {
   display: flex;
+  align-items: center;
   gap: 8px;
   flex-wrap: wrap;
 }
 
-.existing-variants-bar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
-  background: #fafafa;
-  border: 1px solid #e5e5e5;
-  padding: 10px 12px;
-  margin-bottom: 14px;
+.view-mode-switch {
+  display: inline-flex;
+  border: 1px solid #000000;
 
-  .ex-label {
+  .mode-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 11px;
+    background: #ffffff;
+    color: #000000;
+    border: none;
     font-size: 11px;
     font-weight: 800;
-    color: #525252;
     text-transform: uppercase;
-    margin-right: 4px;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    transition: all 0.12s ease;
+
+    &.active {
+      background: #000000;
+      color: #ffffff;
+    }
+  }
+}
+
+/* MATRIX GRID STYLES (SEE ALL 78 VARIANTS WITHOUT SCROLLING) */
+.matrix-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  font-size: 11.5px;
+  color: #525252;
+  margin-bottom: 10px;
+
+  .legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
   }
 
-  .ex-chip {
+  .dot {
+    width: 10px;
+    height: 10px;
+    display: inline-block;
+    border: 1px solid #000000;
+
+    &.dot-new {
+      background: #ecfdf5;
+      border-color: #10b981;
+    }
+    &.dot-exist {
+      background: #f3f4f6;
+      border-color: #d1d5db;
+    }
+    &.dot-empty {
+      background: #ffffff;
+      border-style: dashed;
+      border-color: #a3a3a3;
+    }
+  }
+}
+
+.matrix-table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.variant-matrix-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  background: #ffffff;
+
+  th,
+  td {
+    border: 1px solid #e5e5e5;
+    padding: 6px 5px;
+    text-align: center;
+    vertical-align: middle;
+  }
+
+  thead th {
+    background: #111111;
+    color: #ffffff;
     font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    padding: 8px 6px;
+
+    &.size-col-head {
+      min-width: 68px;
+
+      .col-count {
+        display: inline-block;
+        margin-top: 2px;
+        font-size: 9.5px;
+        font-weight: 700;
+        color: #a3a3a3;
+      }
+    }
+
+    &.row-total-head {
+      min-width: 54px;
+      background: #262626;
+    }
+  }
+
+  .sticky-color-col {
+    position: sticky;
+    left: 0;
+    z-index: 2;
+    min-width: 190px;
+    text-align: left;
+    background: #fafafa;
+  }
+
+  thead .sticky-color-col {
+    background: #000000;
+    z-index: 3;
+    padding-left: 10px;
+  }
+
+  .matrix-color-cell {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 2px 4px;
+
+    .color-swatch {
+      width: 14px;
+      height: 14px;
+      border: 1px solid rgba(0, 0, 0, 0.28);
+      flex-shrink: 0;
+    }
+
+    .color-meta {
+      display: flex;
+      flex-direction: column;
+      line-height: 1.2;
+      min-width: 0;
+      flex: 1;
+
+      strong {
+        font-size: 12px;
+        color: #000000;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      span {
+        font-size: 10px;
+        color: #737373;
+        font-family: var(--font-mono);
+      }
+    }
+
+    .btn-clear-row {
+      background: transparent;
+      border: 1px solid #e5e5e5;
+      color: #737373;
+      width: 20px;
+      height: 20px;
+      font-size: 10px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+
+      &:hover {
+        border-color: #ef4444;
+        color: #ef4444;
+        background: #fef2f2;
+      }
+    }
+  }
+
+  .matrix-cell {
+    padding: 4px;
+  }
+
+  .cell-existing {
+    background: #f3f4f6;
+    color: #9ca3af;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 6px 2px;
+    border: 1px solid #e5e7eb;
+    user-select: none;
+  }
+
+  .cell-draft {
+    position: relative;
+    display: flex;
+    align-items: center;
+    background: #ecfdf5;
+    border: 1px solid #10b981;
+
+    .cell-qty-input {
+      width: 100%;
+      min-width: 42px;
+      border: none;
+      background: transparent;
+      text-align: center;
+      font-size: 12.5px;
+      font-weight: 800;
+      color: #065f46;
+      padding: 5px 14px 5px 4px;
+      outline: none;
+      font-family: var(--font-mono);
+
+      &::-webkit-inner-spin-button,
+      &::-webkit-outer-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+      }
+    }
+
+    .cell-remove-btn {
+      position: absolute;
+      right: 2px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 14px;
+      height: 14px;
+      border: none;
+      background: transparent;
+      color: #059669;
+      font-size: 13px;
+      line-height: 1;
+      cursor: pointer;
+      padding: 0;
+
+      &:hover {
+        color: #dc2626;
+      }
+    }
+  }
+
+  .cell-add-btn {
+    width: 100%;
+    height: 28px;
+    background: #ffffff;
+    border: 1px dashed #d4d4d4;
+    color: #a3a3a3;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.12s ease;
+
+    &:hover {
+      border-color: #000000;
+      color: #000000;
+      background: #f5f5f5;
+    }
+  }
+
+  .row-total-cell {
+    background: #fafafa;
     font-family: var(--font-mono);
+    font-size: 12px;
+    color: #000000;
+  }
+}
+
+/* FILTER BAR FOR TABLE VIEW */
+.table-filter-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+
+  .filter-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .filter-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 10px;
     background: #ffffff;
     border: 1px solid #d4d4d4;
-    padding: 2px 7px;
-    color: #404040;
+    font-size: 11.5px;
+    font-weight: 700;
+    color: #262626;
+    cursor: pointer;
+
+    &.active {
+      background: #000000;
+      border-color: #000000;
+      color: #ffffff;
+    }
+
+    .chip-dot {
+      width: 9px;
+      height: 9px;
+      border: 1px solid rgba(0, 0, 0, 0.25);
+      display: inline-block;
+    }
   }
 }
 
@@ -1061,8 +1603,8 @@ onMounted(async () => {
   align-items: center;
   flex-wrap: wrap;
   gap: 12px;
-  margin-top: 18px;
-  padding-top: 16px;
+  margin-top: 16px;
+  padding-top: 14px;
   border-top: 1px solid #e5e5e5;
 
   .summary-count {
