@@ -148,6 +148,18 @@ const routes = [
         meta: { title: 'Biến thể SKU & Size/Màu', roles: ['ADMIN', 'MANAGER', 'STAFF'] }
       },
       {
+        path: 'variants/create',
+        name: 'VariantCreate',
+        component: () => import('@/views/variants/VariantFormView.vue'),
+        meta: { title: 'Thêm nhiều biến thể SKU', roles: ['ADMIN', 'MANAGER'] }
+      },
+      {
+        path: 'variants/:id/edit',
+        name: 'VariantEdit',
+        component: () => import('@/views/variants/VariantFormView.vue'),
+        meta: { title: 'Chỉnh sửa biến thể SKU', roles: ['ADMIN', 'MANAGER'] }
+      },
+      {
         path: 'categories',
         name: 'Categories',
         component: () => import('@/views/categories/CategoriesView.vue'),

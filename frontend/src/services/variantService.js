@@ -10,6 +10,9 @@ export const variantService = {
   getVariantsByProduct(productId) {
     return api.get(`/variants/by-product/${productId}`)
   },
+  getVariantById(id) {
+    return api.get(`/variants/${id}`)
+  },
   createVariant(payload) {
     return api.post('/variants', payload)
   },

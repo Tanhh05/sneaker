@@ -143,75 +143,6 @@
       </el-tabs>
     </div>
 
-    <!-- Modal Variant -->
-    <el-dialog
-      v-model="vDialogVisible"
-      :title="isEditVariant ? 'Cập nhật biến thể sản phẩm (SKU)' : 'Thêm biến thể sản phẩm mới'"
-      width="560px"
-    >
-      <el-form ref="vFormRef" :model="vForm" :rules="vRules" label-position="top">
-        <el-form-item label="Sản phẩm Sneaker" prop="productId">
-          <el-select v-model="vForm.productId" placeholder="Chọn sản phẩm" style="width: 100%" @change="autoSuggestSku">
-            <el-option v-for="p in products" :key="p.id" :label="`${p.productCode} - ${p.productName}`" :value="p.id" />
-          </el-select>
-        </el-form-item>
-
-        <el-row :gutter="14">
-          <el-col :span="12">
-            <el-form-item label="Size giày" prop="sizeId">
-              <el-select v-model="vForm.sizeId" placeholder="Chọn Size" style="width: 100%" @change="autoSuggestSku">
-                <el-option v-for="s in sizes" :key="s.id" :label="`Size ${s.sizeValue}`" :value="s.id" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="Màu sắc" prop="colorId">
-              <el-select v-model="vForm.colorId" placeholder="Chọn Màu sắc" style="width: 100%" @change="autoSuggestSku">
-                <el-option v-for="c in colors" :key="c.id" :label="`${c.colorName} (${c.colorCode})`" :value="c.id" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-        </el-row>
-
-        <el-row :gutter="14">
-          <el-col :span="14">
-            <el-form-item label="Mã SKU riêng biệt" prop="sku">
-              <el-input v-model="vForm.sku" placeholder="VD: AF1-43-W" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="10">
-            <el-form-item label="Số lượng có sẵn" prop="availableQuantity">
-              <el-input-number v-model="vForm.availableQuantity" :min="0" style="width: 100%" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-
-        <el-row :gutter="14">
-          <el-col :span="12">
-            <el-form-item label="Giá nhập (VNĐ)" prop="importPrice">
-              <el-input-number v-model="vForm.importPrice" :min="0" :step="50000" style="width: 100%" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="Giá bán (VNĐ)" prop="salePrice">
-              <el-input-number v-model="vForm.salePrice" :min="0" :step="50000" style="width: 100%" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-
-        <el-form-item label="Trạng thái" prop="status">
-          <el-select v-model="vForm.status" style="width: 100%">
-            <el-option label="ACTIVE (Đang kinh doanh)" value="ACTIVE" />
-            <el-option label="INACTIVE (Ngừng kinh doanh)" value="INACTIVE" />
-          </el-select>
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="vDialogVisible = false">Hủy</el-button>
-        <el-button type="primary" :loading="saving" @click="submitVariant">Lưu biến thể</el-button>
-      </template>
-    </el-dialog>
-
     <!-- BARCODE PRINT MODAL -->
     <BarcodeLabelPrintModal
       v-model="printBarcodeVisible"
@@ -222,6 +153,7 @@
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Plus, Edit, Printer } from '@element-plus/icons-vue'
 import { variantService } from '@/services/variantService'
@@ -233,10 +165,10 @@ import SizeManagerTab from './components/SizeManagerTab.vue'
 import ColorManagerTab from './components/ColorManagerTab.vue'
 import BarcodeLabelPrintModal from '@/components/common/BarcodeLabelPrintModal.vue'
 
+const router = useRouter()
 const { canManageCatalog } = usePermission()
 const activeTab = ref('variants')
 const loading = ref(false)
-const saving = ref(false)
 
 const printBarcodeVisible = ref(false)
 const printBarcodeItems = ref([])
@@ -296,28 +228,6 @@ useDebouncedWatch(
   350
 )
 
-// Variant Form
-const vDialogVisible = ref(false)
-const isEditVariant = ref(false)
-const editingVariantId = ref(null)
-const vFormRef = ref(null)
-const vForm = reactive({
-  productId: null,
-  sizeId: null,
-  colorId: null,
-  sku: '',
-  importPrice: 1800000,
-  salePrice: 2950000,
-  availableQuantity: 10,
-  status: 'ACTIVE'
-})
-const vRules = {
-  productId: [{ required: true, message: 'Chọn sản phẩm', trigger: 'change' }],
-  sizeId: [{ required: true, message: 'Chọn Size', trigger: 'change' }],
-  colorId: [{ required: true, message: 'Chọn màu sắc', trigger: 'change' }],
-  sku: [{ required: true, message: 'Nhập mã SKU', trigger: 'blur' }]
-}
-
 async function loadMeta() {
   const [pRes, sRes, cRes] = await Promise.all([
     productService.getAllProducts(),
@@ -356,65 +266,13 @@ function resetVariantFilter() {
   loadVariants()
 }
 
-function autoSuggestSku() {
-  if (isEditVariant.value) return
-  const p = products.value.find((x) => x.id === vForm.productId)
-  const s = sizes.value.find((x) => x.id === vForm.sizeId)
-  const c = colors.value.find((x) => x.id === vForm.colorId)
-  if (p) {
-    vForm.importPrice = Number(p.importPrice)
-    vForm.salePrice = Number(p.salePrice)
-  }
-  if (p && s && c) {
-    vForm.sku = `${p.productCode}-${s.sizeValue}-${c.colorCode}`
-  }
-}
-
 function openCreateVariant() {
-  isEditVariant.value = false
-  editingVariantId.value = null
-  vForm.productId = products.value[0]?.id || null
-  vForm.sizeId = sizes.value[0]?.id || null
-  vForm.colorId = colors.value[0]?.id || null
-  vForm.availableQuantity = 10
-  vForm.status = 'ACTIVE'
-  autoSuggestSku()
-  vDialogVisible.value = true
+  const query = vFilters.productId ? { productId: vFilters.productId } : {}
+  router.push({ path: '/admin/variants/create', query })
 }
 
 function openEditVariant(row) {
-  isEditVariant.value = true
-  editingVariantId.value = row.id
-  vForm.productId = row.productId
-  vForm.sizeId = row.sizeId
-  vForm.colorId = row.colorId
-  vForm.sku = row.sku
-  vForm.importPrice = Number(row.importPrice)
-  vForm.salePrice = Number(row.salePrice)
-  vForm.availableQuantity = row.availableQuantity
-  vForm.status = row.status
-  vDialogVisible.value = true
-}
-
-async function submitVariant() {
-  if (!vFormRef.value) return
-  await vFormRef.value.validate(async (valid) => {
-    if (!valid) return
-    saving.value = true
-    try {
-      if (isEditVariant.value) {
-        await variantService.updateVariant(editingVariantId.value, vForm)
-        ElMessage.success('Cập nhật biến thể SKU thành công')
-      } else {
-        await variantService.createVariant(vForm)
-        ElMessage.success('Thêm biến thể SKU mới thành công')
-      }
-      vDialogVisible.value = false
-      loadVariants()
-    } finally {
-      saving.value = false
-    }
-  })
+  router.push(`/admin/variants/${row.id}/edit`)
 }
 
 onMounted(() => {
