@@ -687,27 +687,29 @@
                 </template>
               </el-table-column>
 
-              <el-table-column label="" width="54" align="center" fixed="right">
+              <el-table-column label="Thao tác" width="80" align="center" fixed="right">
                 <template #default="{ row }">
-                  <button
-                    v-if="row.isNew"
-                    type="button"
-                    class="action-btn danger"
-                    title="Xóa dòng mới"
-                    @click="removeRowByRef(row)"
-                  >
-                    <el-icon><Delete /></el-icon>
-                  </button>
-                  <button
-                    v-else-if="isRowModified(row)"
-                    type="button"
-                    class="action-btn"
-                    title="Hoàn tác dòng này"
-                    @click="revertRow(row)"
-                  >
-                    ↺
-                  </button>
-                  <span v-else class="muted-dash">—</span>
+                  <div class="row-actions">
+                    <button
+                      v-if="row.isNew"
+                      type="button"
+                      class="action-btn danger"
+                      title="Xóa dòng mới"
+                      @click="removeRowByRef(row)"
+                    >
+                      <el-icon><Delete /></el-icon>
+                    </button>
+                    <button
+                      v-else-if="isRowModified(row)"
+                      type="button"
+                      class="action-btn"
+                      title="Hoàn tác dòng này"
+                      @click="revertRow(row)"
+                    >
+                      ↺
+                    </button>
+                    <span v-else class="muted-dash">—</span>
+                  </div>
                 </template>
               </el-table-column>
             </el-table>

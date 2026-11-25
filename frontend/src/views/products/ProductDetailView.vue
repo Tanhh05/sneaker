@@ -330,11 +330,13 @@
                   </el-tag>
                 </template>
               </el-table-column>
-              <el-table-column v-if="canManageCatalog" label="" width="60" align="center" fixed="right">
+              <el-table-column v-if="canManageCatalog" label="Thao tác" width="84" align="center" fixed="right">
                 <template #default="{ row }">
-                  <button type="button" class="action-btn" title="Sửa biến thể này" @click="editVariant(row)">
-                    <el-icon><Edit /></el-icon>
-                  </button>
+                  <div class="row-actions">
+                    <button type="button" class="action-btn" title="Cập nhật biến thể này" @click="editVariant(row)">
+                      <el-icon><Edit /></el-icon>
+                    </button>
+                  </div>
                 </template>
               </el-table-column>
             </el-table>
