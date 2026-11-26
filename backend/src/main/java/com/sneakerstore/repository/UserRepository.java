@@ -26,7 +26,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
     boolean existsByPhone(String phone);
 
     @EntityGraph(attributePaths = {"roles"})
-    @Query("SELECT u FROM User u WHERE " +
+    @Query("SELECT u FROM User u WHERE u.deleted = false AND " +
            "(:keyword IS NULL OR :keyword = '' OR LOWER(u.username) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
            "OR LOWER(u.fullName) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
            "OR LOWER(u.email) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
@@ -36,6 +36,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
                            Pageable pageable);
 
     @EntityGraph(attributePaths = {"roles"})
+    @Query("SELECT u FROM User u WHERE u.deleted = false ORDER BY u.id ASC")
     List<User> findAllByOrderByIdAsc();
 }
 

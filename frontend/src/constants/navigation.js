@@ -2,6 +2,7 @@ import {
   Odometer,
   ShoppingCart,
   Tickets,
+  Ticket,
   Document,
   Goods,
   SetUp,
@@ -20,18 +21,19 @@ export const MENU_GROUPS = [
     groupTitle: 'TỔNG QUAN & BÁN HÀNG',
     items: [
       { path: '/admin/dashboard', title: 'Dashboard Tổng quan', icon: Odometer, roles: ['ADMIN', 'MANAGER', 'STAFF'] },
-      { path: '/pos', title: 'Bán hàng tại quầy (POS)', icon: ShoppingCart, badge: 'POS', roles: ['ADMIN', 'MANAGER', 'STAFF'] },
+      { path: '/pos', title: 'Bán hàng tại quầy', icon: ShoppingCart, badge: 'POS', roles: ['ADMIN', 'MANAGER', 'STAFF'] },
       { path: '/admin/orders', title: 'Quản lý đơn hàng', icon: Tickets, roles: ['ADMIN', 'MANAGER', 'STAFF'] },
-      { path: '/admin/invoices', title: 'Quản lý hóa đơn', icon: Document, roles: ['ADMIN', 'MANAGER', 'STAFF'] }
+      { path: '/admin/invoices', title: 'Quản lý hóa đơn', icon: Document, roles: ['ADMIN', 'MANAGER', 'STAFF'] },
+      { path: '/admin/vouchers', title: 'Voucher & Khuyến mãi', icon: Ticket, roles: ['ADMIN', 'MANAGER', 'STAFF'] }
     ]
   },
   {
     groupTitle: 'SẢN PHẨM & BIẾN THỂ',
     items: [
       { path: '/admin/products', title: 'Quản lý sản phẩm', icon: Goods, roles: ['ADMIN', 'MANAGER', 'STAFF'] },
-      { path: '/admin/variants', title: 'Biến thể SKU & Size/Màu', icon: SetUp, roles: ['ADMIN', 'MANAGER', 'STAFF'] },
+      { path: '/admin/variants', title: 'Biến thể & Size/Màu', icon: SetUp, roles: ['ADMIN', 'MANAGER', 'STAFF'] },
       { path: '/admin/categories', title: 'Danh mục giày', icon: Menu, roles: ['ADMIN', 'MANAGER', 'STAFF'] },
-      { path: '/admin/brands', title: 'Thương hiệu Sneaker', icon: CollectionTag, roles: ['ADMIN', 'MANAGER', 'STAFF'] }
+      { path: '/admin/brands', title: 'Thương hiệu', icon: CollectionTag, roles: ['ADMIN', 'MANAGER', 'STAFF'] }
     ]
   },
   {
@@ -47,7 +49,7 @@ export const MENU_GROUPS = [
     items: [
       { path: '/admin/employees', title: 'Quản lý nhân viên', icon: Avatar, roles: ['ADMIN', 'MANAGER'] },
       { path: '/admin/reports', title: 'Báo cáo & Thống kê', icon: DataAnalysis, roles: ['ADMIN', 'MANAGER', 'STAFF'] },
-      { path: '/admin/users', title: 'Tài khoản & Phân quyền', icon: Lock, roles: ['ADMIN', 'MANAGER'] }
+      { path: '/admin/users', title: 'Tài khoản & Quyền', icon: Lock, roles: ['ADMIN', 'MANAGER'] }
     ]
   }
 ]

@@ -40,6 +40,10 @@ public class Brand extends BaseEntity {
 
     @Column(name = "STATUS", nullable = false, length = 20)
     private String status;
+
+    @Column(name = "IS_DELETED", nullable = false)
+    @Builder.Default
+    private boolean deleted = false;
 @PrePersist
     public void prePersist() {
         initAuditTimestamps();

@@ -5,10 +5,12 @@ import com.sneakerstore.common.response.PageResponse;
 import com.sneakerstore.dto.response.CustomerDto;
 import com.sneakerstore.dto.request.CustomerRequest;
 import com.sneakerstore.service.CustomerService;
+import com.sneakerstore.service.SoftDeleteService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -19,6 +21,7 @@ import java.util.List;
 public class CustomerController {
 
     private final CustomerService customerService;
+    private final SoftDeleteService softDeleteService;
 
     @GetMapping
     public ApiResponse<PageResponse<CustomerDto>> getCustomers(
@@ -48,6 +51,13 @@ public class CustomerController {
     @PutMapping("/{id}")
     public ApiResponse<CustomerDto> update(@PathVariable Long id, @Valid @RequestBody CustomerRequest request) {
         return ApiResponse.ok("Cập nhật khách hàng thành công", customerService.update(id, request));
+    }
+
+    @DeleteMapping("/{id}/soft-delete")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ApiResponse<Void> softDelete(@PathVariable Long id) {
+        softDeleteService.softDeleteCustomer(id);
+        return ApiResponse.ok("Đã xóa mềm khách hàng", null);
     }
 }
 

@@ -15,7 +15,7 @@ public interface BrandRepository extends JpaRepository<Brand, Long> {
 
     boolean existsByBrandNameIgnoreCase(String brandName);
 
-    @Query("SELECT b FROM Brand b WHERE " +
+    @Query("SELECT b FROM Brand b WHERE b.deleted = false AND " +
            "(:keyword IS NULL OR :keyword = '' OR LOWER(b.brandCode) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
            "OR LOWER(b.brandName) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
            "AND (:status IS NULL OR :status = '' OR b.status = :status)")
@@ -23,6 +23,7 @@ public interface BrandRepository extends JpaRepository<Brand, Long> {
                              @Param("status") String status,
                              Pageable pageable);
 
+    @Query("SELECT b FROM Brand b WHERE b.deleted = false ORDER BY b.brandName ASC")
     List<Brand> findAllByOrderByBrandNameAsc();
 }
 

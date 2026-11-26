@@ -28,4 +28,8 @@ public interface OrderService {
     SalesOrderDto updateStatus(Long id, String targetStatus, String note);
 
     SalesOrderDto updateNote(Long id, String note);
+
+    byte[] exportOrdersExcel(
+            String keyword, String status, String paymentMethod, String channel,
+            LocalDate fromDate, LocalDate toDate);
 }

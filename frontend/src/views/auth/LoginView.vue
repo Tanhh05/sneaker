@@ -108,7 +108,7 @@ async function handleLogin() {
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: #000000;
+  background-color: #2d3a4b;
   padding: 24px;
 }
 
@@ -116,31 +116,31 @@ async function handleLogin() {
   width: 100%;
   max-width: 440px;
   background: #ffffff;
-  border: 1px solid #262626;
-  border-radius: 5px;
-  padding: 44px 38px;
-  box-shadow: none;
+  border: 1px solid #e6ebf5;
+  border-radius: 6px;
+  padding: 40px 36px;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.22);
 }
 
 .login-brand {
   display: flex;
   align-items: center;
   gap: 14px;
-  margin-bottom: 30px;
-  padding-bottom: 24px;
-  border-bottom: 1px solid #ebebeb;
+  margin-bottom: 28px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #ebeef5;
 
   .logo-mark {
     width: 38px;
     height: 38px;
-    background: #000000;
+    background: var(--vea-theme, #409eff);
     color: #ffffff;
     font-weight: 900;
     font-size: 20px;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 5px;
+    border-radius: 6px;
     letter-spacing: -0.05em;
     flex-shrink: 0;
   }
@@ -148,18 +148,18 @@ async function handleLogin() {
   .brand-text {
     h1 {
       font-size: 18px;
-      font-weight: 900;
-      letter-spacing: 0.08em;
-      color: #000000;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      color: #303133;
       margin: 0;
       line-height: 1.1;
     }
 
     p {
-      font-size: 9.5px;
-      font-weight: 800;
-      letter-spacing: 0.1em;
-      color: #737373;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      color: #909399;
       margin: 4px 0 0;
     }
   }
@@ -167,32 +167,31 @@ async function handleLogin() {
 
 .login-form {
   :deep(.el-form-item__label) {
-    font-size: 11px;
-    font-weight: 800;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: #000000;
+    font-size: 12px;
+    font-weight: 600;
+    color: #606266;
     padding-bottom: 6px;
   }
 }
 
 .btn-login-submit {
   width: 100%;
-  height: 50px;
-  background: #000000;
+  height: 44px;
+  background: var(--vea-theme, #409eff);
   color: #ffffff;
-  border: 1px solid #000000;
-  border-radius: 5px;
+  border: 1px solid var(--vea-theme, #409eff);
+  border-radius: 4px;
   font-family: inherit;
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 0.08em;
+  font-size: 13.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
   cursor: pointer;
   margin-top: 10px;
   transition: background 0.15s ease;
 
   &:hover:not(:disabled) {
-    background: #262626;
+    background: var(--vea-theme-light-3, #66b1ff);
+    border-color: var(--vea-theme-light-3, #66b1ff);
   }
 
   &:disabled {
@@ -202,15 +201,15 @@ async function handleLogin() {
 }
 
 .demo-accounts {
-  margin-top: 28px;
-  padding-top: 20px;
-  border-top: 1px dashed #e5e5e5;
+  margin-top: 26px;
+  padding-top: 18px;
+  border-top: 1px dashed #dcdfe6;
 
   .demo-title {
-    font-size: 10px;
-    font-weight: 800;
-    letter-spacing: 0.1em;
-    color: #737373;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    color: #909399;
     margin-bottom: 10px;
   }
 
@@ -224,49 +223,50 @@ async function handleLogin() {
       justify-content: space-between;
       align-items: center;
       padding: 8px 12px;
-      background: #fafafa;
-      border: 1px solid #e5e5e5;
-      border-radius: 5px;
+      background: #f5f7fa;
+      border: 1px solid #e6ebf5;
+      border-radius: 4px;
       font-family: inherit;
       cursor: pointer;
       transition: all 0.15s ease;
 
       .pill-role {
-        font-size: 9px;
-        font-weight: 900;
-        letter-spacing: 0.08em;
-        padding: 3px 6px;
-        border-radius: 5px;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        padding: 3px 7px;
+        border-radius: 3px;
 
         &.admin {
-          background: #000000;
+          background: var(--vea-theme, #409eff);
           color: #ffffff;
         }
 
         &.manager {
-          background: #f5f5f5;
-          color: #000000;
-          border: 1px solid #000000;
+          background: #fff8e6;
+          color: #e6a23c;
+          border: 1px solid #f5dab1;
         }
 
         &.staff {
-          background: #f5f5f5;
-          color: #525252;
+          background: #e7faf0;
+          color: #13ce66;
+          border: 1px solid #d0f5e0;
         }
       }
 
       .pill-acc {
         font-size: 12px;
         font-family: var(--font-mono);
-        font-weight: 700;
-        color: #525252;
+        font-weight: 600;
+        color: #606266;
       }
 
       &:hover {
-        background: #000000;
-        border-color: #000000;
+        background: var(--vea-theme-light-9, #ecf5ff);
+        border-color: var(--vea-theme-light-7, #c6e2ff);
         .pill-acc {
-          color: #ffffff;
+          color: var(--vea-theme, #409eff);
         }
       }
     }
@@ -274,19 +274,18 @@ async function handleLogin() {
 }
 
 .back-store-row {
-  margin-top: 24px;
+  margin-top: 22px;
   text-align: center;
 
   .back-link {
-    font-size: 11px;
-    font-weight: 800;
-    letter-spacing: 0.04em;
-    color: #737373;
+    font-size: 12px;
+    font-weight: 600;
+    color: #909399;
     text-decoration: none;
     transition: color 0.15s ease;
 
     &:hover {
-      color: #000000;
+      color: var(--vea-theme, #409eff);
     }
   }
 }

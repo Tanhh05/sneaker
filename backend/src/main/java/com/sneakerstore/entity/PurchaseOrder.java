@@ -56,6 +56,10 @@ public class PurchaseOrder extends BaseEntity {
 
     @Column(name = "CANCELLED_AT")
     private LocalDateTime cancelledAt;
+
+    @Column(name = "IS_DELETED", nullable = false)
+    @Builder.Default
+    private boolean deleted = false;
 @OneToMany(mappedBy = "purchaseOrder", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<PurchaseOrderDetail> details = new ArrayList<>();

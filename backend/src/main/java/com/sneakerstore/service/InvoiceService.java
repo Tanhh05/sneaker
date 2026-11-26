@@ -45,5 +45,7 @@ public interface InvoiceService {
             String invoiceStatus, String emailStatus,
             LocalDate fromDate, LocalDate toDate);
 
+    Map<String, Object> getVatConfig();
+
     Map<String, Object> processShippingWebhook(ShippingWebhookRequest request);
 }

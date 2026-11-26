@@ -45,32 +45,50 @@
     <!-- 4.1 KPI Overview Cards (Real DB Aggregation) -->
     <div class="kpi-grid" v-loading="kpiLoading">
       <div class="kpi-card">
-        <div class="kpi-label">Tổng số hóa đơn</div>
+        <div class="kpi-top">
+          <div class="kpi-label">Tổng số hóa đơn</div>
+          <span class="kpi-icon-badge tone-slate"><el-icon><Document /></el-icon></span>
+        </div>
         <div class="kpi-value">{{ kpi.totalInvoices }}</div>
         <div class="kpi-sub">Tất cả hóa đơn trong kỳ</div>
       </div>
       <div class="kpi-card kpi-revenue">
-        <div class="kpi-label">Doanh thu hóa đơn hợp lệ</div>
+        <div class="kpi-top">
+          <div class="kpi-label">Doanh thu hóa đơn hợp lệ</div>
+          <span class="kpi-icon-badge tone-hero"><el-icon><Wallet /></el-icon></span>
+        </div>
         <div class="kpi-value">{{ formatCurrency(kpi.totalValidRevenue) }}</div>
         <div class="kpi-sub">Không tính hóa đơn đã hủy</div>
       </div>
       <div class="kpi-card kpi-tax">
-        <div class="kpi-label">Tổng tiền thuế VAT</div>
+        <div class="kpi-top">
+          <div class="kpi-label">Tổng tiền thuế VAT</div>
+          <span class="kpi-icon-badge tone-blue"><el-icon><Tickets /></el-icon></span>
+        </div>
         <div class="kpi-value">{{ formatCurrency(kpi.totalValidTax) }}</div>
         <div class="kpi-sub">Thuế GTGT hóa đơn hợp lệ</div>
       </div>
       <div class="kpi-card">
-        <div class="kpi-label">Hóa đơn tại quầy (POS)</div>
+        <div class="kpi-top">
+          <div class="kpi-label">Hóa đơn tại quầy (POS)</div>
+          <span class="kpi-icon-badge tone-green"><el-icon><Shop /></el-icon></span>
+        </div>
         <div class="kpi-value">{{ kpi.posInvoices }}</div>
         <div class="kpi-sub">Phát sinh tại cửa hàng</div>
       </div>
       <div class="kpi-card">
-        <div class="kpi-label">Hóa đơn Online</div>
+        <div class="kpi-top">
+          <div class="kpi-label">Hóa đơn Online</div>
+          <span class="kpi-icon-badge tone-sky"><el-icon><Monitor /></el-icon></span>
+        </div>
         <div class="kpi-value">{{ kpi.onlineInvoices }}</div>
         <div class="kpi-sub">Giao hàng thành công</div>
       </div>
       <div class="kpi-card kpi-cancelled">
-        <div class="kpi-label">Hóa đơn đã hủy</div>
+        <div class="kpi-top">
+          <div class="kpi-label">Hóa đơn đã hủy</div>
+          <span class="kpi-icon-badge tone-red"><el-icon><CircleClose /></el-icon></span>
+        </div>
         <div class="kpi-value">{{ kpi.cancelledInvoices }}</div>
         <div class="kpi-sub">Lưu lịch sử bất biến</div>
       </div>
@@ -92,26 +110,32 @@
             <template #prefix><el-icon><Search /></el-icon></template>
           </el-input>
 
-          <el-date-picker
-            v-model="dateRange"
-            type="daterange"
-            unlink-panels
-            range-separator="→"
-            start-placeholder="Từ ngày"
-            end-placeholder="Đến ngày"
-            value-format="YYYY-MM-DD"
-            format="DD/MM/YYYY"
-            clearable
-            class="date-picker"
-            @change="handleDateRangeChange"
-          />
+          <div class="date-picker-wrap">
+            <el-date-picker
+              v-model="dateRange"
+              type="daterange"
+              unlink-panels
+              range-separator="→"
+              start-placeholder="Từ ngày"
+              end-placeholder="Đến ngày"
+              value-format="YYYY-MM-DD"
+              format="DD/MM/YYYY"
+              clearable
+              class="date-picker"
+              @change="handleDateRangeChange"
+            />
+          </div>
 
           <el-button type="primary" class="btn-primary-dark" @click="handleSearch">
-            Tìm kiếm
+            <el-icon><Search /></el-icon>
+            <span>Tìm kiếm</span>
           </el-button>
-          <el-button class="btn-soft" @click="resetFilters">
-            Làm mới bộ lọc
-          </el-button>
+          <el-tooltip content="Làm mới toàn bộ bộ lọc" placement="top">
+            <el-button class="btn-soft" @click="resetFilters">
+              <el-icon><RefreshLeft /></el-icon>
+              <span>Đặt lại</span>
+            </el-button>
+          </el-tooltip>
         </div>
 
         <div class="filter-row filter-selects">
@@ -145,68 +169,63 @@
         </div>
       </div>
 
-      <!-- 4.3 Invoice Table (14 Columns) -->
+      <!-- 4.3 Optimized Invoice Data Table (Compact Scannable Columns, Zero Clipped Values) -->
       <div class="table-wrap" v-loading="loading">
         <el-table :data="items" class="invoices-table" style="width: 100%" stripe>
           <template #empty>
             <el-empty description="Chưa có hóa đơn nào phù hợp với bộ lọc" :image-size="88" />
           </template>
 
-          <el-table-column label="Mã hóa đơn" min-width="155" fixed="left">
+          <!-- 1. Hóa đơn & Đơn hàng -->
+          <el-table-column label="Hóa đơn & Đơn hàng" min-width="205">
             <template #default="{ row }">
               <div class="code-cell">
-                <button type="button" class="code-link" @click="goDetail(row)">
+                <button type="button" class="code-link" title="Xem chi tiết hóa đơn" @click="goDetail(row)">
                   {{ row.invoiceCode }}
                 </button>
-                <span v-if="row.recordKind && row.recordKind !== 'ORIGINAL'" class="kind-micro-tag">
-                  {{ row.recordKind === 'REPLACEMENT' ? 'Thay thế' : 'Điều chỉnh' }}
-                </span>
+                <div class="code-sub-row">
+                  <router-link :to="`/admin/orders/${row.orderId}`" class="order-ref-link" title="Mở đơn hàng gốc">
+                    {{ row.orderCode }}
+                  </router-link>
+                  <span class="channel-pill" :class="row.saleChannel === 'ONLINE' ? 'online' : 'pos'">
+                    {{ row.saleChannel === 'ONLINE' ? 'Online' : 'Tại quầy' }}
+                  </span>
+                  <span v-if="row.recordKind && row.recordKind !== 'ORIGINAL'" class="kind-micro-tag">
+                    {{ row.recordKind === 'REPLACEMENT' ? 'Thay thế' : 'Điều chỉnh' }}
+                  </span>
+                </div>
               </div>
             </template>
           </el-table-column>
 
-          <el-table-column label="Mã đơn hàng" width="120">
+          <!-- 2. Khách hàng & Liên hệ -->
+          <el-table-column label="Khách hàng & Liên hệ" min-width="235">
             <template #default="{ row }">
-              <router-link :to="`/admin/orders/${row.orderId}`" class="order-ref-link">
-                {{ row.orderCode }}
-              </router-link>
+              <div class="cust-cell">
+                <div class="cust-name-row">
+                  <span class="cust-name">{{ row.companyName || row.customerName }}</span>
+                  <code v-if="row.taxCode" class="mst-code">MST: {{ row.taxCode }}</code>
+                </div>
+                <div v-if="row.companyName" class="cust-sub">{{ row.customerName }}</div>
+                <div class="cust-contact-row">
+                  <span class="phone-chip">{{ row.customerPhone || '---' }}</span>
+                  <span class="contact-sep">&middot;</span>
+                  <el-tooltip
+                    v-if="row.customerEmail"
+                    :content="row.customerEmail"
+                    placement="top"
+                    :show-after="350"
+                  >
+                    <span class="email-text">{{ row.customerEmail }}</span>
+                  </el-tooltip>
+                  <span v-else class="muted-dash">Chưa có email</span>
+                </div>
+              </div>
             </template>
           </el-table-column>
 
-          <el-table-column label="Kênh bán" width="105" align="center">
-            <template #default="{ row }">
-              <span class="channel-pill" :class="row.saleChannel === 'ONLINE' ? 'online' : 'pos'">
-                {{ row.saleChannel === 'ONLINE' ? 'Online' : 'Tại quầy' }}
-              </span>
-            </template>
-          </el-table-column>
-
-          <el-table-column label="Khách hàng" min-width="175">
-            <template #default="{ row }">
-              <div class="cust-name">{{ row.companyName || row.customerName }}</div>
-              <div v-if="row.companyName" class="cust-sub">{{ row.customerName }}</div>
-            </template>
-          </el-table-column>
-
-          <el-table-column label="Số điện thoại" width="120">
-            <template #default="{ row }">{{ row.customerPhone || '---' }}</template>
-          </el-table-column>
-
-          <el-table-column label="Email" min-width="170">
-            <template #default="{ row }">
-              <span v-if="row.customerEmail" class="email-text">{{ row.customerEmail }}</span>
-              <span v-else class="muted-dash">Chưa có</span>
-            </template>
-          </el-table-column>
-
-          <el-table-column label="Mã số thuế" width="125">
-            <template #default="{ row }">
-              <code v-if="row.taxCode" class="mst-code">{{ row.taxCode }}</code>
-              <span v-else class="muted-dash">---</span>
-            </template>
-          </el-table-column>
-
-          <el-table-column label="Loại hóa đơn" width="110" align="center">
+          <!-- 3. Loại HĐ -->
+          <el-table-column label="Loại HĐ" width="94" align="center">
             <template #default="{ row }">
               <span class="type-pill" :class="row.invoiceType === 'VAT' ? 'type-vat' : 'type-retail'">
                 {{ row.invoiceType === 'VAT' ? 'VAT' : 'Bán lẻ' }}
@@ -214,69 +233,115 @@
             </template>
           </el-table-column>
 
-          <el-table-column label="Tổng tiền" width="135" align="right">
+          <!-- 4. Tổng tiền & Thuế VAT -->
+          <el-table-column label="Tổng tiền & VAT" width="160" align="right">
             <template #default="{ row }">
-              <span class="money-strong" :class="{ 'money-cancelled': row.invoiceStatus === 'CANCELLED' }">
-                {{ formatCurrency(row.totalAmount) }}
-              </span>
+              <div class="money-cell">
+                <span class="money-strong" :class="{ 'money-cancelled': row.invoiceStatus === 'CANCELLED' }">
+                  {{ formatCurrency(row.totalAmount) }}
+                </span>
+                <span class="tax-sub">
+                  VAT: <span class="tax-text">{{ formatCurrency(row.taxAmount) }}</span>
+                </span>
+              </div>
             </template>
           </el-table-column>
 
-          <el-table-column label="Tiền thuế" width="115" align="right">
-            <template #default="{ row }">
-              <span class="tax-text">{{ formatCurrency(row.taxAmount) }}</span>
-            </template>
-          </el-table-column>
-
-          <el-table-column label="Ngày lập" width="135">
+          <!-- 5. Ngày lập -->
+          <el-table-column label="Ngày lập" width="132" align="center">
             <template #default="{ row }">
               <span class="date-text">{{ formatCompactDate(row.issuedAt) }}</span>
             </template>
           </el-table-column>
 
-          <el-table-column label="Trạng thái HĐ" width="140" align="center">
+          <!-- 6. Trạng thái HĐ & Email -->
+          <el-table-column label="Trạng thái" width="155" align="center">
             <template #default="{ row }">
-              <span class="status-pill" :class="`st-${(row.invoiceStatus || '').toLowerCase()}`">
-                {{ invoiceStatusLabel(row.invoiceStatus) }}
-              </span>
+              <div class="status-stack">
+                <span class="status-pill" :class="`st-${(row.invoiceStatus || '').toLowerCase()}`">
+                  {{ invoiceStatusLabel(row.invoiceStatus) }}
+                </span>
+                <span class="email-pill" :class="`em-${(row.emailStatus || '').toLowerCase()}`">
+                  Email: {{ emailStatusLabel(row.emailStatus) }}
+                </span>
+              </div>
             </template>
           </el-table-column>
 
-          <el-table-column label="Trạng thái Email" width="125" align="center">
+          <!-- 7. Thao tác (Icon-first + chỉ hiển thị chữ khi có yêu cầu duyệt hủy cần xử lý ngay) -->
+          <el-table-column label="Thao tác" width="185" fixed="right" align="center" class-name="small-padding fixed-width">
             <template #default="{ row }">
-              <span class="email-pill" :class="`em-${(row.emailStatus || '').toLowerCase()}`">
-                {{ emailStatusLabel(row.emailStatus) }}
-              </span>
-            </template>
-          </el-table-column>
-
-          <el-table-column label="Thao tác" width="175" fixed="right" align="center">
-            <template #default="{ row }">
-              <div class="action-cell">
-                <button type="button" class="icon-btn" title="Xem chi tiết hóa đơn" @click="goDetail(row)">
-                  <el-icon><View /></el-icon>
-                </button>
-                <button type="button" class="icon-btn" title="Xem trước & In hóa đơn" @click="openPrintModal(row)">
-                  <el-icon><Printer /></el-icon>
-                </button>
-                <button
-                  type="button"
-                  class="icon-btn"
-                  title="Gửi hóa đơn PDF qua Email"
-                  @click="openEmailModal(row)"
+              <div class="vea-table-actions">
+                <el-button
+                  v-if="canApproveCancel && row.invoiceStatus === 'PENDING_CANCEL' && row.pendingCancelRequestId"
+                  type="warning"
+                  size="small"
+                  class="vea-cta-btn"
+                  @click="handleReviewCancel(row)"
                 >
-                  <el-icon><Message /></el-icon>
-                </button>
+                  <el-icon><Check /></el-icon>
+                  <span>Duyệt hủy</span>
+                </el-button>
+
+                <el-tooltip content="Xem chi tiết hóa đơn" placement="top" :show-after="200">
+                  <el-button
+                    size="small"
+                    class="vea-icon-btn vea-icon-primary"
+                    aria-label="Xem chi tiết hóa đơn"
+                    @click="goDetail(row)"
+                  >
+                    <el-icon><View /></el-icon>
+                  </el-button>
+                </el-tooltip>
+
+                <el-tooltip content="Xem trước & In hóa đơn" placement="top" :show-after="200">
+                  <el-button
+                    size="small"
+                    class="vea-icon-btn vea-icon-info"
+                    aria-label="In hóa đơn"
+                    @click="openPrintModal(row)"
+                  >
+                    <el-icon><Printer /></el-icon>
+                  </el-button>
+                </el-tooltip>
+
+                <el-tooltip content="Gửi hóa đơn PDF qua Email" placement="top" :show-after="200">
+                  <el-button
+                    size="small"
+                    class="vea-icon-btn vea-icon-success"
+                    aria-label="Gửi Email hóa đơn"
+                    @click="openEmailModal(row)"
+                  >
+                    <el-icon><Message /></el-icon>
+                  </el-button>
+                </el-tooltip>
 
                 <el-dropdown trigger="click" @command="(cmd) => handleRowAction(row, cmd)">
-                  <button type="button" class="icon-btn" title="Nghiệp vụ hóa đơn">
-                    <el-icon><MoreFilled /></el-icon>
-                  </button>
+                  <span>
+                    <el-tooltip content="Thêm thao tác" placement="top" :show-after="200">
+                      <el-button
+                        size="small"
+                        class="vea-icon-btn vea-icon-more"
+                        aria-label="Thêm thao tác"
+                      >
+                        <el-icon><MoreFilled /></el-icon>
+                      </el-button>
+                    </el-tooltip>
+                  </span>
                   <template #dropdown>
                     <el-dropdown-menu>
-                      <el-dropdown-item command="DETAIL">Xem chi tiết đầy đủ</el-dropdown-item>
-                      <el-dropdown-item command="PRINT">Xem trước &amp; In hóa đơn</el-dropdown-item>
-                      <el-dropdown-item command="SEND_EMAIL">Gửi / Gửi lại Email</el-dropdown-item>
+                      <el-dropdown-item command="DETAIL">
+                        <el-icon><View /></el-icon>
+                        <span>Xem chi tiết đầy đủ</span>
+                      </el-dropdown-item>
+                      <el-dropdown-item command="PRINT">
+                        <el-icon><Printer /></el-icon>
+                        <span>Xem trước &amp; In hóa đơn</span>
+                      </el-dropdown-item>
+                      <el-dropdown-item command="SEND_EMAIL">
+                        <el-icon><Message /></el-icon>
+                        <span>Gửi / Gửi lại Email</span>
+                      </el-dropdown-item>
 
                       <!-- Admin/Manager: Duyệt yêu cầu hủy -->
                       <el-dropdown-item
@@ -285,7 +350,8 @@
                         divided
                         style="color: #d97706; font-weight: 700"
                       >
-                        Duyệt / Từ chối yêu cầu hủy
+                        <el-icon><Check /></el-icon>
+                        <span>Duyệt / Từ chối yêu cầu hủy</span>
                       </el-dropdown-item>
 
                       <!-- Admin/Manager: Điều chỉnh / Thay thế -->
@@ -294,7 +360,8 @@
                         command="ADJUST"
                         divided
                       >
-                        Lập hóa đơn điều chỉnh / thay thế
+                        <el-icon><EditPen /></el-icon>
+                        <span>Lập hóa đơn điều chỉnh / thay thế</span>
                       </el-dropdown-item>
 
                       <!-- Admin/Manager: Hủy trực tiếp -->
@@ -303,7 +370,8 @@
                         command="CANCEL_DIRECT"
                         style="color: #dc2626"
                       >
-                        Hủy hóa đơn (Bắt buộc lý do)
+                        <el-icon><Delete /></el-icon>
+                        <span>Hủy hóa đơn (Bắt buộc lý do)</span>
                       </el-dropdown-item>
 
                       <!-- Staff: Xin duyệt hủy -->
@@ -313,7 +381,8 @@
                         divided
                         style="color: #d97706"
                       >
-                        Gửi yêu cầu duyệt hủy
+                        <el-icon><WarningFilled /></el-icon>
+                        <span>Gửi yêu cầu duyệt hủy</span>
                       </el-dropdown-item>
                     </el-dropdown-menu>
                   </template>
@@ -594,6 +663,7 @@ import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   Refresh,
+  RefreshLeft,
   Download,
   Plus,
   Search,
@@ -601,7 +671,16 @@ import {
   Printer,
   Message,
   MoreFilled,
-  WarningFilled
+  WarningFilled,
+  Document,
+  Wallet,
+  Tickets,
+  Shop,
+  Monitor,
+  CircleClose,
+  EditPen,
+  Delete,
+  Check
 } from '@element-plus/icons-vue'
 import { useAuthStore } from '@/stores/auth'
 import { invoiceService } from '@/services/invoiceService'
@@ -1049,7 +1128,8 @@ async function handleExportExcel() {
   exporting.value = true
   try {
     const res = await invoiceService.exportExcel(buildFilterParams())
-    const blob = new Blob([res.data], {
+    const raw = res instanceof Blob ? res : (res?.data ?? res)
+    const blob = new Blob([raw], {
       type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     })
     const url = URL.createObjectURL(blob)
@@ -1103,56 +1183,116 @@ onMounted(() => {
   }
 }
 
-/* KPI Grid — Balanced 3x2 Executive Grid (never wraps currency!) */
+/* KPI Grid — Compact 1-Row 6-Card Strip (fits 1 single screen cleanly!) */
 .kpi-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 10px;
+  flex-shrink: 0;
 }
 
 .kpi-card {
   background: #ffffff;
-  border: 1px solid #e5e5e5;
+  border: 1px solid #e6ebf5;
   border-radius: 6px;
-  padding: 18px 20px;
+  padding: 9px 12px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 2px;
+  box-shadow: 0 1px 3px rgba(0, 21, 41, 0.03);
   transition: border-color 0.16s ease, box-shadow 0.16s ease;
+  min-width: 0;
 
   &:hover {
-    border-color: #a3a3a3;
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
+    border-color: var(--vea-theme-light-5, #a0cfff);
+    box-shadow: 0 3px 10px rgba(0, 21, 41, 0.06);
+  }
+
+  .kpi-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
   }
 
   .kpi-label {
-    font-size: 11px;
-    font-weight: 800;
-    color: #737373;
+    font-size: 10.5px;
+    font-weight: 700;
+    color: #64748b;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .kpi-icon-badge {
+    width: 24px;
+    height: 24px;
+    border-radius: 5px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    flex-shrink: 0;
+
+    &.tone-slate {
+      background: #f1f5f9;
+      color: #475569;
+    }
+
+    &.tone-hero {
+      background: rgba(255, 255, 255, 0.22);
+      color: #ffffff;
+    }
+
+    &.tone-blue {
+      background: #eff6ff;
+      color: #2563eb;
+    }
+
+    &.tone-green {
+      background: #e7faf0;
+      color: #13ce66;
+    }
+
+    &.tone-sky {
+      background: var(--vea-theme-light-9, #ecf5ff);
+      color: var(--vea-theme, #409eff);
+    }
+
+    &.tone-red {
+      background: #fef2f2;
+      color: #ef4444;
+    }
   }
 
   .kpi-value {
-    font-size: 23px;
-    font-weight: 900;
-    color: #000000;
+    font-size: 17px;
+    font-weight: 800;
+    color: #303133;
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.25;
   }
 
   .kpi-sub {
-    font-size: 12px;
-    color: #737373;
+    font-size: 10.5px;
+    color: #909399;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   &.kpi-revenue {
-    background: #0a0a0a;
-    border-color: #0a0a0a;
+    background: linear-gradient(135deg, var(--vea-theme, #409eff) 0%, var(--vea-theme-dark-2, #337ecc) 100%);
+    border-color: var(--vea-theme, #409eff);
 
-    .kpi-label { color: #a3a3a3; }
+    .kpi-label { color: rgba(255, 255, 255, 0.92); }
     .kpi-value { color: #ffffff; }
-    .kpi-sub { color: #a3a3a3; }
+    .kpi-sub { color: rgba(255, 255, 255, 0.84); }
   }
 
   &.kpi-tax {
@@ -1169,18 +1309,20 @@ onMounted(() => {
 /* Surface */
 .invoices-surface {
   background: #ffffff;
-  border: 1px solid #e5e5e5;
+  border: 1px solid #e6ebf5;
   border-radius: 6px;
+  box-shadow: 0 1px 4px rgba(0, 21, 41, 0.03);
   overflow: hidden;
 }
 
 .filters-panel {
-  padding: 16px 22px;
-  background: #fafafa;
-  border-bottom: 1px solid #e5e5e5;
+  padding: 10px 14px;
+  background: #fafbfc;
+  border-bottom: 1px solid #e6ebf5;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
 .filter-row {
@@ -1198,11 +1340,22 @@ onMounted(() => {
 
 .search-input {
   flex: 1;
-  min-width: 260px;
+  min-width: 240px;
+}
+
+.date-picker-wrap {
+  width: 245px;
+  flex-shrink: 0;
+
+  :deep(.el-date-editor) {
+    width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box;
+  }
 }
 
 .date-picker {
-  width: 260px !important;
+  width: 100% !important;
 }
 
 .filter-select {
@@ -1213,10 +1366,15 @@ onMounted(() => {
 .invoices-table {
   :deep(th.el-table__cell) {
     background: #f8fafc !important;
-    color: #475569;
-    font-size: 11.5px;
+    color: #515a6e;
+    font-size: 12px;
     font-weight: 700;
-    text-transform: uppercase;
+    padding: 11px 0;
+  }
+
+  :deep(td.el-table__cell) {
+    padding: 11px 0;
+    vertical-align: middle;
   }
 }
 
@@ -1224,23 +1382,32 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 3px;
+  gap: 5px;
+}
+
+.code-sub-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
 }
 
 .code-link {
-  border: 1px solid #cbd5e1;
-  background: #f8fafc;
-  color: #0f172a;
-  padding: 2px 7px;
+  border: 1px solid var(--vea-theme-light-7, #c6e2ff);
+  background: var(--vea-theme-light-9, #ecf5ff);
+  color: var(--vea-theme, #409eff);
+  padding: 3px 8px;
   border-radius: 4px;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 700;
+  white-space: nowrap;
   cursor: pointer;
+  transition: all 0.15s ease;
 
   &:hover {
-    background: #0f172a;
-    border-color: #0f172a;
+    background: var(--vea-theme, #409eff);
+    border-color: var(--vea-theme, #409eff);
     color: #ffffff;
   }
 }
@@ -1249,11 +1416,15 @@ onMounted(() => {
   font-size: 10.5px;
   font-weight: 700;
   color: #1d4ed8;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  padding: 1px 5px;
+  border-radius: 3px;
 }
 
 .order-ref-link {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 12.5px;
+  font-size: 12px;
   font-weight: 700;
   color: #2563eb;
   text-decoration: none;
@@ -1265,27 +1436,43 @@ onMounted(() => {
 
 .channel-pill {
   display: inline-flex;
-  padding: 2px 7px;
-  border-radius: 4px;
-  font-size: 11px;
-  font-weight: 700;
+  padding: 1px 7px;
+  border-radius: 3px;
+  font-size: 10.5px;
+  font-weight: 600;
+  white-space: nowrap;
 
   &.pos {
-    background: #0f172a;
-    color: #ffffff;
+    background: #e7faf0;
+    color: #13ce66;
+    border: 1px solid #d0f5e0;
   }
 
   &.online {
-    background: #fff7ed;
-    color: #c2410c;
-    border: 1px solid #fdba74;
+    background: var(--vea-theme-light-9, #ecf5ff);
+    color: var(--vea-theme, #409eff);
+    border: 1px solid var(--vea-theme-light-7, #c6e2ff);
   }
+}
+
+.cust-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.cust-name-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
 }
 
 .cust-name {
   font-weight: 700;
   font-size: 13px;
-  color: #0f172a;
+  color: #303133;
 }
 
 .cust-sub {
@@ -1293,31 +1480,59 @@ onMounted(() => {
   color: #64748b;
 }
 
+.cust-contact-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.phone-chip {
+  font-variant-numeric: tabular-nums;
+  color: #475569;
+  font-weight: 500;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.contact-sep {
+  color: #cbd5e1;
+  flex-shrink: 0;
+}
+
 .email-text {
-  font-size: 12.5px;
-  color: #334155;
-  word-break: break-all;
+  font-size: 12px;
+  color: #64748b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
 }
 
 .muted-dash {
   color: #94a3b8;
-  font-size: 12px;
+  font-size: 11.5px;
+  white-space: nowrap;
 }
 
 .mst-code {
   background: #f1f5f9;
-  padding: 2px 5px;
+  padding: 1px 6px;
   border-radius: 3px;
-  font-size: 11.5px;
-  color: #0f172a;
+  font-size: 11px;
+  color: #475569;
+  white-space: nowrap;
 }
 
 .type-pill {
   display: inline-flex;
-  padding: 2px 8px;
+  padding: 2px 9px;
   border-radius: 4px;
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 700;
+  white-space: nowrap;
 
   &.type-vat {
     background: #eff6ff;
@@ -1327,15 +1542,24 @@ onMounted(() => {
 
   &.type-retail {
     background: #f1f5f9;
-    color: #334155;
-    border: 1px solid #cbd5e1;
+    color: #475569;
+    border: 1px solid #d5dde7;
   }
 }
 
+.money-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
 .money-strong {
+  font-size: 14px;
   font-weight: 800;
   color: #dc2626;
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .money-cancelled {
@@ -1343,16 +1567,31 @@ onMounted(() => {
   text-decoration: line-through;
 }
 
+.tax-sub {
+  font-size: 11.5px;
+  color: #64748b;
+  white-space: nowrap;
+}
+
 .tax-text {
-  font-size: 12.5px;
-  color: #1d4ed8;
+  font-size: 11.5px;
+  color: #2563eb;
   font-weight: 600;
+  font-variant-numeric: tabular-nums;
 }
 
 .date-text {
   font-size: 12px;
   color: #475569;
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.status-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
 }
 
 .status-pill {
@@ -1390,10 +1629,11 @@ onMounted(() => {
 
 .email-pill {
   display: inline-flex;
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-size: 11px;
-  font-weight: 700;
+  padding: 1px 7px;
+  border-radius: 3px;
+  font-size: 10.5px;
+  font-weight: 600;
+  white-space: nowrap;
 
   &.em-not_sent {
     background: #f1f5f9;
@@ -1413,31 +1653,6 @@ onMounted(() => {
   &.em-failed {
     background: #fef2f2;
     color: #dc2626;
-  }
-}
-
-.action-cell {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-}
-
-.icon-btn {
-  width: 28px;
-  height: 28px;
-  border-radius: 4px;
-  border: 1px solid #e2e8f0;
-  background: #ffffff;
-  color: #334155;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-
-  &:hover {
-    border-color: #0f172a;
-    color: #0f172a;
-    background: #f8fafc;
   }
 }
 

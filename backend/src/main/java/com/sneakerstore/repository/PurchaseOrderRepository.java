@@ -19,7 +19,7 @@ public interface PurchaseOrderRepository extends JpaRepository<PurchaseOrder, Lo
     Optional<PurchaseOrder> findWithHeaderById(Long id);
 
     @EntityGraph(attributePaths = {"supplier", "employee"})
-    @Query("SELECT po FROM PurchaseOrder po WHERE " +
+    @Query("SELECT po FROM PurchaseOrder po WHERE po.deleted = false AND " +
            "(:keyword IS NULL OR :keyword = '' OR LOWER(po.purchaseCode) LIKE LOWER(CONCAT('%', CAST(:keyword AS string), '%')) " +
            "OR LOWER(po.supplier.supplierName) LIKE LOWER(CONCAT('%', CAST(:keyword AS string), '%'))) " +
            "AND (:supplierId IS NULL OR po.supplier.id = :supplierId) " +

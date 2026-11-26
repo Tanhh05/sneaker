@@ -12,8 +12,12 @@ import com.sneakerstore.repository.EmployeeRepository;
 import com.sneakerstore.dto.request.InvoiceIssueRequest;
 import com.sneakerstore.dto.request.SalesOrderRequest;
 import com.sneakerstore.dto.response.SalesOrderDto;
+import com.sneakerstore.exporter.OrderExcelExporter;
 import com.sneakerstore.service.InvoiceService;
+import com.sneakerstore.service.VoucherService;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import com.sneakerstore.entity.OrderStatusHistory;
 import com.sneakerstore.entity.SalesOrder;
 import com.sneakerstore.entity.SalesOrderDetail;
@@ -52,7 +56,9 @@ public class OrderServiceImpl implements OrderService {
     private final EmployeeRepository employeeRepository;
     private final ProductVariantRepository variantRepository;
     private final OrderMapper orderMapper;
+    private final OrderExcelExporter orderExcelExporter;
     private final ObjectProvider<InvoiceService> invoiceServiceProvider;
+    private final VoucherService voucherService;
 
     @Override
     @Transactional(readOnly = true)
@@ -289,9 +295,22 @@ public class OrderServiceImpl implements OrderService {
         variantRepository.saveAll(variantsToUpdate);
 
         order.setTotalAmount(totalAmount);
+        order.setDiscountAmount(BigDecimal.ZERO);
+        order.setShippingFee(BigDecimal.ZERO);
         order.setFinalAmount(totalAmount);
         order.setDetails(detailEntities);
         SalesOrder savedOrder = salesOrderRepository.save(order);
+
+        // Bước 3.5: Áp dụng Voucher tại quầy POS (nếu thu ngân nhập/chọn mã)
+        BigDecimal finalAmount = totalAmount;
+        if (request.getVoucherCode() != null && !request.getVoucherCode().isBlank()) {
+            BigDecimal discount = voucherService.applyVoucherToOrder(
+                    savedOrder, request.getVoucherCode(), "POS", customer, totalAmount);
+            finalAmount = totalAmount.subtract(discount).max(BigDecimal.ZERO);
+            savedOrder.setDiscountAmount(discount);
+            savedOrder.setFinalAmount(finalAmount);
+            savedOrder = salesOrderRepository.save(savedOrder);
+        }
 
         // Bước 4: Lưu bản ghi Thanh toán (Payment) & Lịch sử trạng thái (OrderStatusHistory / Audit Log)
         String paymentStatus = AppConstants.ORDER_COMPLETED.equals(initialStatus) ? "PAID" : "PENDING";
@@ -299,7 +318,7 @@ public class OrderServiceImpl implements OrderService {
                 .paymentCode(generatePaymentCode())
                 .salesOrder(savedOrder)
                 .paymentMethod(paymentMethod)
-                .amount(totalAmount)
+                .amount(finalAmount)
                 .paymentDate(LocalDateTime.now())
                 .status(paymentStatus)
                 .referenceNote(request.getPaymentReference() != null ? request.getPaymentReference() : "Thanh toán đơn hàng " + orderCode)
@@ -339,6 +358,8 @@ public class OrderServiceImpl implements OrderService {
                 }
                 invService.autoIssueForCompletedOrder(savedOrder.getId(), invCfg);
             }
+            // Bước 4.6: Đánh giá quy tắc thưởng Voucher động khi đơn POS hoàn thành
+            voucherService.evaluateAndAwardRulesForCompletedOrder(savedOrder.getId());
         }
 
         // Bước 5: Output Mapping
@@ -377,6 +398,9 @@ public class OrderServiceImpl implements OrderService {
                 p.setUpdatedBy(actor);
             }
             paymentRepository.saveAll(payments);
+
+            // Hoàn trả lượt sử dụng Voucher & khôi phục voucher cá nhân khi hủy đơn
+            voucherService.refundVoucherForCancelledOrder(order.getId(), note);
         } else if (AppConstants.ORDER_COMPLETED.equals(nextStatus)) {
             List<Payment> payments = paymentRepository.findBySalesOrderIdOrderByIdAsc(id);
             for (Payment p : payments) {
@@ -408,6 +432,8 @@ public class OrderServiceImpl implements OrderService {
             if (invService != null) {
                 invService.autoIssueForCompletedOrder(order.getId(), null);
             }
+            // Đánh giá quy tắc thưởng Voucher động & tự động gửi email chúc mừng
+            voucherService.evaluateAndAwardRulesForCompletedOrder(order.getId());
         }
 
         // Bước 5: Output Mapping
@@ -424,6 +450,17 @@ public class OrderServiceImpl implements OrderService {
         order.setUpdatedBy(actor);
         salesOrderRepository.save(order);
         return getById(id);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public byte[] exportOrdersExcel(
+            String keyword, String status, String paymentMethod, String channel,
+            LocalDate fromDate, LocalDate toDate) {
+        PageResponse<SalesOrderDto> page = searchOrders(
+                keyword, status, paymentMethod, channel, fromDate, toDate,
+                PageRequest.of(0, 2000, Sort.by(Sort.Direction.DESC, "id")));
+        return orderExcelExporter.export(page.getContent() != null ? page.getContent() : Collections.emptyList());
     }
 
     private void validateTransition(String currentStatus, String nextStatus) {

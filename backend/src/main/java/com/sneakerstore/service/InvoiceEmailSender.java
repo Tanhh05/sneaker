@@ -4,11 +4,13 @@ import com.sneakerstore.entity.Invoice;
 import com.sneakerstore.entity.InvoiceDetail;
 import com.sneakerstore.entity.InvoiceEmailHistory;
 import com.sneakerstore.entity.InvoiceHistory;
+import com.sneakerstore.entity.SystemSetting;
 import com.sneakerstore.exporter.InvoicePdfGenerator;
 import com.sneakerstore.repository.InvoiceDetailRepository;
 import com.sneakerstore.repository.InvoiceEmailHistoryRepository;
 import com.sneakerstore.repository.InvoiceHistoryRepository;
 import com.sneakerstore.repository.InvoiceRepository;
+import com.sneakerstore.repository.SystemSettingRepository;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,6 +18,7 @@ import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
@@ -26,6 +29,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Locale;
+import java.util.Properties;
 
 @Component
 @RequiredArgsConstructor
@@ -37,10 +41,20 @@ public class InvoiceEmailSender {
     private final InvoiceDetailRepository detailRepository;
     private final InvoiceEmailHistoryRepository emailHistoryRepository;
     private final InvoiceHistoryRepository historyRepository;
+    private final SystemSettingRepository settingRepository;
     private final InvoicePdfGenerator pdfGenerator;
 
     @Value("${spring.mail.host:}")
     private String mailHost;
+
+    @Value("${spring.mail.port:587}")
+    private int mailPort;
+
+    @Value("${spring.mail.username:}")
+    private String mailUsername;
+
+    @Value("${spring.mail.password:}")
+    private String mailPassword;
 
     @Value("${app.invoice.from-email:no-reply@adhasneaker.vn}")
     private String fromEmail;
@@ -57,6 +71,37 @@ public class InvoiceEmailSender {
     private static final int MAX_RETRIES = 2;
     private static final DateTimeFormatter DT_FMT = DateTimeFormatter.ofPattern("HH:mm dd/MM/yyyy");
 
+    private String getSettingOrDefault(String key, String fallback) {
+        return settingRepository.findById(key)
+                .map(SystemSetting::getSettingValue)
+                .filter(v -> v != null && !v.isBlank())
+                .orElse(fallback);
+    }
+
+    private JavaMailSender resolveMailSender(String effectiveHost, int effectivePort, String effectiveUser, String effectivePass) {
+        if (mailHost != null && !mailHost.isBlank() && effectiveHost.equals(mailHost)) {
+            JavaMailSender bean = mailSenderProvider.getIfAvailable();
+            if (bean != null) return bean;
+        }
+        JavaMailSenderImpl impl = new JavaMailSenderImpl();
+        impl.setHost(effectiveHost);
+        impl.setPort(effectivePort);
+        impl.setUsername(effectiveUser);
+        impl.setPassword(effectivePass);
+        impl.setDefaultEncoding("UTF-8");
+        Properties props = impl.getJavaMailProperties();
+        props.put("mail.transport.protocol", "smtp");
+        props.put("mail.smtp.auth", "true");
+        props.put("mail.smtp.starttls.enable", effectivePort != 465 ? "true" : "false");
+        if (effectivePort == 465) {
+            props.put("mail.smtp.ssl.enable", "true");
+        }
+        props.put("mail.smtp.connectiontimeout", "8000");
+        props.put("mail.smtp.timeout", "8000");
+        props.put("mail.smtp.writetimeout", "8000");
+        return impl;
+    }
+
     @Async("invoiceEmailExecutor")
     @Transactional
     public void sendInvoiceEmailAsync(Long invoiceId, Long emailHistoryId, String actor) {
@@ -67,13 +112,24 @@ public class InvoiceEmailSender {
         }
 
         String recipient = emailHist.getRecipientEmail();
-        JavaMailSender mailSender = mailSenderProvider.getIfAvailable();
+        String effectiveHost = (mailHost != null && !mailHost.isBlank()) ? mailHost.trim() : getSettingOrDefault("SMTP_HOST", "");
+        String effectiveUser = (mailUsername != null && !mailUsername.isBlank()) ? mailUsername.trim() : getSettingOrDefault("SMTP_USERNAME", "");
+        String effectivePass = (mailPassword != null && !mailPassword.isBlank()) ? mailPassword.trim() : getSettingOrDefault("SMTP_PASSWORD", "");
+        String effectiveFrom = getSettingOrDefault("SMTP_FROM", effectiveUser.isBlank() ? fromEmail : effectiveUser);
+        int effectivePort = mailPort;
+        try {
+            String pStr = getSettingOrDefault("SMTP_PORT", String.valueOf(mailPort));
+            effectivePort = Integer.parseInt(pStr.trim());
+        } catch (Exception ignored) {
+        }
 
-        if (mailHost == null || mailHost.isBlank() || mailSender == null) {
+        if (effectiveHost.isBlank() || effectiveUser.isBlank() || effectivePass.isBlank()) {
             markFailed(invoice, emailHist, actor,
-                    "Chưa cấu hình máy chủ SMTP (biến môi trường MAIL_HOST/MAIL_USERNAME/MAIL_PASSWORD). Hóa đơn vẫn giữ nguyên trạng thái đã phát hành.");
+                    "Chưa cấu hình tài khoản SMTP (cập nhật bảng system_settings: SMTP_HOST, SMTP_USERNAME, SMTP_PASSWORD hoặc biến môi trường MAIL_HOST/MAIL_USERNAME/MAIL_PASSWORD). Hóa đơn vẫn giữ nguyên trạng thái đã phát hành.");
             return;
         }
+
+        JavaMailSender mailSender = resolveMailSender(effectiveHost, effectivePort, effectiveUser, effectivePass);
 
         List<InvoiceDetail> details = detailRepository.findByInvoiceIdOrderByIdAsc(invoiceId);
         byte[] pdfBytes;
@@ -90,7 +146,7 @@ public class InvoiceEmailSender {
             try {
                 MimeMessage message = mailSender.createMimeMessage();
                 MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-                helper.setFrom(fromEmail);
+                helper.setFrom(effectiveFrom);
                 helper.setTo(recipient);
                 helper.setSubject(emailHist.getSubject());
                 helper.setText(buildEmailHtml(invoice), true);

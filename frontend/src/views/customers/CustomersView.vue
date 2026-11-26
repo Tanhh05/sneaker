@@ -67,15 +67,29 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="Thao tác" width="85" fixed="right" align="center">
+        <el-table-column label="Thao tác" width="130" fixed="right" align="center" class-name="small-padding fixed-width">
           <template #default="{ row }">
-            <div class="row-actions">
-              <button class="action-btn" title="Lịch sử mua hàng" @click="openHistory(row)">
-                <el-icon><Tickets /></el-icon>
-              </button>
-              <button class="action-btn" title="Chỉnh sửa" @click="openEdit(row)">
-                <el-icon><Edit /></el-icon>
-              </button>
+            <div class="vea-table-actions">
+              <el-tooltip content="Xem lịch sử mua hàng" placement="top" :show-after="200">
+                <el-button size="small" class="vea-icon-btn vea-icon-info" aria-label="Lịch sử mua hàng" @click="openHistory(row)">
+                  <el-icon><Tickets /></el-icon>
+                </el-button>
+              </el-tooltip>
+              <el-tooltip content="Chỉnh sửa thông tin khách hàng" placement="top" :show-after="200">
+                <el-button size="small" class="vea-icon-btn vea-icon-primary" aria-label="Chỉnh sửa" @click="openEdit(row)">
+                  <el-icon><Edit /></el-icon>
+                </el-button>
+              </el-tooltip>
+              <el-tooltip v-if="authStore.isAdmin" content="Xóa mềm khách hàng" placement="top" :show-after="200">
+                <el-button
+                  size="small"
+                  class="vea-icon-btn vea-icon-danger"
+                  aria-label="Xóa mềm"
+                  @click="handleSoftDelete(row)"
+                >
+                  <el-icon><Delete /></el-icon>
+                </el-button>
+              </el-tooltip>
             </div>
           </template>
         </el-table-column>
@@ -179,13 +193,17 @@
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
-import { Plus, Edit, Tickets } from '@element-plus/icons-vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { Plus, Edit, Tickets, Delete } from '@element-plus/icons-vue'
 import { customerService } from '@/services/customerService'
 import { orderService } from '@/services/orderService'
+import { softDeleteService } from '@/services/softDeleteService'
+import { useAuthStore } from '@/stores/auth'
 import { formatDate, formatDateTime } from '@/utils/formatters'
 import { useDebouncedWatch } from '@/composables/useDebounce'
 import CustomerHistoryDialog from './components/CustomerHistoryDialog.vue'
+
+const authStore = useAuthStore()
 
 const loading = ref(false)
 const saving = ref(false)
@@ -298,6 +316,18 @@ async function submitForm() {
       saving.value = false
     }
   })
+}
+
+function handleSoftDelete(row) {
+  ElMessageBox.confirm(
+    `Bạn có chắc chắn muốn xóa mềm khách hàng "${row.fullName}"? Dữ liệu đơn hàng lịch sử vẫn được giữ nguyên.`,
+    'Xác nhận xóa mềm',
+    { type: 'warning', confirmButtonText: 'Xóa mềm', cancelButtonText: 'Hủy', confirmButtonClass: 'el-button--danger' }
+  ).then(async () => {
+    await softDeleteService.remove('customers', row.id)
+    ElMessage.success(`Đã xóa mềm khách hàng ${row.fullName}`)
+    loadData()
+  }).catch(() => {})
 }
 
 onMounted(() => {

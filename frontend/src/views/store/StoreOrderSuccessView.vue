@@ -146,7 +146,7 @@
                 <h3 class="box-title">THANH TOÁN TIỀN MẶT KHI NHẬN HÀNG (COD)</h3>
               </div>
               <p class="cod-desc">
-                Bạn sẽ thanh toán số tiền <strong>{{ formatCurrency(order.totalAmount) }}</strong> trực tiếp cho nhân viên giao hàng sau khi kiểm tra giày tận nơi.
+                Bạn sẽ thanh toán số tiền <strong>{{ formatCurrency(order.finalAmount || order.totalAmount) }}</strong> trực tiếp cho nhân viên giao hàng sau khi kiểm tra giày tận nơi.
               </p>
             </div>
 

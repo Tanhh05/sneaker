@@ -28,7 +28,7 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long> {
     Optional<Employee> findByUserUsername(String username);
 
     @EntityGraph(attributePaths = {"user"})
-    @Query("SELECT e FROM Employee e WHERE " +
+    @Query("SELECT e FROM Employee e WHERE e.deleted = false AND " +
            "(:keyword IS NULL OR :keyword = '' OR LOWER(e.employeeCode) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
            "OR LOWER(e.fullName) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
            "OR LOWER(e.phone) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
@@ -39,6 +39,7 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long> {
                                    Pageable pageable);
 
     @EntityGraph(attributePaths = {"user"})
+    @Query("SELECT e FROM Employee e WHERE e.deleted = false ORDER BY e.id ASC")
     List<Employee> findAllByOrderByIdAsc();
 }
 

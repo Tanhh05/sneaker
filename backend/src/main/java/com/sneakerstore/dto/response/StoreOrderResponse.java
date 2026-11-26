@@ -21,6 +21,10 @@ public class StoreOrderResponse {
     private String customerPhone;
     private String shippingAddress;
     private BigDecimal totalAmount;
+    private BigDecimal discountAmount;
+    private BigDecimal shippingFee;
+    private BigDecimal finalAmount;
+    private String voucherCode;
     private String paymentMethod;
     private String status;
     private String qrPaymentUrl;

@@ -3,6 +3,7 @@ package com.sneakerstore.controller;
 import com.sneakerstore.dto.response.BrandDto;
 import com.sneakerstore.dto.request.BrandRequest;
 import com.sneakerstore.service.BrandService;
+import com.sneakerstore.service.SoftDeleteService;
 import com.sneakerstore.common.response.ApiResponse;
 import com.sneakerstore.common.response.PageResponse;
 import jakarta.validation.Valid;
@@ -20,6 +21,7 @@ import java.util.List;
 public class BrandController {
 
     private final BrandService brandService;
+    private final SoftDeleteService softDeleteService;
 
     @GetMapping
     public ApiResponse<PageResponse<BrandDto>> getBrands(
@@ -57,6 +59,13 @@ public class BrandController {
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ApiResponse<BrandDto> deactivate(@PathVariable Long id) {
         return ApiResponse.ok("Đã ngừng sử dụng thương hiệu", brandService.deactivate(id));
+    }
+
+    @DeleteMapping("/{id}/soft-delete")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ApiResponse<Void> softDelete(@PathVariable Long id) {
+        softDeleteService.softDeleteBrand(id);
+        return ApiResponse.ok("Đã xóa mềm thương hiệu", null);
     }
 }
 

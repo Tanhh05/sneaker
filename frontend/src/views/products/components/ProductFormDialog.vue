@@ -544,7 +544,7 @@ async function handleSubmit() {
 .product-form-dialog {
   :deep(.el-dialog__header) {
     padding: 16px 24px;
-    border-bottom: 2px solid #000000;
+    border-bottom: 2px solid var(--vea-theme, #409eff);
     margin-right: 0;
   }
   :deep(.el-dialog__body) {
@@ -561,7 +561,7 @@ async function handleSubmit() {
 /* Header Banner */
 .dialog-header-banner {
   background: #ffffff;
-  border: 1px solid #000000;
+  border: 1px solid var(--vea-theme, #409eff);
   padding: 14px 18px;
   margin-bottom: 18px;
   box-shadow: 2px 2px 0px rgba(0, 0, 0, 0.08);
@@ -583,7 +583,7 @@ async function handleSubmit() {
       font-weight: 900;
       letter-spacing: 0.04em;
       margin: 0;
-      color: #000000;
+      color: #303133;
       text-transform: uppercase;
     }
   }
@@ -613,11 +613,11 @@ async function handleSubmit() {
 /* Live Preview Card */
 .preview-card {
   background: #ffffff;
-  border: 1px solid #000000;
+  border: 1px solid var(--vea-theme, #409eff);
   overflow: hidden;
 
   .preview-header {
-    background: #000000;
+    background: var(--vea-theme, #409eff);
     color: #ffffff;
     padding: 8px 12px;
     display: flex;
@@ -723,7 +723,7 @@ async function handleSubmit() {
       .preview-price {
         font-size: 14px;
         font-weight: 900;
-        color: #000000;
+        color: #303133;
         font-family: var(--font-mono);
       }
     }
@@ -764,7 +764,7 @@ async function handleSubmit() {
   }
 
   .dialog-upload-box {
-    border: 1.5px dashed #000000;
+    border: 1.5px dashed var(--vea-theme, #409eff);
     background: #f8fafc;
     padding: 10px 12px;
     margin-bottom: 8px;
@@ -828,8 +828,8 @@ async function handleSubmit() {
 
         &:hover,
         &.active {
-          border-color: #000000;
-          box-shadow: 0 0 0 1px #000000;
+          border-color: var(--vea-theme, #409eff);
+          box-shadow: 0 0 0 1px var(--vea-theme, #409eff);
         }
       }
     }
@@ -841,7 +841,7 @@ async function handleSubmit() {
   background: #0f172a;
   color: #ffffff;
   padding: 12px 14px;
-  border: 1px solid #000000;
+  border: 1px solid var(--vea-theme, #409eff);
 
   &.warning {
     background: #450a0a;
@@ -876,7 +876,7 @@ async function handleSubmit() {
       }
       &.warning {
         background: #f59e0b;
-        color: #000000;
+        color: #303133;
       }
       &.danger {
         background: #ef4444;
@@ -949,7 +949,7 @@ async function handleSubmit() {
     position: absolute;
     top: -9px;
     left: 14px;
-    background: #000000;
+    background: var(--vea-theme, #409eff);
     color: #ffffff;
     font-size: 9px;
     font-weight: 800;
@@ -968,8 +968,8 @@ async function handleSubmit() {
     width: 32px;
     height: 32px;
     background: #ffffff;
-    border: 1px solid #000000;
-    color: #000000;
+    border: 1px solid var(--vea-theme, #409eff);
+    color: #303133;
     cursor: pointer;
     display: inline-flex;
     align-items: center;
@@ -979,7 +979,7 @@ async function handleSubmit() {
     border-radius: 5px;
 
     &:hover {
-      background: #000000;
+      background: var(--vea-theme, #409eff);
       color: #ffffff;
     }
   }
@@ -1012,8 +1012,8 @@ async function handleSubmit() {
     transition: all 0.12s ease;
 
     &:hover {
-      background: #000000;
-      border-color: #000000;
+      background: var(--vea-theme, #409eff);
+      border-color: var(--vea-theme, #409eff);
       color: #ffffff;
     }
   }

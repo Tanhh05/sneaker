@@ -65,40 +65,49 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="Thao tác" width="115" fixed="right" align="center">
+        <el-table-column label="Thao tác" width="160" fixed="right" align="center" class-name="small-padding fixed-width">
           <template #default="{ row }">
-            <div class="row-actions">
-              <button class="action-btn" title="Xem chi tiết" @click="openDetail(row)">
-                <el-icon><View /></el-icon>
-              </button>
-              <button class="action-btn" title="Chỉnh sửa" @click="openEdit(row)">
-                <el-icon><Edit /></el-icon>
-              </button>
-              <el-dropdown
-                trigger="click"
-                @command="(cmd) => handleToggleStatus(row, cmd)"
-              >
-                <button class="action-btn action-more" title="Thao tác khác">
-                  <el-icon><MoreFilled /></el-icon>
-                </button>
-                <template #dropdown>
-                  <el-dropdown-menu>
-                    <el-dropdown-item
-                      v-if="row.status === 'ACTIVE'"
-                      command="INACTIVE"
-                      style="color: #ef4444"
-                    >
-                      ✕ Tạm khóa nhân viên
-                    </el-dropdown-item>
-                    <el-dropdown-item
-                      v-else
-                      command="ACTIVE"
-                    >
-                      ✓ Kích hoạt lại
-                    </el-dropdown-item>
-                  </el-dropdown-menu>
-                </template>
-              </el-dropdown>
+            <div class="vea-table-actions">
+              <el-tooltip content="Xem hồ sơ nhân viên" placement="top" :show-after="200">
+                <el-button size="small" class="vea-icon-btn vea-icon-info" aria-label="Xem hồ sơ" @click="openDetail(row)">
+                  <el-icon><View /></el-icon>
+                </el-button>
+              </el-tooltip>
+              <el-tooltip content="Chỉnh sửa nhân viên" placement="top" :show-after="200">
+                <el-button size="small" class="vea-icon-btn vea-icon-primary" aria-label="Chỉnh sửa" @click="openEdit(row)">
+                  <el-icon><Edit /></el-icon>
+                </el-button>
+              </el-tooltip>
+              <el-tooltip v-if="row.status === 'ACTIVE'" content="Khóa nhân viên" placement="top" :show-after="200">
+                <el-button
+                  size="small"
+                  class="vea-icon-btn vea-icon-warning"
+                  aria-label="Khóa nhân viên"
+                  @click="handleToggleStatus(row, 'INACTIVE')"
+                >
+                  <el-icon><Lock /></el-icon>
+                </el-button>
+              </el-tooltip>
+              <el-tooltip v-else content="Mở lại hoạt động" placement="top" :show-after="200">
+                <el-button
+                  size="small"
+                  class="vea-icon-btn vea-icon-success"
+                  aria-label="Mở lại"
+                  @click="handleToggleStatus(row, 'ACTIVE')"
+                >
+                  <el-icon><Unlock /></el-icon>
+                </el-button>
+              </el-tooltip>
+              <el-tooltip v-if="authStore.isAdmin" content="Xóa mềm nhân viên" placement="top" :show-after="200">
+                <el-button
+                  size="small"
+                  class="vea-icon-btn vea-icon-danger"
+                  aria-label="Xóa mềm"
+                  @click="handleSoftDelete(row)"
+                >
+                  <el-icon><Delete /></el-icon>
+                </el-button>
+              </el-tooltip>
             </div>
           </template>
         </el-table-column>
@@ -250,11 +259,15 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus, View, Edit, MoreFilled } from '@element-plus/icons-vue'
+import { Plus, View, Edit, Lock, Unlock, Delete } from '@element-plus/icons-vue'
 import { employeeService } from '@/services/employeeService'
 import { userService } from '@/services/userService'
+import { softDeleteService } from '@/services/softDeleteService'
+import { useAuthStore } from '@/stores/auth'
 import { formatDate } from '@/utils/formatters'
 import { useDebouncedWatch } from '@/composables/useDebounce'
+
+const authStore = useAuthStore()
 
 const loading = ref(false)
 const saving = ref(false)
@@ -390,6 +403,18 @@ function handleToggleStatus(row, status) {
   ).then(async () => {
     await employeeService.updateEmployeeStatus(row.id, status)
     ElMessage.success(`Đã cập nhật trạng thái nhân viên ${row.fullName}`)
+    loadData()
+  }).catch(() => {})
+}
+
+function handleSoftDelete(row) {
+  ElMessageBox.confirm(
+    `Bạn có chắc chắn muốn xóa mềm nhân viên "${row.fullName}"? Dữ liệu lịch sử bán hàng & nhập kho vẫn được giữ nguyên.`,
+    'Xác nhận xóa mềm',
+    { type: 'warning', confirmButtonText: 'Xóa mềm', cancelButtonText: 'Hủy', confirmButtonClass: 'el-button--danger' }
+  ).then(async () => {
+    await softDeleteService.remove('employees', row.id)
+    ElMessage.success(`Đã xóa mềm nhân viên ${row.fullName}`)
     loadData()
   }).catch(() => {})
 }

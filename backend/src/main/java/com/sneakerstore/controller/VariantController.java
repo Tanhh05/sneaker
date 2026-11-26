@@ -4,6 +4,7 @@ import com.sneakerstore.common.response.ApiResponse;
 import com.sneakerstore.common.response.PageResponse;
 import com.sneakerstore.dto.response.ProductVariantDto;
 import com.sneakerstore.dto.request.ProductVariantRequest;
+import com.sneakerstore.service.SoftDeleteService;
 import com.sneakerstore.service.VariantService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +21,7 @@ import java.util.List;
 public class VariantController {
 
     private final VariantService variantService;
+    private final SoftDeleteService softDeleteService;
 
     @GetMapping
     public ApiResponse<PageResponse<ProductVariantDto>> getVariants(
@@ -61,5 +63,12 @@ public class VariantController {
     public ApiResponse<ProductVariantDto> updateVariant(
             @PathVariable Long id, @Valid @RequestBody ProductVariantRequest request) {
         return ApiResponse.ok("Cập nhật biến thể sản phẩm thành công", variantService.updateVariant(id, request));
+    }
+
+    @DeleteMapping("/{id}/soft-delete")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ApiResponse<Void> softDelete(@PathVariable Long id) {
+        softDeleteService.softDeleteVariant(id);
+        return ApiResponse.ok("Đã xóa mềm biến thể sản phẩm", null);
     }
 }

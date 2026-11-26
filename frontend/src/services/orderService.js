@@ -21,5 +21,8 @@ export const orderService = {
   },
   updateOrderNote(id, payload) {
     return api.patch(`/orders/${id}/note`, payload)
+  },
+  exportOrdersExcel(params) {
+    return api.get('/orders/export-excel', { params, responseType: 'blob' })
   }
 }

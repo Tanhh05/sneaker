@@ -1391,7 +1391,7 @@ onUnmounted(() => {
   gap: 12px;
   flex-wrap: wrap;
   background: #ffffff;
-  border: 1px solid #000000;
+  border: 1px solid var(--vea-theme, #409eff);
   padding: 10px 14px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
 }
@@ -1418,7 +1418,7 @@ onUnmounted(() => {
   gap: 5px;
   background: #ffffff;
   border: 1px solid #d4d4d4;
-  color: #171717;
+  color: #303133;
   font-size: 11.5px;
   font-weight: 800;
   padding: 6px 10px;
@@ -1427,8 +1427,8 @@ onUnmounted(() => {
   flex-shrink: 0;
 
   &:hover {
-    border-color: #000000;
-    background: #000000;
+    border-color: var(--vea-theme, #409eff);
+    background: var(--vea-theme, #409eff);
     color: #ffffff;
   }
 }
@@ -1441,7 +1441,7 @@ onUnmounted(() => {
   flex-shrink: 0;
 
   &.mode-create {
-    background: #000000;
+    background: var(--vea-theme, #409eff);
     color: #ffffff;
   }
   &.mode-edit {
@@ -1489,7 +1489,7 @@ onUnmounted(() => {
     font-variant-numeric: tabular-nums;
 
     strong {
-      color: #000000;
+      color: #303133;
       font-weight: 800;
     }
 
@@ -1524,8 +1524,8 @@ onUnmounted(() => {
   cursor: pointer;
 
   &:hover {
-    border-color: #000000;
-    color: #000000;
+    border-color: var(--vea-theme, #409eff);
+    color: #303133;
   }
 }
 
@@ -1547,7 +1547,7 @@ onUnmounted(() => {
   }
   .p-price {
     font-weight: 800;
-    color: #000000;
+    color: #303133;
     font-size: 12px;
   }
 }
@@ -1579,7 +1579,7 @@ onUnmounted(() => {
   margin-bottom: 2px;
 
   .badge-black {
-    background: #000000;
+    background: var(--vea-theme, #409eff);
     color: #ffffff;
     font-size: 9.5px;
     font-weight: 900;
@@ -1592,8 +1592,8 @@ onUnmounted(() => {
     align-items: center;
     gap: 5px;
     background: #fafafa;
-    border: 1px solid #000000;
-    color: #000000;
+    border: 1px solid var(--vea-theme, #409eff);
+    color: #303133;
     font-size: 11px;
     font-weight: 800;
     padding: 5px 10px;
@@ -1602,7 +1602,7 @@ onUnmounted(() => {
 
     &.open,
     &:hover {
-      background: #000000;
+      background: var(--vea-theme, #409eff);
       color: #ffffff;
     }
 
@@ -1661,8 +1661,8 @@ onUnmounted(() => {
 
   .btn-mini-apply {
     background: #ffffff;
-    border: 1px solid #000000;
-    color: #000000;
+    border: 1px solid var(--vea-theme, #409eff);
+    color: #303133;
     font-size: 11px;
     font-weight: 800;
     padding: 5px 10px;
@@ -1671,7 +1671,7 @@ onUnmounted(() => {
     white-space: nowrap;
 
     &:hover:not(:disabled) {
-      background: #000000;
+      background: var(--vea-theme, #409eff);
       color: #ffffff;
     }
 
@@ -1705,7 +1705,7 @@ onUnmounted(() => {
     font-size: 11px;
     font-weight: 900;
     letter-spacing: 0.05em;
-    color: #171717;
+    color: #303133;
 
     em {
       font-style: normal;
@@ -1725,7 +1725,7 @@ onUnmounted(() => {
       background: none;
       border: none;
       padding: 0;
-      color: #171717;
+      color: #303133;
       font-weight: 700;
       font-size: 11px;
       cursor: pointer;
@@ -1749,7 +1749,7 @@ onUnmounted(() => {
   padding: 0 8px;
   background: #ffffff;
   border: 1px solid #d4d4d4;
-  color: #171717;
+  color: #303133;
   font-size: 12px;
   font-weight: 800;
   font-family: var(--font-mono);
@@ -1757,12 +1757,12 @@ onUnmounted(() => {
   transition: all 0.12s ease;
 
   &:hover {
-    border-color: #000000;
+    border-color: var(--vea-theme, #409eff);
   }
 
   &.active {
-    background: #000000;
-    border-color: #000000;
+    background: var(--vea-theme, #409eff);
+    border-color: var(--vea-theme, #409eff);
     color: #ffffff;
   }
 }
@@ -1775,7 +1775,7 @@ onUnmounted(() => {
   padding: 0 9px;
   background: #ffffff;
   border: 1px solid #d4d4d4;
-  color: #171717;
+  color: #303133;
   font-size: 11.5px;
   font-weight: 700;
   cursor: pointer;
@@ -1795,12 +1795,12 @@ onUnmounted(() => {
   }
 
   &:hover {
-    border-color: #000000;
+    border-color: var(--vea-theme, #409eff);
   }
 
   &.active {
-    background: #000000;
-    border-color: #000000;
+    background: var(--vea-theme, #409eff);
+    border-color: var(--vea-theme, #409eff);
     color: #ffffff;
 
     small {
@@ -1840,21 +1840,21 @@ onUnmounted(() => {
 .btn-secondary-sm {
   background: #ffffff;
   border: 1px solid #d4d4d4;
-  color: #171717;
+  color: #303133;
   font-size: 11.5px;
   font-weight: 700;
   padding: 7px 12px;
   cursor: pointer;
 
   &:hover {
-    border-color: #000000;
+    border-color: var(--vea-theme, #409eff);
   }
 }
 
 .btn-generate-now {
-  background: #000000;
+  background: var(--vea-theme, #409eff);
   color: #ffffff;
-  border: 1px solid #000000;
+  border: 1px solid var(--vea-theme, #409eff);
   padding: 7px 16px;
   font-size: 11.5px;
   font-weight: 900;
@@ -1862,7 +1862,7 @@ onUnmounted(() => {
   cursor: pointer;
 
   &:hover:not(:disabled) {
-    background: #262626;
+    background: var(--vea-theme-light-3, #66b1ff);
   }
 
   &:disabled {
@@ -1898,7 +1898,7 @@ onUnmounted(() => {
 
 .view-switch {
   display: inline-flex;
-  border: 1px solid #000000;
+  border: 1px solid var(--vea-theme, #409eff);
 
   .vs-btn {
     display: inline-flex;
@@ -1906,7 +1906,7 @@ onUnmounted(() => {
     gap: 5px;
     padding: 5px 11px;
     background: #ffffff;
-    color: #000000;
+    color: #303133;
     border: none;
     font-size: 11px;
     font-weight: 800;
@@ -1915,7 +1915,7 @@ onUnmounted(() => {
     cursor: pointer;
 
     &.active {
-      background: #000000;
+      background: var(--vea-theme, #409eff);
       color: #ffffff;
     }
   }
@@ -1955,7 +1955,7 @@ onUnmounted(() => {
   .dot {
     width: 9px;
     height: 9px;
-    border: 1px solid #000;
+    border: 1px solid var(--vea-theme, #409eff);
     display: inline-block;
 
     &.dot-exist { background: #eff6ff; border-color: #3b82f6; }
@@ -1983,7 +1983,7 @@ onUnmounted(() => {
 
 /* Quick Inspector Bar */
 .quick-inspector-bar {
-  border: 1.5px solid #000000;
+  border: 1.5px solid var(--vea-theme, #409eff);
   background: #fafafa;
   padding: 10px 12px;
   margin-bottom: 10px;
@@ -2076,8 +2076,8 @@ onUnmounted(() => {
     height: 24px;
     padding: 0 9px;
     background: #ffffff;
-    border: 1px solid #000000;
-    color: #000000;
+    border: 1px solid var(--vea-theme, #409eff);
+    color: #303133;
     font-size: 11px;
     font-weight: 800;
     cursor: pointer;
@@ -2088,7 +2088,7 @@ onUnmounted(() => {
       &:hover { background: #dc2626; color: #ffffff; }
     }
     &:hover {
-      background: #000000;
+      background: var(--vea-theme, #409eff);
       color: #ffffff;
     }
   }
@@ -2104,8 +2104,8 @@ onUnmounted(() => {
     cursor: pointer;
 
     &:hover {
-      border-color: #000000;
-      color: #000000;
+      border-color: var(--vea-theme, #409eff);
+      color: #303133;
     }
   }
 }
@@ -2123,7 +2123,7 @@ onUnmounted(() => {
     margin: 0;
     font-size: 14px;
     font-weight: 800;
-    color: #171717;
+    color: #303133;
   }
   .empty-sub {
     margin: 6px 0 14px;
@@ -2158,7 +2158,7 @@ onUnmounted(() => {
   }
 
   thead th {
-    background: #111111;
+    background: var(--vea-theme, #409eff);
     color: #ffffff;
     padding: 7px 5px;
 
@@ -2199,7 +2199,7 @@ onUnmounted(() => {
         color: #a3a3a3;
 
         .btn-fill-axis {
-          background: #262626;
+          background: var(--vea-theme-light-3, #66b1ff);
           border: 1px solid #525252;
           color: #e5e5e5;
           font-size: 9px;
@@ -2209,7 +2209,7 @@ onUnmounted(() => {
 
           &:hover {
             background: #ffffff;
-            color: #000000;
+            color: #303133;
             border-color: #ffffff;
           }
         }
@@ -2218,7 +2218,7 @@ onUnmounted(() => {
 
     &.row-total-head {
       min-width: 56px;
-      background: #262626;
+      background: var(--vea-theme-light-3, #66b1ff);
       font-size: 10.5px;
       font-weight: 900;
     }
@@ -2234,7 +2234,7 @@ onUnmounted(() => {
   }
 
   thead .sticky-color-col {
-    background: #000000;
+    background: var(--vea-theme, #409eff);
     z-index: 3;
   }
 
@@ -2260,7 +2260,7 @@ onUnmounted(() => {
 
       strong {
         font-size: 11.5px;
-        color: #000000;
+        color: #303133;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -2290,8 +2290,8 @@ onUnmounted(() => {
       cursor: pointer;
 
       &:hover {
-        border-color: #000000;
-        background: #000000;
+        border-color: var(--vea-theme, #409eff);
+        background: var(--vea-theme, #409eff);
         color: #ffffff;
       }
     }
@@ -2356,7 +2356,7 @@ onUnmounted(() => {
     }
 
     &.cell-selected {
-      outline: 2px solid #000000;
+      outline: 2px solid var(--vea-theme, #409eff);
       outline-offset: -1px;
       box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
     }
@@ -2406,7 +2406,7 @@ onUnmounted(() => {
       }
       &.revert {
         color: #d97706;
-        &:hover { color: #000000; }
+        &:hover { color: #303133; }
       }
     }
   }
@@ -2423,8 +2423,8 @@ onUnmounted(() => {
     transition: all 0.12s ease;
 
     &:hover {
-      border-color: #000000;
-      color: #000000;
+      border-color: var(--vea-theme, #409eff);
+      color: #303133;
       background: #f5f5f5;
     }
   }
@@ -2437,7 +2437,7 @@ onUnmounted(() => {
     strong {
       display: block;
       font-size: 12px;
-      color: #000000;
+      color: #303133;
     }
     small {
       font-size: 9.5px;
@@ -2457,7 +2457,7 @@ onUnmounted(() => {
     padding: 1px 4px;
     font-size: 10px;
     font-family: var(--font-mono);
-    color: #171717;
+    color: #303133;
   }
 }
 
@@ -2497,8 +2497,8 @@ onUnmounted(() => {
     cursor: pointer;
 
     &.active {
-      background: #000000;
-      border-color: #000000;
+      background: var(--vea-theme, #409eff);
+      border-color: var(--vea-theme, #409eff);
       color: #ffffff;
     }
 

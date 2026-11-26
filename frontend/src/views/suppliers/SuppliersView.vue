@@ -57,31 +57,39 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="Thao tác" width="115" fixed="right" align="center">
+        <el-table-column label="Thao tác" width="160" fixed="right" align="center" class-name="small-padding fixed-width">
           <template #default="{ row }">
-            <div class="row-actions">
-              <button class="action-btn" title="Xem chi tiết" @click="openDetail(row)">
-                <el-icon><View /></el-icon>
-              </button>
-              <button class="action-btn" title="Chỉnh sửa" @click="openEdit(row)">
-                <el-icon><Edit /></el-icon>
-              </button>
-              <el-dropdown
-                v-if="row.status === 'ACTIVE'"
-                trigger="click"
-                @command="(cmd) => handleSupplierAction(cmd, row)"
-              >
-                <button class="action-btn action-more" title="Thao tác khác">
-                  <el-icon><MoreFilled /></el-icon>
-                </button>
-                <template #dropdown>
-                  <el-dropdown-menu>
-                    <el-dropdown-item command="deactivate" style="color: #ef4444">
-                      ✕ Ngừng hợp tác
-                    </el-dropdown-item>
-                  </el-dropdown-menu>
-                </template>
-              </el-dropdown>
+            <div class="vea-table-actions">
+              <el-tooltip content="Xem chi tiết nhà cung cấp" placement="top" :show-after="200">
+                <el-button size="small" class="vea-icon-btn vea-icon-info" aria-label="Xem chi tiết" @click="openDetail(row)">
+                  <el-icon><View /></el-icon>
+                </el-button>
+              </el-tooltip>
+              <el-tooltip content="Chỉnh sửa nhà cung cấp" placement="top" :show-after="200">
+                <el-button size="small" class="vea-icon-btn vea-icon-primary" aria-label="Chỉnh sửa" @click="openEdit(row)">
+                  <el-icon><Edit /></el-icon>
+                </el-button>
+              </el-tooltip>
+              <el-tooltip v-if="row.status === 'ACTIVE'" content="Ngừng hợp tác" placement="top" :show-after="200">
+                <el-button
+                  size="small"
+                  class="vea-icon-btn vea-icon-warning"
+                  aria-label="Ngừng hợp tác"
+                  @click="handleDeactivate(row)"
+                >
+                  <el-icon><CircleClose /></el-icon>
+                </el-button>
+              </el-tooltip>
+              <el-tooltip v-if="authStore.isAdmin" content="Xóa mềm nhà cung cấp" placement="top" :show-after="200">
+                <el-button
+                  size="small"
+                  class="vea-icon-btn vea-icon-danger"
+                  aria-label="Xóa mềm"
+                  @click="handleSoftDelete(row)"
+                >
+                  <el-icon><Delete /></el-icon>
+                </el-button>
+              </el-tooltip>
             </div>
           </template>
         </el-table-column>
@@ -185,9 +193,13 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus, View, Edit, MoreFilled } from '@element-plus/icons-vue'
+import { Plus, View, Edit, CircleClose, Delete } from '@element-plus/icons-vue'
 import { supplierService } from '@/services/supplierService'
+import { softDeleteService } from '@/services/softDeleteService'
+import { useAuthStore } from '@/stores/auth'
 import { useDebouncedWatch } from '@/composables/useDebounce'
+
+const authStore = useAuthStore()
 
 const loading = ref(false)
 const saving = ref(false)
@@ -314,6 +326,18 @@ function handleDeactivate(row) {
   ).then(async () => {
     await supplierService.deactivateSupplier(row.id)
     ElMessage.success('Đã chuyển trạng thái sang Ngừng hợp tác')
+    loadData()
+  }).catch(() => {})
+}
+
+function handleSoftDelete(row) {
+  ElMessageBox.confirm(
+    `Bạn có chắc chắn muốn xóa mềm nhà cung cấp "${row.supplierName}"? Dữ liệu lịch sử nhập hàng vẫn được giữ nguyên.`,
+    'Xác nhận xóa mềm',
+    { type: 'warning', confirmButtonText: 'Xóa mềm', cancelButtonText: 'Hủy', confirmButtonClass: 'el-button--danger' }
+  ).then(async () => {
+    await softDeleteService.remove('suppliers', row.id)
+    ElMessage.success(`Đã xóa mềm nhà cung cấp ${row.supplierName}`)
     loadData()
   }).catch(() => {})
 }

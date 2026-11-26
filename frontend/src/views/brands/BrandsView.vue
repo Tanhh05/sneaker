@@ -56,38 +56,44 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column v-if="canManageCatalog" label="Thao tác" width="85" fixed="right" align="center">
+        <el-table-column v-if="canManageCatalog || authStore.isAdmin" label="Thao tác" width="130" fixed="right" align="center" class-name="small-padding fixed-width">
           <template #default="{ row }">
-            <div class="row-actions">
-              <button class="action-btn" title="Chỉnh sửa" @click="openEdit(row)">
-                <el-icon><Edit /></el-icon>
-              </button>
-              <el-dropdown
-                trigger="click"
-                @command="(cmd) => handleBrandAction(cmd, row)"
-              >
-                <button class="action-btn action-more" title="Thao tác khác">
-                  <el-icon><MoreFilled /></el-icon>
-                </button>
-                <template #dropdown>
-                  <el-dropdown-menu>
-                    <el-dropdown-item
-                      v-if="row.status === 'ACTIVE'"
-                      command="deactivate"
-                      style="color: #ef4444"
-                    >
-                      ✕ Ngừng sử dụng
-                    </el-dropdown-item>
-                    <el-dropdown-item
-                      v-else
-                      command="activate"
-                      style="color: #10b981"
-                    >
-                      ↻ Kích hoạt lại
-                    </el-dropdown-item>
-                  </el-dropdown-menu>
-                </template>
-              </el-dropdown>
+            <div class="vea-table-actions">
+              <el-tooltip v-if="canManageCatalog" content="Chỉnh sửa thương hiệu" placement="top" :show-after="200">
+                <el-button size="small" class="vea-icon-btn vea-icon-primary" aria-label="Sửa thương hiệu" @click="openEdit(row)">
+                  <el-icon><Edit /></el-icon>
+                </el-button>
+              </el-tooltip>
+              <el-tooltip v-if="canManageCatalog && row.status === 'ACTIVE'" content="Ngừng sử dụng" placement="top" :show-after="200">
+                <el-button
+                  size="small"
+                  class="vea-icon-btn vea-icon-warning"
+                  aria-label="Ngừng sử dụng"
+                  @click="handleDeactivate(row)"
+                >
+                  <el-icon><CircleClose /></el-icon>
+                </el-button>
+              </el-tooltip>
+              <el-tooltip v-else-if="canManageCatalog" content="Kích hoạt lại" placement="top" :show-after="200">
+                <el-button
+                  size="small"
+                  class="vea-icon-btn vea-icon-success"
+                  aria-label="Kích hoạt lại"
+                  @click="handleActivate(row)"
+                >
+                  <el-icon><CircleCheck /></el-icon>
+                </el-button>
+              </el-tooltip>
+              <el-tooltip v-if="authStore.isAdmin" content="Xóa mềm thương hiệu" placement="top" :show-after="200">
+                <el-button
+                  size="small"
+                  class="vea-icon-btn vea-icon-danger"
+                  aria-label="Xóa mềm"
+                  @click="handleSoftDelete(row)"
+                >
+                  <el-icon><Delete /></el-icon>
+                </el-button>
+              </el-tooltip>
             </div>
           </template>
         </el-table-column>
@@ -152,11 +158,14 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus, Edit, Close, MoreFilled } from '@element-plus/icons-vue'
+import { Plus, Edit, CircleClose, CircleCheck, Delete } from '@element-plus/icons-vue'
 import { brandService } from '@/services/brandService'
+import { softDeleteService } from '@/services/softDeleteService'
+import { useAuthStore } from '@/stores/auth'
 import { usePermission } from '@/composables/usePermission'
 import { useDebouncedWatch } from '@/composables/useDebounce'
 
+const authStore = useAuthStore()
 const { canManageCatalog } = usePermission()
 const loading = ref(false)
 const saving = ref(false)
@@ -296,6 +305,18 @@ async function handleActivate(row) {
   } catch (err) {
     ElMessage.error('Kích hoạt thương hiệu thất bại')
   }
+}
+
+function handleSoftDelete(row) {
+  ElMessageBox.confirm(
+    `Bạn có chắc chắn muốn xóa mềm thương hiệu "${row.brandName}"? Dữ liệu lịch sử vẫn được giữ nguyên trong hệ thống.`,
+    'Xác nhận xóa mềm',
+    { type: 'warning', confirmButtonText: 'Xóa mềm', cancelButtonText: 'Hủy', confirmButtonClass: 'el-button--danger' }
+  ).then(async () => {
+    await softDeleteService.remove('brands', row.id)
+    ElMessage.success(`Đã xóa mềm thương hiệu ${row.brandName}`)
+    loadData()
+  }).catch(() => {})
 }
 
 onMounted(() => {

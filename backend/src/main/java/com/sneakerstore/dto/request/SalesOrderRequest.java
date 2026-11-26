@@ -16,6 +16,7 @@ public class SalesOrderRequest {
     private String status = "COMPLETED";
     private String note;
     private String paymentReference;
+    private String voucherCode;
 
     // Tùy chọn phát hành hóa đơn VAT ngay tại POS
     private String invoiceType; // RETAIL (mặc định) hoặc VAT

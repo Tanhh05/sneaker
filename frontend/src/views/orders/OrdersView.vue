@@ -120,14 +120,16 @@
           </div>
 
           <!-- Reset Button -->
-          <el-button
-            class="btn-soft btn-reset"
-            :disabled="!hasActiveFilters"
-            @click="resetFilters"
-          >
-            <el-icon><RefreshLeft /></el-icon>
-            <span>Đặt lại bộ lọc</span>
-          </el-button>
+          <el-tooltip content="Đặt lại toàn bộ bộ lọc" placement="top">
+            <el-button
+              class="btn-soft btn-reset"
+              :disabled="!hasActiveFilters"
+              @click="resetFilters"
+            >
+              <el-icon><RefreshLeft /></el-icon>
+              <span>Đặt lại</span>
+            </el-button>
+          </el-tooltip>
         </div>
       </div>
 
@@ -178,15 +180,17 @@
         </div>
       </transition>
 
-      <!-- D. Optimized Order Data Table -->
+      <!-- D. Optimized Order Data Table (Uniform 2-line Rhythm & Vertically Aligned Action Rail) -->
       <div class="table-wrapper" v-loading="loading">
         <el-table
           ref="tableRef"
           :data="items"
           row-key="id"
+          stripe
           class="orders-table"
           style="width: 100%"
           @selection-change="handleSelectionChange"
+          @row-click="handleRowClick"
         >
           <template #empty>
             <el-empty description="Không có đơn hàng nào phù hợp với bộ lọc hiện tại" :image-size="90">
@@ -196,26 +200,26 @@
             </el-empty>
           </template>
 
-          <el-table-column type="selection" width="44" align="center" />
+          <el-table-column type="selection" width="42" align="center" />
 
-          <!-- 1. Mã đơn & Thời gian -->
-          <el-table-column label="Mã đơn & Thời gian" min-width="170">
+          <!-- 1. Mã đơn & Kênh bán (2-line compact) -->
+          <el-table-column label="Mã đơn & Thời gian" width="182">
             <template #default="{ row }">
               <div class="col-order-code">
-                <button
-                  type="button"
-                  class="order-code-tag"
-                  title="Xem nhanh chi tiết đơn hàng"
-                  @click="openQuickDrawer(row)"
-                >
-                  {{ row.orderCode }}
-                </button>
-                <div class="channel-row">
+                <div class="order-code-head">
+                  <button
+                    type="button"
+                    class="order-code-tag"
+                    title="Xem nhanh chi tiết đơn hàng"
+                    @click.stop="openQuickDrawer(row)"
+                  >
+                    {{ row.orderCode }}
+                  </button>
                   <span v-if="isOnlineOrder(row)" class="channel-pill channel-online">
-                    Online Store
+                    Online
                   </span>
                   <span v-else class="channel-pill channel-pos">
-                    Tại quầy
+                    POS
                   </span>
                 </div>
                 <div class="order-time-text">
@@ -225,12 +229,14 @@
             </template>
           </el-table-column>
 
-          <!-- 2. Khách hàng -->
-          <el-table-column label="Khách hàng" min-width="205">
+          <!-- 2. Khách hàng (2-line crisp) -->
+          <el-table-column label="Khách hàng" min-width="195">
             <template #default="{ row }">
               <div class="col-customer">
-                <div class="customer-name">{{ getDisplayCustomerName(row) }}</div>
-                <div class="customer-phone-row">
+                <div class="customer-head-line">
+                  <span class="customer-name">{{ getDisplayCustomerName(row) }}</span>
+                </div>
+                <div class="customer-sub-line">
                   <span class="phone-text">{{ getDisplayCustomerPhone(row) }}</span>
                   <button
                     v-if="hasCopyablePhone(row)"
@@ -241,26 +247,27 @@
                   >
                     <el-icon><CopyDocument /></el-icon>
                   </button>
-                </div>
-                <el-tooltip
-                  v-if="getShippingAddress(row)"
-                  :content="getShippingAddress(row)"
-                  placement="top"
-                  :show-after="400"
-                >
-                  <div class="customer-address">
-                    {{ getShippingAddress(row) }}
-                  </div>
-                </el-tooltip>
-                <div v-else-if="!isOnlineOrder(row) && row.employeeName" class="pos-staff-note">
-                  NV: {{ row.employeeName }}
+                  <template v-if="getShippingAddress(row)">
+                    <span class="sub-dot">&middot;</span>
+                    <el-tooltip
+                      :content="getShippingAddress(row)"
+                      placement="top"
+                      :show-after="350"
+                    >
+                      <span class="customer-address">{{ getShippingAddress(row) }}</span>
+                    </el-tooltip>
+                  </template>
+                  <template v-else-if="!isOnlineOrder(row) && row.employeeName">
+                    <span class="sub-dot">&middot;</span>
+                    <span class="pos-staff-note">NV: {{ row.employeeName }}</span>
+                  </template>
                 </div>
               </div>
             </template>
           </el-table-column>
 
-          <!-- 3. Sản phẩm trong đơn (Quick Glance) -->
-          <el-table-column label="Sản phẩm trong đơn" min-width="265">
+          <!-- 3. Sản phẩm trong đơn (Uniform 2-line Quick Glance + Inline Hover Popover) -->
+          <el-table-column label="Sản phẩm trong đơn" min-width="255">
             <template #default="{ row }">
               <div v-if="row.details && row.details.length > 0" class="col-products">
                 <div class="primary-product-row">
@@ -279,88 +286,87 @@
                       {{ row.details[0].productName || 'Sản phẩm' }}
                     </div>
                     <div class="product-variant-line">
-                      <span>Size {{ row.details[0].sizeValue || '-' }}</span>
+                      <span>EU {{ row.details[0].sizeValue || '-' }}</span>
                       <span class="dot-sep">/</span>
-                      <span>{{ row.details[0].colorName || '-' }}</span>
+                      <span class="color-trunc">{{ row.details[0].colorName || '-' }}</span>
                       <span class="qty-badge">x{{ row.details[0].quantity }}</span>
-                    </div>
-                  </div>
-                </div>
 
-                <!-- Popover for 2+ items -->
-                <div v-if="row.details.length > 1" class="more-items-wrap">
-                  <el-popover
-                    placement="right"
-                    :width="360"
-                    trigger="hover"
-                    popper-class="order-items-popover"
-                  >
-                    <template #reference>
-                      <span class="more-items-pill">
-                        +{{ row.details.length - 1 }} sản phẩm khác ({{ getTotalQty(row) }} đôi)
-                      </span>
-                    </template>
-                    <div class="popover-items-header">
-                      <span>Chi tiết {{ row.details.length }} dòng sản phẩm ({{ row.orderCode }})</span>
-                    </div>
-                    <div class="popover-items-list">
-                      <div
-                        v-for="(item, idx) in row.details"
-                        :key="item.id || idx"
-                        class="popover-item-row"
+                      <!-- Inline Popover pill for 2+ items (keeps uniform 2-line row height!) -->
+                      <el-popover
+                        v-if="row.details.length > 1"
+                        placement="right"
+                        :width="360"
+                        trigger="hover"
+                        popper-class="order-items-popover"
                       >
-                        <div class="popover-thumb-box">
-                          <img
-                            v-if="item.thumbnailUrl"
-                            :src="resolveThumbUrl(item.thumbnailUrl)"
-                            :alt="item.productName"
-                            class="product-thumb-img"
-                            @error="handleImgError"
-                          />
-                          <span v-else class="thumb-placeholder">AD</span>
+                        <template #reference>
+                          <span class="more-items-pill" @click.stop>
+                            +{{ row.details.length - 1 }} SP ({{ getTotalQty(row) }}đ)
+                          </span>
+                        </template>
+                        <div class="popover-items-header">
+                          <span>Chi tiết {{ row.details.length }} dòng sản phẩm ({{ row.orderCode }})</span>
                         </div>
-                        <div class="popover-item-info">
-                          <div class="popover-item-name">{{ item.productName }}</div>
-                          <div class="popover-item-sub">
-                            Size {{ item.sizeValue || '-' }} / {{ item.colorName || '-' }} &middot;
-                            <strong>x{{ item.quantity }}</strong>
+                        <div class="popover-items-list">
+                          <div
+                            v-for="(item, idx) in row.details"
+                            :key="item.id || idx"
+                            class="popover-item-row"
+                          >
+                            <div class="popover-thumb-box">
+                              <img
+                                v-if="item.thumbnailUrl"
+                                :src="resolveThumbUrl(item.thumbnailUrl)"
+                                :alt="item.productName"
+                                class="product-thumb-img"
+                                @error="handleImgError"
+                              />
+                              <span v-else class="thumb-placeholder">AD</span>
+                            </div>
+                            <div class="popover-item-info">
+                              <div class="popover-item-name">{{ item.productName }}</div>
+                              <div class="popover-item-sub">
+                                Size {{ item.sizeValue || '-' }} / {{ item.colorName || '-' }} &middot;
+                                <strong>x{{ item.quantity }}</strong>
+                              </div>
+                            </div>
+                            <div class="popover-item-price">
+                              {{ formatCurrency(item.subtotal) }}
+                            </div>
                           </div>
                         </div>
-                        <div class="popover-item-price">
-                          {{ formatCurrency(item.subtotal) }}
-                        </div>
-                      </div>
+                      </el-popover>
                     </div>
-                  </el-popover>
+                  </div>
                 </div>
               </div>
               <span v-else class="muted-empty">Chưa có dữ liệu sản phẩm</span>
             </template>
           </el-table-column>
 
-          <!-- 4. Tổng tiền & Trạng thái thanh toán -->
-          <el-table-column label="Tổng tiền & Thanh toán" min-width="180" align="right">
+          <!-- 4. Tổng tiền & Thanh toán (2-line inline badges) -->
+          <el-table-column label="Tổng tiền & Thanh toán" width="185" align="right">
             <template #default="{ row }">
               <div class="col-payment">
                 <div class="order-total-amount">{{ formatCurrency(row.finalAmount) }}</div>
-                <div class="payment-badges">
+                <div class="payment-badges-inline">
                   <template v-if="getEffectivePayment(row) === 'BANK_TRANSFER'">
-                    <span class="pay-tag pay-bank">Chuyển khoản</span>
+                    <span class="pay-tag pay-bank">CK</span>
                     <span v-if="isSepayMatched(row)" class="pay-status-badge status-sepay-paid">
-                      Đã khớp SePay
+                      ✓ SePay
                     </span>
                     <span v-else-if="row.status === 'CANCELLED'" class="pay-status-badge status-muted">
                       Đã hủy
                     </span>
                     <span v-else class="pay-status-badge status-unpaid">
-                      Chờ thanh toán
+                      Chờ TT
                     </span>
                   </template>
 
                   <template v-else-if="getEffectivePayment(row) === 'COD'">
                     <span class="pay-tag pay-cod">COD</span>
                     <span v-if="isCodCollected(row)" class="pay-status-badge status-cod-paid">
-                      Đã thu tiền
+                      ✓ Đã thu
                     </span>
                     <span v-else-if="row.status === 'CANCELLED'" class="pay-status-badge status-muted">
                       Đã hủy
@@ -373,7 +379,7 @@
                   <template v-else>
                     <span class="pay-tag pay-cash">Tiền mặt</span>
                     <span v-if="isCashPaid(row)" class="pay-status-badge status-cod-paid">
-                      Đã thu
+                      ✓ Đã thu
                     </span>
                   </template>
                 </div>
@@ -382,7 +388,7 @@
           </el-table-column>
 
           <!-- 5. Trạng thái đơn hàng -->
-          <el-table-column label="Trạng thái" width="145" align="center">
+          <el-table-column label="Trạng thái" width="132" align="center">
             <template #default="{ row }">
               <span class="status-pill" :class="`status-pill-${(row.status || '').toLowerCase()}`">
                 <span class="status-dot" />
@@ -391,69 +397,84 @@
             </template>
           </el-table-column>
 
-          <!-- 6. Thao tác nhanh (Quick Actions) -->
-          <el-table-column label="Thao tác nhanh" width="235" fixed="right" align="right">
+          <!-- 6. Thao tác (Right-pinned vertical icon rail + optional workflow CTA on left) -->
+          <el-table-column label="Thao tác" width="205" fixed="right" align="right" class-name="small-padding fixed-width">
             <template #default="{ row }">
-              <div class="quick-actions-cell">
-                <!-- Contextual 1-Click Action Button -->
-                <el-button
-                  v-if="row.status === 'PENDING' || row.status === 'DRAFT'"
-                  size="small"
-                  type="primary"
-                  class="ctx-action-btn ctx-approve"
-                  :loading="rowActionLoadingId === row.id"
-                  @click.stop="handleQuickTransition(row, 'CONFIRMED')"
-                >
-                  Duyệt đơn
-                </el-button>
-                <el-button
-                  v-else-if="row.status === 'CONFIRMED'"
-                  size="small"
-                  type="warning"
-                  class="ctx-action-btn ctx-ship"
-                  :loading="rowActionLoadingId === row.id"
-                  @click.stop="handleQuickTransition(row, 'SHIPPING')"
-                >
-                  Giao hàng
-                </el-button>
-                <el-button
-                  v-else-if="row.status === 'SHIPPING'"
-                  size="small"
-                  type="success"
-                  class="ctx-action-btn ctx-complete"
-                  :loading="rowActionLoadingId === row.id"
-                  @click.stop="handleQuickTransition(row, 'COMPLETED')"
-                >
-                  Giao thành công
-                </el-button>
+              <div class="vea-table-actions orders-action-rail">
+                <!-- Slot trái: Nút chuyển trạng thái 1-click (chỉ hiện khi cần xử lý) -->
+                <template v-if="row.status === 'PENDING' || row.status === 'DRAFT' || row.status === 'CONFIRMED' || row.status === 'SHIPPING'">
+                  <el-button
+                    v-if="row.status === 'PENDING' || row.status === 'DRAFT'"
+                    size="small"
+                    type="primary"
+                    class="vea-cta-btn"
+                    :loading="rowActionLoadingId === row.id"
+                    @click.stop="handleQuickTransition(row, 'CONFIRMED')"
+                  >
+                    <el-icon><Check /></el-icon>
+                    <span>Duyệt</span>
+                  </el-button>
+                  <el-button
+                    v-else-if="row.status === 'CONFIRMED'"
+                    size="small"
+                    type="warning"
+                    class="vea-cta-btn"
+                    :loading="rowActionLoadingId === row.id"
+                    @click.stop="handleQuickTransition(row, 'SHIPPING')"
+                  >
+                    <el-icon><Van /></el-icon>
+                    <span>Giao</span>
+                  </el-button>
+                  <el-button
+                    v-else-if="row.status === 'SHIPPING'"
+                    size="small"
+                    type="success"
+                    class="vea-cta-btn"
+                    :loading="rowActionLoadingId === row.id"
+                    @click.stop="handleQuickTransition(row, 'COMPLETED')"
+                  >
+                    <el-icon><CircleCheck /></el-icon>
+                    <span>Xong</span>
+                  </el-button>
+                  <span class="action-rail-sep" />
+                </template>
 
-                <!-- Utility Icons -->
-                <div class="icon-actions-group">
-                  <button
-                    type="button"
-                    class="icon-action-btn"
-                    title="Xem chi tiết đơn hàng"
-                    @click.stop="openDetailPage(row)"
-                  >
-                    <el-icon><View /></el-icon>
-                  </button>
-                  <button
-                    type="button"
-                    class="icon-action-btn"
-                    title="In hóa đơn / Phiếu đóng gói"
-                    @click.stop="openPrintInvoice(row)"
-                  >
-                    <el-icon><Printer /></el-icon>
-                  </button>
-                  <el-dropdown trigger="click" @command="(cmd) => handleRowMenuCommand(row, cmd)">
-                    <button
-                      type="button"
-                      class="icon-action-btn"
-                      title="Tác vụ khác"
-                      @click.stop
+                <!-- Slot phải: 3 nút icon luôn thẳng hàng dọc tuyệt đối trên mọi dòng -->
+                <div class="action-icon-rail">
+                  <el-tooltip content="Xem chi tiết đầy đủ" placement="top" :show-after="200">
+                    <el-button
+                      size="small"
+                      class="vea-icon-btn vea-icon-primary"
+                      aria-label="Xem chi tiết đơn hàng"
+                      @click.stop="openDetailPage(row)"
                     >
-                      <el-icon><MoreFilled /></el-icon>
-                    </button>
+                      <el-icon><View /></el-icon>
+                    </el-button>
+                  </el-tooltip>
+
+                  <el-tooltip content="In hóa đơn" placement="top" :show-after="200">
+                    <el-button
+                      size="small"
+                      class="vea-icon-btn vea-icon-info"
+                      aria-label="In hóa đơn"
+                      @click.stop="openPrintInvoice(row)"
+                    >
+                      <el-icon><Printer /></el-icon>
+                    </el-button>
+                  </el-tooltip>
+
+                  <el-dropdown trigger="click" @command="(cmd) => handleRowMenuCommand(row, cmd)">
+                    <span @click.stop>
+                      <el-tooltip content="Thêm thao tác" placement="top" :show-after="200">
+                        <el-button
+                          size="small"
+                          class="vea-icon-btn vea-icon-more"
+                          aria-label="Thêm thao tác"
+                        >
+                          <el-icon><MoreFilled /></el-icon>
+                        </el-button>
+                      </el-tooltip>
+                    </span>
                     <template #dropdown>
                       <el-dropdown-menu>
                         <el-dropdown-item command="QUICK_VIEW">
@@ -693,7 +714,9 @@ import {
   Check,
   Close,
   Edit,
-  Document
+  Document,
+  Van,
+  CircleCheck
 } from '@element-plus/icons-vue'
 import { orderService } from '@/services/orderService'
 import { formatCurrency } from '@/utils/formatters'
@@ -737,7 +760,7 @@ const activeStatusTab = ref('ALL')
 const filters = reactive({
   keyword: '',
   paymentMethod: '',
-  channel: '',
+  channel: 'POS',
   fromDate: null,
   toDate: null
 })
@@ -798,7 +821,7 @@ const hasActiveFilters = computed(() => {
   return Boolean(
     activeStatusTab.value !== 'ALL' ||
       filters.paymentMethod ||
-      filters.channel ||
+      filters.channel !== 'POS' ||
       (filters.keyword && filters.keyword.trim()) ||
       filters.fromDate ||
       filters.toDate
@@ -982,8 +1005,14 @@ function hydrateFromUrl() {
   const pm = typeof q.payment === 'string' ? q.payment.toUpperCase() : ''
   filters.paymentMethod = ['CASH', 'BANK_TRANSFER', 'COD'].includes(pm) ? pm : ''
 
-  const ch = typeof q.channel === 'string' ? q.channel.toUpperCase() : ''
-  filters.channel = ['POS', 'ONLINE'].includes(ch) ? ch : ''
+  const ch = typeof q.channel === 'string' ? q.channel.toUpperCase() : null
+  if (ch === 'ALL') {
+    filters.channel = ''
+  } else if (ch && ['POS', 'ONLINE'].includes(ch)) {
+    filters.channel = ch
+  } else {
+    filters.channel = 'POS'
+  }
 
   filters.keyword = typeof q.keyword === 'string' ? q.keyword : ''
   filters.fromDate = typeof q.from === 'string' && q.from ? q.from : null
@@ -1007,7 +1036,8 @@ function syncUrlQuery() {
     query.status = activeStatusTab.value
   }
   if (filters.paymentMethod) query.payment = filters.paymentMethod
-  if (filters.channel) query.channel = filters.channel
+  if (filters.channel === '') query.channel = 'ALL'
+  else if (filters.channel !== 'POS') query.channel = filters.channel
   if (filters.keyword && filters.keyword.trim()) query.keyword = filters.keyword.trim()
   if (filters.fromDate) query.from = filters.fromDate
   if (filters.toDate) query.to = filters.toDate
@@ -1113,7 +1143,7 @@ function resetFilters() {
   activeStatusTab.value = 'ALL'
   filters.keyword = ''
   filters.paymentMethod = ''
-  filters.channel = ''
+  filters.channel = 'POS'
   filters.fromDate = null
   filters.toDate = null
   dateRange.value = null
@@ -1142,6 +1172,11 @@ useDebouncedWatch(
 
 function handleSelectionChange(rows) {
   selectedRows.value = rows || []
+}
+
+function handleRowClick(row, column) {
+  if (!column || column.type === 'selection' || column.label === 'Thao tác') return
+  openQuickDrawer(row)
 }
 
 function clearSelection() {
@@ -1510,105 +1545,31 @@ function printPackingSlips(orders) {
   setTimeout(() => printWindow.print(), 200)
 }
 
-// ==================== EXCEL EXPORT ====================
+// ==================== EXCEL EXPORT (.xlsx thật từ Backend Apache POI) ====================
 
 async function handleExportExcel() {
   exporting.value = true
   try {
-    let rowsToExport = []
-    if (selectedRows.value.length > 0) {
-      rowsToExport = selectedRows.value
-    } else {
-      const res = await orderService.getOrders({
-        ...buildCommonFilterParams(),
-        status: activeStatusTab.value !== 'ALL' ? activeStatusTab.value : undefined,
-        page: 0,
-        size: 500
-      })
-      rowsToExport = res.data?.content || []
-    }
-
-    if (!rowsToExport.length) {
-      ElMessage.warning('Không có dữ liệu đơn hàng để xuất Excel')
-      return
-    }
-
-    const headers = [
-      'Mã đơn hàng',
-      'Kênh bán',
-      'Thời gian tạo',
-      'Khách hàng',
-      'Số điện thoại',
-      'Địa chỉ giao hàng',
-      'Sản phẩm trong đơn',
-      'Tổng số lượng',
-      'Tổng tiền (VNĐ)',
-      'Phương thức thanh toán',
-      'Trạng thái thanh toán',
-      'Trạng thái đơn hàng',
-      'Ghi chú'
-    ]
-
-    const bodyRows = rowsToExport.map((row) => {
-      const productsSummary = (row.details || [])
-        .map((d) => `${d.productName} (Size ${d.sizeValue || '-'} / ${d.colorName || '-'} x${d.quantity})`)
-        .join('; ')
-
-      let payState = 'Chưa thanh toán'
-      const pm = getEffectivePayment(row)
-      if (pm === 'BANK_TRANSFER') payState = isSepayMatched(row) ? 'Đã khớp SePay' : 'Chờ thanh toán'
-      else if (pm === 'COD') payState = isCodCollected(row) ? 'Đã thu tiền' : 'Chưa thu'
-      else payState = isCashPaid(row) ? 'Đã thu tại quầy' : 'Chờ thu'
-      if (row.status === 'CANCELLED') payState = 'Đã hủy'
-
-      return [
-        row.orderCode,
-        isOnlineOrder(row) ? 'Online Store' : 'Tại quầy (POS)',
-        formatCompactDateTime(row.orderDate),
-        getDisplayCustomerName(row),
-        getDisplayCustomerPhone(row),
-        getShippingAddress(row) || 'Tại cửa hàng',
-        productsSummary,
-        getTotalQty(row),
-        Number(row.finalAmount || 0),
-        getEffectivePaymentLabel(row),
-        payState,
-        getStatusLabel(row.status),
-        row.note || ''
-      ]
+    const res = await orderService.exportOrdersExcel({
+      ...buildCommonFilterParams(),
+      status: activeStatusTab.value !== 'ALL' ? activeStatusTab.value : undefined
     })
-
-    const tableRowsHtml = [
-      `<tr>${headers.map((h) => `<th style="background:#0f172a;color:#fff;font-weight:bold;border:1px solid #cbd5e1;padding:6px 10px">${escapeHtml(h)}</th>`).join('')}</tr>`,
-      ...bodyRows.map(
-        (cols) =>
-          `<tr>${cols
-            .map((val, idx) => {
-              const style =
-                idx === 4
-                  ? 'mso-number-format:"\\@";border:1px solid #e2e8f0;padding:5px 8px;'
-                  : idx === 8
-                    ? 'mso-number-format:"#,##0";text-align:right;font-weight:bold;border:1px solid #e2e8f0;padding:5px 8px;'
-                    : 'border:1px solid #e2e8f0;padding:5px 8px;'
-              return `<td style="${style}">${escapeHtml(val)}</td>`
-            })
-            .join('')}</tr>`
-      )
-    ].join('')
-
-    const excelHtml = `\uFEFF<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="UTF-8"/></head><body><table>${tableRowsHtml}</table></body></html>`
-
-    const blob = new Blob([excelHtml], { type: 'application/vnd.ms-excel;charset=utf-8;' })
+    const raw = res instanceof Blob ? res : (res?.data ?? res)
+    const blob = new Blob([raw], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    })
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
-    link.download = `ADHA_DonHang_${formatLocalYMD(new Date())}.xls`
+    link.download = `ADHA_DonHang_${formatLocalYMD(new Date())}.xlsx`
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
     URL.revokeObjectURL(url)
 
-    ElMessage.success(`Đã xuất ${rowsToExport.length} đơn hàng ra file Excel`)
+    ElMessage.success('Đã xuất danh sách đơn hàng ra file Excel (.xlsx) thành công')
+  } catch {
+    ElMessage.error('Không thể xuất file Excel đơn hàng')
   } finally {
     exporting.value = false
   }
@@ -1703,23 +1664,23 @@ onUnmounted(() => {
 
   :deep(.el-tabs__active-bar) {
     height: 2.5px;
-    background-color: #000000;
+    background-color: var(--vea-theme, #409eff);
   }
 
   :deep(.el-tabs__item) {
-    height: 48px;
-    font-size: 13px;
-    font-weight: 700;
-    color: #525252;
-    padding: 0 18px;
+    height: 40px;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #606266;
+    padding: 0 15px;
 
     &.is-active {
-      color: #000000;
-      font-weight: 800;
+      color: var(--vea-theme, #409eff);
+      font-weight: 700;
     }
 
     &:hover {
-      color: #000000;
+      color: var(--vea-theme, #409eff);
     }
   }
 }
@@ -1783,12 +1744,13 @@ onUnmounted(() => {
 
 /* Filters Toolbar */
 .filters-toolbar {
-  padding: 16px 22px;
-  background: #fafafa;
-  border-bottom: 1px solid #e5e5e5;
+  padding: 10px 16px;
+  background: #fafbfc;
+  border-bottom: 1px solid #e6ebf5;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
 .filter-row {
@@ -1836,19 +1798,26 @@ onUnmounted(() => {
   }
 
   :deep(.el-radio-button__original-radio:checked + .el-radio-button__inner) {
-    background-color: #111111;
-    border-color: #111111;
+    background-color: var(--vea-theme, #409eff);
+    border-color: var(--vea-theme, #409eff);
     color: #ffffff;
   }
 }
 
 .search-box-wrap {
   flex: 1;
-  min-width: 260px;
+  min-width: 220px;
 }
 
 .date-range-wrap {
-  width: 270px;
+  width: 245px;
+  flex-shrink: 0;
+
+  :deep(.el-date-editor) {
+    width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box;
+  }
 }
 
 .date-range-picker {
@@ -1857,6 +1826,7 @@ onUnmounted(() => {
 
 .btn-reset {
   flex-shrink: 0;
+  white-space: nowrap;
 }
 
 /* Batch Actions Bar */
@@ -1923,45 +1893,60 @@ onUnmounted(() => {
 .orders-table {
   :deep(th.el-table__cell) {
     background: #f8fafc !important;
-    color: #475569;
+    color: #515a6e;
     font-size: 12px;
     font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
-    padding: 11px 0;
+    letter-spacing: 0.01em;
+    padding: 10px 0;
   }
 
   :deep(td.el-table__cell) {
-    padding: 12px 0;
-    vertical-align: top;
+    padding: 9px 0;
+    vertical-align: middle;
+  }
+
+  :deep(.el-table__row) {
+    cursor: pointer;
+    transition: background-color 0.14s ease;
+
+    &:hover > td.el-table__cell {
+      background-color: #f4f9ff !important;
+    }
   }
 }
 
-/* Col 1: Order Code & Time */
+/* Col 1: Order Code & Time (2-line compact) */
 .col-order-code {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 5px;
+  gap: 4px;
+}
+
+.order-code-head {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .order-code-tag {
   display: inline-flex;
   align-items: center;
-  padding: 3px 9px;
+  padding: 2px 8px;
   border-radius: 4px;
-  border: 1px solid #cbd5e1;
-  background: #f8fafc;
-  color: #0f172a;
+  border: 1px solid var(--vea-theme-light-7, #c6e2ff);
+  background: var(--vea-theme-light-9, #ecf5ff);
+  color: var(--vea-theme, #409eff);
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 12.5px;
-  font-weight: 800;
+  font-weight: 700;
   cursor: pointer;
+  white-space: nowrap;
   transition: all 0.15s ease;
 
   &:hover {
-    background: #0f172a;
-    border-color: #0f172a;
+    background: var(--vea-theme, #409eff);
+    border-color: var(--vea-theme, #409eff);
     color: #ffffff;
   }
 }
@@ -1969,94 +1954,121 @@ onUnmounted(() => {
 .channel-pill {
   display: inline-flex;
   align-items: center;
-  padding: 1px 7px;
-  border-radius: 4px;
-  font-size: 11px;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 10.5px;
   font-weight: 700;
-  letter-spacing: 0.01em;
+  white-space: nowrap;
 
   &.channel-pos {
-    background: #0f172a;
-    color: #ffffff;
+    background: #e7faf0;
+    color: #13ce66;
+    border: 1px solid #d0f5e0;
   }
 
   &.channel-online {
-    background: #fff7ed;
-    color: #c2410c;
-    border: 1px solid #fdba74;
+    background: var(--vea-theme-light-9, #ecf5ff);
+    color: var(--vea-theme, #409eff);
+    border: 1px solid var(--vea-theme-light-7, #c6e2ff);
   }
 }
 
 .order-time-text {
-  font-size: 12px;
-  color: #64748b;
+  font-size: 11.5px;
+  color: #8c95a6;
   font-variant-numeric: tabular-nums;
 }
 
-/* Col 2: Customer */
+/* Col 2: Customer (2-line crisp) */
 .col-customer {
   display: flex;
   flex-direction: column;
   gap: 3px;
+  min-width: 0;
+}
+
+.customer-head-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
 }
 
 .customer-name {
-  font-size: 13.5px;
+  font-size: 13px;
   font-weight: 700;
-  color: #0f172a;
+  color: #303133;
   line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.customer-phone-row {
-  display: inline-flex;
+.customer-sub-line {
+  display: flex;
   align-items: center;
-  gap: 5px;
-  font-size: 12.5px;
-  color: #334155;
+  gap: 4px;
+  min-width: 0;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.phone-text {
   font-variant-numeric: tabular-nums;
+  color: #475569;
+  font-weight: 500;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.sub-dot {
+  color: #cbd5e1;
+  flex-shrink: 0;
 }
 
 .copy-phone-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
   border: 1px solid transparent;
   border-radius: 4px;
   background: transparent;
-  color: #64748b;
+  color: #94a3b8;
   cursor: pointer;
   padding: 0;
+  flex-shrink: 0;
   transition: all 0.15s ease;
 
   &:hover {
-    background: #f1f5f9;
-    border-color: #cbd5e1;
-    color: #0f172a;
+    background: var(--vea-theme-light-9, #ecf5ff);
+    border-color: var(--vea-theme-light-7, #c6e2ff);
+    color: var(--vea-theme, #409eff);
   }
 }
 
 .customer-address {
-  font-size: 12px;
-  color: #64748b;
-  line-height: 1.35;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
+  font-size: 11.5px;
+  color: #8c95a6;
+  white-space: nowrap;
   overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
 }
 
 .pos-staff-note {
   font-size: 11.5px;
-  color: #64748b;
+  color: #8c95a6;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Col 3: Products Quick Glance */
 .col-products {
   display: flex;
   flex-direction: column;
-  gap: 6px;
 }
 
 .primary-product-row {
@@ -2066,10 +2078,10 @@ onUnmounted(() => {
 }
 
 .product-thumb-box {
-  width: 42px;
-  height: 42px;
+  width: 38px;
+  height: 38px;
   border-radius: 5px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid #e6ebf5;
   background: #f8fafc;
   overflow: hidden;
   flex-shrink: 0;
@@ -2086,7 +2098,7 @@ onUnmounted(() => {
 }
 
 .thumb-placeholder {
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 800;
   color: #94a3b8;
 }
@@ -2097,9 +2109,9 @@ onUnmounted(() => {
 }
 
 .product-name {
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 600;
-  color: #0f172a;
+  color: #303133;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -2109,10 +2121,18 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 4px;
-  flex-wrap: wrap;
-  font-size: 12px;
+  flex-wrap: nowrap;
+  font-size: 11.5px;
   color: #64748b;
   margin-top: 2px;
+  min-width: 0;
+}
+
+.color-trunc {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 90px;
 }
 
 .dot-sep {
@@ -2120,30 +2140,34 @@ onUnmounted(() => {
 }
 
 .qty-badge {
-  margin-left: 3px;
+  margin-left: 2px;
   padding: 0 5px;
-  border-radius: 4px;
+  border-radius: 3px;
   background: #f1f5f9;
-  color: #0f172a;
+  color: #303133;
   font-weight: 700;
-  font-size: 11.5px;
+  font-size: 11px;
+  flex-shrink: 0;
 }
 
 .more-items-pill {
   display: inline-flex;
   align-items: center;
-  padding: 2px 8px;
-  border-radius: 4px;
-  background: #f1f5f9;
-  border: 1px dashed #94a3b8;
-  color: #334155;
-  font-size: 11.5px;
-  font-weight: 600;
+  margin-left: 4px;
+  padding: 0 6px;
+  border-radius: 3px;
+  background: var(--vea-theme-light-9, #ecf5ff);
+  border: 1px solid var(--vea-theme-light-7, #c6e2ff);
+  color: var(--vea-theme, #409eff);
+  font-size: 10.5px;
+  font-weight: 700;
   cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
 
   &:hover {
-    background: #e2e8f0;
-    color: #0f172a;
+    background: var(--vea-theme, #409eff);
+    color: #ffffff;
   }
 }
 
@@ -2216,26 +2240,28 @@ onUnmounted(() => {
   white-space: nowrap;
 }
 
-/* Col 4: Amount & Payment */
+/* Col 4: Amount & Payment (2-line inline badges) */
 .col-payment {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 5px;
+  gap: 4px;
 }
 
 .order-total-amount {
-  font-size: 14.5px;
+  font-size: 14px;
   font-weight: 800;
   color: #dc2626;
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
-.payment-badges {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
+.payment-badges-inline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
   gap: 4px;
+  flex-wrap: nowrap;
 }
 
 .pay-tag {
@@ -2346,46 +2372,26 @@ onUnmounted(() => {
   }
 }
 
-/* Col 6: Quick Actions */
-.quick-actions-cell {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 6px;
+/* Col 6: Quick Actions — Right-pinned vertical icon rail */
+.orders-action-rail {
+  width: 100%;
+  justify-content: flex-end !important;
+  padding-right: 4px;
 }
 
-.ctx-action-btn {
-  border-radius: 4px !important;
-  font-weight: 700;
-  font-size: 12px;
-  padding: 5px 10px;
-  height: 28px;
+.action-rail-sep {
+  width: 1px;
+  height: 18px;
+  background: #e6ebf5;
+  margin: 0 2px;
+  flex-shrink: 0;
 }
 
-.icon-actions-group {
+.action-icon-rail {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-}
-
-.icon-action-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 4px;
-  border: 1px solid #e2e8f0;
-  background: #ffffff;
-  color: #475569;
-  cursor: pointer;
-  transition: all 0.15s ease;
-
-  &:hover {
-    border-color: #0f172a;
-    color: #0f172a;
-    background: #f8fafc;
-  }
+  gap: 5px;
+  flex-shrink: 0;
 }
 
 :deep(.dropdown-danger-item) {
@@ -2537,7 +2543,7 @@ onUnmounted(() => {
   align-items: center;
   margin-top: 12px;
   padding-top: 10px;
-  border-top: 1.5px solid #0f172a;
+  border-top: 1.5px solid #e2e8f0;
   font-size: 14px;
 
   strong {
@@ -2562,7 +2568,7 @@ onUnmounted(() => {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #0f172a;
+  background: var(--vea-theme, #409eff);
   margin-top: 5px;
   flex-shrink: 0;
 }

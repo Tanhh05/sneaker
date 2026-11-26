@@ -31,6 +31,7 @@
           @change="onCustomDateChange"
         />
         <el-select
+          v-if="showGroupBy"
           :model-value="modelValue.groupBy"
           size="small"
           class="group-select"
@@ -138,6 +139,10 @@ const props = defineProps({
   categories: {
     type: Array,
     default: () => []
+  },
+  showGroupBy: {
+    type: Boolean,
+    default: true
   }
 })
 
@@ -312,14 +317,14 @@ function handleReset() {
   transition: all 0.14s ease;
 
   &:hover {
-    border-color: #000000;
-    color: #000000;
+    border-color: var(--vea-theme, #409eff);
+    color: #303133;
     background: #ffffff;
   }
 
   &.active {
-    background: #111111;
-    border-color: #111111;
+    background: var(--vea-theme, #409eff);
+    border-color: var(--vea-theme, #409eff);
     color: #ffffff;
   }
 }

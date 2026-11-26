@@ -250,10 +250,118 @@
           <div class="summary-card">
             <h2 class="summary-heading">TÓM TẮT ĐƠN HÀNG</h2>
 
+            <!-- VOUCHER SECTION AT CHECKOUT -->
+            <div class="checkout-voucher-box">
+              <div class="voucher-box-header">
+                <span class="voucher-box-title">MÃ GIẢM GIÁ / VOUCHER</span>
+                <span v-if="availableVouchers.length" class="voucher-count-pill">
+                  {{ availableVouchers.filter(v => v.eligible).length }}/{{ availableVouchers.length }} áp dụng được
+                </span>
+              </div>
+
+              <div class="voucher-input-group">
+                <input
+                  v-model="voucherInput"
+                  type="text"
+                  class="voucher-code-input"
+                  placeholder="Nhập mã voucher (VD: SNEAKER10)..."
+                  @keyup.enter="applyVoucherCode()"
+                  @input="voucherInput = voucherInput.toUpperCase()"
+                />
+                <button
+                  type="button"
+                  class="btn-apply-voucher"
+                  :disabled="validatingVoucher || !voucherInput.trim()"
+                  @click="applyVoucherCode()"
+                >
+                  {{ validatingVoucher ? '...' : 'ÁP DỤNG' }}
+                </button>
+              </div>
+
+              <!-- Applied Success Banner -->
+              <div v-if="appliedVoucher" class="voucher-applied-banner">
+                <div class="applied-info">
+                  <strong>✓ {{ appliedVoucher.appliedCode }}</strong>
+                  <span>Đã giảm {{ formatCurrency(appliedVoucher.discountAmount) }}</span>
+                </div>
+                <button type="button" class="btn-remove-voucher" @click="removeVoucher">Bỏ chọn</button>
+              </div>
+
+              <!-- Validation Error Message -->
+              <div v-else-if="voucherError" class="voucher-error-msg">
+                {{ voucherError }}
+              </div>
+
+              <!-- Available Vouchers Wallet + Public Codes -->
+              <div v-if="availableVouchers.length > 0" class="voucher-wallet-section">
+                <div class="wallet-label">
+                  {{ authStore.isAuthenticated ? 'Kho voucher của tôi & ưu đãi hiện có:' : 'Ưu đãi có thể áp dụng ngay:' }}
+                </div>
+                <div class="voucher-cards-list">
+                  <div
+                    v-for="v in availableVouchers"
+                    :key="v.code"
+                    class="voucher-ticket"
+                    :class="{
+                      selected: appliedVoucher?.appliedCode === v.code,
+                      ineligible: !v.eligible
+                    }"
+                  >
+                    <div class="ticket-main">
+                      <div class="ticket-top-row">
+                        <span class="ticket-code">{{ v.code }}</span>
+                        <span class="ticket-source" :class="v.sourceType === 'PERSONAL' ? 'personal' : 'public'">
+                          {{ v.sourceType === 'PERSONAL' ? 'CÁ NHÂN' : 'CÔNG KHAI' }}
+                        </span>
+                      </div>
+                      <div class="ticket-discount">
+                        {{ v.discountType === 'PERCENT'
+                          ? `Giảm ${v.discountValue}%${v.maxDiscountAmount ? ` (tối đa ${formatCurrency(v.maxDiscountAmount)})` : ''}`
+                          : `Giảm trực tiếp ${formatCurrency(v.discountValue)}` }}
+                      </div>
+                      <div class="ticket-meta">
+                        <span>Đơn tối thiểu {{ formatCurrency(v.minOrderAmount || 0) }}</span>
+                        <span v-if="v.remainingDays !== null && v.remainingDays <= 7" class="exp-warn">
+                          · Còn {{ v.remainingDays }} ngày
+                        </span>
+                      </div>
+                      <div v-if="!v.eligible && v.ineligibleReason" class="ticket-reason">
+                        {{ v.ineligibleReason }}
+                      </div>
+                    </div>
+                    <div class="ticket-action">
+                      <button
+                        v-if="appliedVoucher?.appliedCode === v.code"
+                        type="button"
+                        class="btn-ticket-use active"
+                        @click="removeVoucher"
+                      >
+                        Đang dùng ✓
+                      </button>
+                      <button
+                        v-else
+                        type="button"
+                        class="btn-ticket-use"
+                        :disabled="!v.eligible"
+                        @click="applyVoucherCode(v.code)"
+                      >
+                        {{ v.eligible ? 'Áp dụng' : 'Chưa đủ' }}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <div class="summary-calc-rows">
               <div class="calc-row">
                 <span class="calc-label">Tạm tính ({{ cartStore.totalItems }} đôi):</span>
                 <span class="calc-val">{{ formatCurrency(cartStore.totalPrice) }}</span>
+              </div>
+
+              <div v-if="voucherDiscount > 0" class="calc-row discount-row">
+                <span class="calc-label">Giảm giá voucher ({{ appliedVoucher?.appliedCode }}):</span>
+                <span class="calc-val discount-val">-{{ formatCurrency(voucherDiscount) }}</span>
               </div>
 
               <div class="calc-row">
@@ -558,12 +666,14 @@ onMounted(async () => {
   await loadProvinces()
   fillCustomerFromAuth(true)
   enrichCartThumbnails()
+  loadAvailableVouchers()
 })
 
 watch(() => authStore.isAuthenticated, (isAuth) => {
   if (isAuth) {
     fillCustomerFromAuth(true)
   }
+  loadAvailableVouchers()
 })
 
 watch(
@@ -571,9 +681,100 @@ watch(
   (newUser) => {
     if (newUser) {
       fillCustomerFromAuth(true)
+      loadAvailableVouchers()
     }
   },
   { deep: true }
+)
+
+// ==================== CHECKOUT VOUCHER LOGIC ====================
+const voucherInput = ref('')
+const availableVouchers = ref([])
+const appliedVoucher = ref(null)
+const voucherError = ref('')
+const validatingVoucher = ref(false)
+let voucherFetchTimer = null
+
+const voucherDiscount = computed(() => Number(appliedVoucher.value?.discountAmount || 0))
+
+const loadAvailableVouchers = async () => {
+  try {
+    const res = await storeService.getAvailableVouchers({
+      phone: form.customerPhone?.trim() || authStore.user?.phone || undefined,
+      email: form.customerEmail?.trim() || authStore.user?.email || undefined,
+      orderAmount: cartStore.totalPrice || 0
+    })
+    availableVouchers.value = res?.data || []
+  } catch (err) {
+    console.error('Lỗi tải danh sách voucher:', err)
+  }
+}
+
+const applyVoucherCode = async (codeOverride) => {
+  const code = (codeOverride || voucherInput.value || '').trim().toUpperCase()
+  if (!code) return
+  voucherInput.value = code
+  validatingVoucher.value = true
+  voucherError.value = ''
+  try {
+    const res = await storeService.validateVoucher({
+      voucherCode: code,
+      channel: 'ONLINE',
+      orderAmount: cartStore.totalPrice,
+      customerPhone: form.customerPhone?.trim() || authStore.user?.phone || null,
+      customerEmail: form.customerEmail?.trim() || authStore.user?.email || null
+    })
+    const data = res?.data
+    if (data?.valid) {
+      appliedVoucher.value = data
+      voucherError.value = ''
+      ElMessage.success(data.message || `Đã áp dụng voucher ${data.appliedCode}`)
+    } else {
+      appliedVoucher.value = null
+      voucherError.value = data?.message || 'Mã voucher không hợp lệ'
+    }
+  } catch (err) {
+    appliedVoucher.value = null
+    voucherError.value = err?.response?.data?.message || 'Không thể kiểm tra mã voucher'
+  } finally {
+    validatingVoucher.value = false
+  }
+}
+
+const removeVoucher = () => {
+  appliedVoucher.value = null
+  voucherInput.value = ''
+  voucherError.value = ''
+}
+
+watch(
+  () => [cartStore.totalPrice, form.customerPhone, form.customerEmail],
+  () => {
+    clearTimeout(voucherFetchTimer)
+    voucherFetchTimer = setTimeout(async () => {
+      await loadAvailableVouchers()
+      if (appliedVoucher.value && cartStore.totalPrice > 0) {
+        try {
+          const res = await storeService.validateVoucher({
+            voucherCode: appliedVoucher.value.appliedCode,
+            channel: 'ONLINE',
+            orderAmount: cartStore.totalPrice,
+            customerPhone: form.customerPhone?.trim() || authStore.user?.phone || null,
+            customerEmail: form.customerEmail?.trim() || authStore.user?.email || null
+          })
+          if (res?.data?.valid) {
+            appliedVoucher.value = res.data
+            voucherError.value = ''
+          } else {
+            appliedVoucher.value = null
+            voucherError.value = res?.data?.message || 'Mã voucher không còn đủ điều kiện cho giỏ hàng hiện tại'
+          }
+        } catch {
+          appliedVoucher.value = null
+        }
+      }
+    }, 350)
+  }
 )
 
 const rules = {
@@ -590,7 +791,7 @@ const rules = {
 
 const finalTotal = computed(() => {
   const shipFee = cartStore.totalPrice >= 1000000 ? 0 : 30000
-  return cartStore.totalPrice + shipFee
+  return Math.max(0, cartStore.totalPrice - voucherDiscount.value) + shipFee
 })
 
 const confirmClearCart = () => {
@@ -631,6 +832,7 @@ const submitOrder = async () => {
         wardName: form.wardName || null,
         streetAddress: form.streetAddress || null,
         paymentMethod: form.paymentMethod,
+        voucherCode: appliedVoucher.value?.appliedCode || null,
         note: form.note || null,
         items: cartStore.items.map(item => ({
           variantId: item.variantId,
@@ -963,7 +1165,7 @@ const submitOrder = async () => {
       .item-name {
         font-size: 15px;
         font-weight: 800;
-        color: #0a0a0a;
+        color: #000000;
         margin: 0 0 8px;
         line-height: 1.3;
         cursor: pointer;
@@ -1101,7 +1303,7 @@ const submitOrder = async () => {
       .preview-address {
         font-size: 13px;
         font-weight: 700;
-        color: #0f172a;
+        color: #000000;
         line-height: 1.4;
       }
     }
@@ -1321,6 +1523,244 @@ const submitOrder = async () => {
         color: #000000;
       }
     }
+  }
+}
+
+.checkout-voucher-box {
+  margin-bottom: 20px;
+  padding: 16px;
+  background: #fafafa;
+  border: 1px solid #e5e5e5;
+
+  .voucher-box-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    .voucher-box-title {
+      font-size: 11.5px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      color: #000000;
+    }
+    .voucher-count-pill {
+      font-size: 11px;
+      font-weight: 700;
+      color: #059669;
+    }
+  }
+
+  .voucher-input-group {
+    display: flex;
+    gap: 8px;
+
+    .voucher-code-input {
+      flex: 1;
+      height: 38px;
+      padding: 0 12px;
+      border: 1px solid #d4d4d4;
+      background: #ffffff;
+      font-family: inherit;
+      font-size: 12.5px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      color: #000000;
+      outline: none;
+      &:focus {
+        border-color: #000000;
+      }
+    }
+
+    .btn-apply-voucher {
+      height: 38px;
+      padding: 0 16px;
+      background: #000000;
+      color: #ffffff;
+      border: none;
+      font-family: inherit;
+      font-size: 11.5px;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      cursor: pointer;
+      &:hover:not(:disabled) {
+        background: #262626;
+      }
+      &:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+      }
+    }
+  }
+
+  .voucher-applied-banner {
+    margin-top: 10px;
+    padding: 8px 12px;
+    background: #ecfdf5;
+    border: 1px solid #a7f3d0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    color: #065f46;
+
+    .applied-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .btn-remove-voucher {
+      background: none;
+      border: none;
+      color: #dc2626;
+      font-size: 11.5px;
+      font-weight: 700;
+      text-decoration: underline;
+      cursor: pointer;
+    }
+  }
+
+  .voucher-error-msg {
+    margin-top: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #dc2626;
+  }
+
+  .voucher-wallet-section {
+    margin-top: 12px;
+
+    .wallet-label {
+      font-size: 11.5px;
+      font-weight: 700;
+      color: #525252;
+      margin-bottom: 8px;
+    }
+
+    .voucher-cards-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 240px;
+      overflow-y: auto;
+    }
+
+    .voucher-ticket {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      background: #ffffff;
+      border: 1px solid #e5e5e5;
+      transition: border-color 0.15s ease;
+
+      &.selected {
+        border-color: #000000;
+        box-shadow: inset 3px 0 0 #000000;
+        background: #f9fafb;
+      }
+
+      &.ineligible {
+        opacity: 0.72;
+        background: #fcfcfc;
+      }
+
+      .ticket-main {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .ticket-top-row {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-bottom: 3px;
+
+        .ticket-code {
+          font-family: monospace;
+          font-size: 12.5px;
+          font-weight: 900;
+          color: #000000;
+          letter-spacing: 0.04em;
+        }
+
+        .ticket-source {
+          font-size: 9px;
+          font-weight: 800;
+          padding: 1px 5px;
+          letter-spacing: 0.05em;
+
+          &.personal {
+            background: #000000;
+            color: #ffffff;
+          }
+          &.public {
+            background: #f1f5f9;
+            color: #334155;
+            border: 1px solid #cbd5e1;
+          }
+        }
+      }
+
+      .ticket-discount {
+        font-size: 12.5px;
+        font-weight: 800;
+        color: #dc2626;
+      }
+
+      .ticket-meta {
+        font-size: 11px;
+        color: #737373;
+        margin-top: 2px;
+        .exp-warn {
+          color: #d97706;
+          font-weight: 700;
+        }
+      }
+
+      .ticket-reason {
+        font-size: 11px;
+        color: #dc2626;
+        margin-top: 3px;
+        font-weight: 600;
+      }
+
+      .btn-ticket-use {
+        padding: 6px 11px;
+        font-size: 11px;
+        font-weight: 800;
+        border: 1px solid #000000;
+        background: #ffffff;
+        color: #000000;
+        cursor: pointer;
+        white-space: nowrap;
+        transition: all 0.14s ease;
+
+        &:hover:not(:disabled) {
+          background: #000000;
+          color: #ffffff;
+        }
+
+        &.active {
+          background: #000000;
+          color: #ffffff;
+        }
+
+        &:disabled {
+          border-color: #d4d4d4;
+          color: #a3a3a3;
+          cursor: not-allowed;
+        }
+      }
+    }
+  }
+}
+
+.summary-calc-rows .calc-row.discount-row {
+  .discount-val {
+    color: #dc2626;
+    font-weight: 800;
   }
 }
 </style>

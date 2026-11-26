@@ -25,10 +25,11 @@ public interface ProductVariantRepository extends JpaRepository<ProductVariant, 
     List<ProductVariant> findByIdIn(Collection<Long> ids);
 
     @EntityGraph(attributePaths = {"product", "product.brand", "product.category", "size", "color"})
-    List<ProductVariant> findByProductIdOrderByIdAsc(Long productId);
+    @Query("SELECT pv FROM ProductVariant pv WHERE pv.deleted = false AND pv.product.deleted = false AND pv.product.id = :productId ORDER BY pv.id ASC")
+    List<ProductVariant> findByProductIdOrderByIdAsc(@Param("productId") Long productId);
 
     @EntityGraph(attributePaths = {"product", "product.brand", "product.category", "size", "color"})
-    @Query("SELECT pv FROM ProductVariant pv WHERE " +
+    @Query("SELECT pv FROM ProductVariant pv WHERE pv.deleted = false AND pv.product.deleted = false AND " +
            "(:keyword IS NULL OR :keyword = '' OR LOWER(pv.sku) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
            "OR LOWER(pv.product.productName) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
            "OR LOWER(pv.product.productCode) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
@@ -44,6 +45,7 @@ public interface ProductVariantRepository extends JpaRepository<ProductVariant, 
                                         Pageable pageable);
 
     @EntityGraph(attributePaths = {"product", "product.brand", "product.category", "size", "color"})
+    @Query("SELECT pv FROM ProductVariant pv WHERE pv.deleted = false AND pv.product.deleted = false ORDER BY pv.id ASC")
     List<ProductVariant> findAllByOrderByIdAsc();
 }
 

@@ -179,7 +179,8 @@ async function handleDownloadPdf() {
   downloadingPdf.value = true
   try {
     const res = await invoiceService.downloadPdf(props.invoice.id)
-    const blob = new Blob([res.data], { type: 'application/pdf' })
+    const raw = res instanceof Blob ? res : (res?.data ?? res)
+    const blob = new Blob([raw], { type: 'application/pdf' })
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url

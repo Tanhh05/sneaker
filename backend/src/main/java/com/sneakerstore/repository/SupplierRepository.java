@@ -13,7 +13,7 @@ public interface SupplierRepository extends JpaRepository<Supplier, Long> {
 
     boolean existsBySupplierCodeIgnoreCase(String supplierCode);
 
-    @Query("SELECT s FROM Supplier s WHERE " +
+    @Query("SELECT s FROM Supplier s WHERE s.deleted = false AND " +
            "(:keyword IS NULL OR :keyword = '' OR LOWER(s.supplierCode) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
            "OR LOWER(s.supplierName) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
            "OR LOWER(s.phone) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
@@ -23,6 +23,7 @@ public interface SupplierRepository extends JpaRepository<Supplier, Long> {
                                    @Param("status") String status,
                                    Pageable pageable);
 
+    @Query("SELECT s FROM Supplier s WHERE s.deleted = false ORDER BY s.supplierName ASC")
     List<Supplier> findAllByOrderBySupplierNameAsc();
 }
 

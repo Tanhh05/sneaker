@@ -36,6 +36,7 @@ public class StoreOrderRequest {
 
     private String paymentMethod; // CASH (COD) hoặc BANK_TRANSFER
     private String note;
+    private String voucherCode;
 
     @NotEmpty(message = "Giỏ hàng phải có ít nhất 1 sản phẩm")
     @Valid

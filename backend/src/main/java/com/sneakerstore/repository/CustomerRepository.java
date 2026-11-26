@@ -29,7 +29,7 @@ public interface CustomerRepository extends JpaRepository<Customer, Long> {
 
     boolean existsByEmail(String email);
 
-    @Query("SELECT c FROM Customer c WHERE " +
+    @Query("SELECT c FROM Customer c WHERE c.deleted = false AND " +
            "(:keyword IS NULL OR :keyword = '' OR LOWER(c.customerCode) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
            "OR LOWER(c.fullName) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
            "OR LOWER(c.phone) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
@@ -39,6 +39,7 @@ public interface CustomerRepository extends JpaRepository<Customer, Long> {
                                    @Param("status") String status,
                                    Pageable pageable);
 
+    @Query("SELECT c FROM Customer c WHERE c.deleted = false ORDER BY c.id DESC")
     List<Customer> findAllByOrderByIdDesc();
 }
 

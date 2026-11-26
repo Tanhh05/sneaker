@@ -180,24 +180,24 @@
                 </span>
               </template>
             </el-table-column>
-            <el-table-column label="Thao tác" width="90" align="center">
+            <el-table-column label="Thao tác" width="128" align="center" class-name="small-padding fixed-width">
               <template #default="{ row }">
-                <div class="row-actions">
-                  <button
-                    class="action-btn"
-                    title="In tem mã vạch dán hộp giày"
-                    @click="printSingleVariant(row)"
-                  >
-                    <el-icon><Printer /></el-icon>
-                  </button>
-                  <button
-                    class="action-btn primary"
+                <div class="vea-table-actions">
+                  <el-tooltip content="In tem mã vạch SKU" placement="top" :show-after="200">
+                    <el-button size="small" class="vea-icon-btn vea-icon-info" aria-label="In tem mã vạch" @click="printSingleVariant(row)">
+                      <el-icon><Printer /></el-icon>
+                    </el-button>
+                  </el-tooltip>
+                  <el-button
+                    type="primary"
+                    size="small"
+                    class="vea-cta-btn"
                     :disabled="row.availableQuantity <= 0"
-                    title="Thêm vào đơn hàng"
                     @click="addVariantToCart(row)"
                   >
                     <el-icon><Plus /></el-icon>
-                  </button>
+                    <span>Thêm</span>
+                  </el-button>
                 </div>
               </template>
             </el-table-column>
@@ -336,6 +336,70 @@
                 <el-input v-model="checkoutForm.note" placeholder="Ghi chú thêm nếu có..." />
               </el-form-item>
 
+              <!-- VOUCHER POS & VÍ VOUCHER KHÁCH HÀNG -->
+              <div class="pos-voucher-box">
+                <div class="pos-voucher-head">
+                  <span class="pos-voucher-title">VOUCHER / MÃ GIẢM GIÁ</span>
+                  <span v-if="posAvailableVouchers.length" class="pos-voucher-count">{{ posAvailableVouchers.length }} khả dụng</span>
+                </div>
+                <div class="pos-voucher-input-row">
+                  <el-input
+                    v-model="posVoucherInput"
+                    size="small"
+                    placeholder="Nhập mã voucher (VD: POS50K, SNEAKER10...)"
+                    clearable
+                    @keyup.enter="applyPosVoucherCode()"
+                    @input="posVoucherInput = posVoucherInput.toUpperCase()"
+                  />
+                  <el-button
+                    type="primary"
+                    size="small"
+                    :loading="validatingPosVoucher"
+                    :disabled="!posVoucherInput.trim() || cart.length === 0"
+                    @click="applyPosVoucherCode()"
+                  >
+                    Áp dụng
+                  </el-button>
+                </div>
+
+                <div v-if="appliedPosVoucher" class="pos-voucher-applied">
+                  <div>
+                    <strong>✓ {{ appliedPosVoucher.appliedCode }}</strong>
+                    <span> — Giảm {{ formatCurrency(appliedPosVoucher.discountAmount) }}</span>
+                  </div>
+                  <button type="button" class="pos-voucher-remove" @click="clearPosVoucher">Gỡ</button>
+                </div>
+                <div v-else-if="posVoucherError" class="pos-voucher-err">
+                  {{ posVoucherError }}
+                </div>
+
+                <!-- Danh sách voucher khả dụng từ ví khách hàng & ưu đãi POS -->
+                <div v-if="posAvailableVouchers.length > 0" class="pos-voucher-list">
+                  <div
+                    v-for="v in posAvailableVouchers"
+                    :key="v.code"
+                    class="pos-voucher-chip"
+                    :class="{
+                      active: appliedPosVoucher?.appliedCode === v.code,
+                      disabled: !v.eligible || cart.length === 0
+                    }"
+                    @click="v.eligible && cart.length > 0 && applyPosVoucherCode(v.code)"
+                  >
+                    <div class="chip-top">
+                      <span class="chip-code">{{ v.code }}</span>
+                      <span class="chip-tag" :class="v.sourceType === 'PERSONAL' ? 'personal' : 'public'">
+                        {{ v.sourceType === 'PERSONAL' ? 'Ví KH' : 'Công khai' }}
+                      </span>
+                    </div>
+                    <div class="chip-desc">
+                      {{ v.discountType === 'PERCENT' ? `Giảm ${v.discountValue}%` : `Giảm ${formatCurrency(v.discountValue)}` }}
+                      <span v-if="v.minOrderAmount > 0"> · Đơn từ {{ formatCurrency(v.minOrderAmount) }}</span>
+                    </div>
+                    <div v-if="!v.eligible && cart.length > 0" class="chip-reason">{{ v.ineligibleReason }}</div>
+                  </div>
+                </div>
+              </div>
+
               <!-- Tùy chọn phát hành hóa đơn VAT tại quầy -->
               <div v-if="checkoutForm.status === 'COMPLETED'" style="margin-top: 6px; padding: 8px 10px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 5px;">
                 <el-checkbox v-model="vatForm.requestVat">
@@ -348,12 +412,12 @@
                       <el-input v-model="vatForm.taxCode" size="small" placeholder="Mã số thuế (MST) *" />
                     </el-col>
                     <el-col :span="10">
-                      <el-select v-model="vatForm.taxRate" size="small" style="width: 100%">
-                        <el-option label="VAT 0%" :value="0" />
-                        <el-option label="VAT 5%" :value="5" />
-                        <el-option label="VAT 8%" :value="8" />
-                        <el-option label="VAT 10%" :value="10" />
-                      </el-select>
+                      <el-input
+                        :model-value="`VAT ${dbPosVatRate}% (DB)`"
+                        size="small"
+                        disabled
+                        title="Thuế suất VAT lấy động từ cấu hình hệ thống (DB), không được phép sửa trên giao diện"
+                      />
                     </el-col>
                   </el-row>
                   <el-input v-model="vatForm.address" size="small" placeholder="Địa chỉ công ty" />
@@ -371,9 +435,13 @@
                 <span>Tổng tiền hàng:</span>
                 <strong>{{ formatCurrency(totalCartAmount) }}</strong>
               </div>
+              <div v-if="posVoucherDiscount > 0" class="row voucher-discount-row">
+                <span>Giảm giá Voucher ({{ appliedPosVoucher?.appliedCode }}):</span>
+                <strong style="color: #dc2626">-{{ formatCurrency(posVoucherDiscount) }}</strong>
+              </div>
               <div class="row final">
                 <span>THÀNH TIỀN THANH TOÁN:</span>
-                <span>{{ formatCurrency(totalCartAmount) }}</span>
+                <span>{{ formatCurrency(finalPosAmount) }}</span>
               </div>
             </div>
 
@@ -451,6 +519,8 @@ import { variantService } from '@/services/variantService'
 import { productService } from '@/services/productService'
 import { customerService } from '@/services/customerService'
 import { orderService } from '@/services/orderService'
+import { invoiceService } from '@/services/invoiceService'
+import { voucherService } from '@/services/voucherService'
 import { formatCurrency } from '@/utils/formatters'
 import { useDebouncedWatch } from '@/composables/useDebounce'
 import InvoicePrintModal from '@/components/InvoicePrintModal.vue'
@@ -579,6 +649,104 @@ const totalCartAmount = computed(() =>
   cart.value.reduce((s, i) => s + Number(i.quantity || 0) * Number(i.variant.salePrice || 0), 0)
 )
 
+// ==================== POS VOUCHER STATE ====================
+const posVoucherInput = ref('')
+const posAvailableVouchers = ref([])
+const appliedPosVoucher = ref(null)
+const posVoucherError = ref('')
+const validatingPosVoucher = ref(false)
+
+const posVoucherDiscount = computed(() => Number(appliedPosVoucher.value?.discountAmount || 0))
+const finalPosAmount = computed(() => Math.max(0, totalCartAmount.value - posVoucherDiscount.value))
+
+async function loadPosAvailableVouchers() {
+  try {
+    const selectedCust = customers.value.find((c) => c.id === checkoutForm.customerId)
+    const res = await voucherService.getPosAvailableVouchers({
+      customerId: checkoutForm.customerId || undefined,
+      phone: selectedCust?.phone || undefined,
+      orderAmount: totalCartAmount.value || 0
+    })
+    posAvailableVouchers.value = res.data || []
+  } catch {
+    posAvailableVouchers.value = []
+  }
+}
+
+async function applyPosVoucherCode(codeOverride) {
+  const code = (codeOverride || posVoucherInput.value || '').trim().toUpperCase()
+  if (!code) return
+  if (cart.value.length === 0) {
+    ElMessage.warning('Vui lòng thêm sản phẩm vào đơn trước khi áp dụng voucher')
+    return
+  }
+  posVoucherInput.value = code
+  validatingPosVoucher.value = true
+  posVoucherError.value = ''
+  try {
+    const selectedCust = customers.value.find((c) => c.id === checkoutForm.customerId)
+    const res = await voucherService.validateVoucher({
+      voucherCode: code,
+      channel: 'POS',
+      orderAmount: totalCartAmount.value,
+      customerId: checkoutForm.customerId || null,
+      customerPhone: selectedCust?.phone || null
+    })
+    const data = res.data
+    if (data?.valid) {
+      appliedPosVoucher.value = data
+      posVoucherError.value = ''
+      ElMessage.success(data.message || `Đã áp dụng mã ${data.appliedCode}`)
+    } else {
+      appliedPosVoucher.value = null
+      posVoucherError.value = data?.message || 'Mã voucher không hợp lệ'
+    }
+  } catch (err) {
+    appliedPosVoucher.value = null
+    posVoucherError.value = err?.response?.data?.message || 'Không thể kiểm tra mã voucher'
+  } finally {
+    validatingPosVoucher.value = false
+  }
+}
+
+function clearPosVoucher() {
+  appliedPosVoucher.value = null
+  posVoucherInput.value = ''
+  posVoucherError.value = ''
+}
+
+watch(
+  () => [checkoutForm.customerId, totalCartAmount.value],
+  async () => {
+    await loadPosAvailableVouchers()
+    if (appliedPosVoucher.value && totalCartAmount.value > 0) {
+      // Re-validate silently when customer or subtotal changes
+      try {
+        const selectedCust = customers.value.find((c) => c.id === checkoutForm.customerId)
+        const res = await voucherService.validateVoucher({
+          voucherCode: appliedPosVoucher.value.appliedCode,
+          channel: 'POS',
+          orderAmount: totalCartAmount.value,
+          customerId: checkoutForm.customerId || null,
+          customerPhone: selectedCust?.phone || null
+        })
+        if (res.data?.valid) {
+          appliedPosVoucher.value = res.data
+          posVoucherError.value = ''
+        } else {
+          appliedPosVoucher.value = null
+          posVoucherError.value = res.data?.message || 'Mã voucher không còn đủ điều kiện'
+        }
+      } catch {
+        appliedPosVoucher.value = null
+      }
+    } else if (totalCartAmount.value === 0) {
+      appliedPosVoucher.value = null
+      posVoucherError.value = ''
+    }
+  }
+)
+
 function onStepProductChange() {
   stepSizeId.value = availableSizesForStepProduct.value[0]?.sizeId || null
   onStepSizeChange()
@@ -612,6 +780,7 @@ function addVariantToCart(variant) {
 async function loadCatalog() {
   loading.value = true
   try {
+    loadVatConfig()
     const [vRes, pRes, sRes, cRes, custRes] = await Promise.all([
       variantService.getAllVariants(),
       productService.getAllProducts(),
@@ -624,6 +793,7 @@ async function loadCatalog() {
     sizes.value = sRes.data || []
     colors.value = cRes.data || []
     customers.value = custRes.data || []
+    await loadPosAvailableVouchers()
   } finally {
     loading.value = false
   }
@@ -634,14 +804,25 @@ function onQuickCustomerCreated(newCust) {
   checkoutForm.customerId = newCust.id
 }
 
+const dbPosVatRate = ref(8)
 const vatForm = reactive({
   requestVat: false,
   companyName: '',
   taxCode: '',
   address: '',
-  email: '',
-  taxRate: 8
+  email: ''
 })
+
+async function loadVatConfig() {
+  try {
+    const res = await invoiceService.getVatConfig()
+    if (res?.data?.posVatRate !== undefined && res?.data?.posVatRate !== null) {
+      dbPosVatRate.value = Number(res.data.posVatRate)
+    }
+  } catch {
+    // keep fallback
+  }
+}
 
 async function submitSaleOrder() {
   if (cart.value.length === 0) return
@@ -658,13 +839,13 @@ async function submitSaleOrder() {
       paymentMethod: checkoutForm.paymentMethod,
       status: checkoutForm.status,
       paymentReference: checkoutForm.paymentReference || null,
+      voucherCode: appliedPosVoucher.value?.appliedCode || null,
       note: checkoutForm.note || 'Bán hàng trực tiếp tại quầy POS',
       invoiceType: checkoutForm.status === 'COMPLETED' && vatForm.requestVat ? 'VAT' : 'RETAIL',
       vatCompanyName: vatForm.requestVat ? vatForm.companyName.trim() : null,
       vatTaxCode: vatForm.requestVat ? vatForm.taxCode.trim() : null,
       vatAddress: vatForm.requestVat ? vatForm.address.trim() : null,
       vatEmail: vatForm.requestVat ? vatForm.email.trim() : null,
-      vatTaxRate: vatForm.requestVat ? vatForm.taxRate : null,
       items: cart.value.map((i) => ({
         productVariantId: i.variant.id,
         quantity: i.quantity
@@ -679,6 +860,7 @@ async function submitSaleOrder() {
           : ' thành công!')
     )
     cart.value = []
+    clearPosVoucher()
     checkoutForm.note = ''
     checkoutForm.paymentReference = ''
     vatForm.requestVat = false
@@ -686,7 +868,6 @@ async function submitSaleOrder() {
     vatForm.taxCode = ''
     vatForm.address = ''
     vatForm.email = ''
-    vatForm.taxRate = 8
     invoiceVisible.value = true
     await loadCatalog()
   } finally {
@@ -958,8 +1139,8 @@ onUnmounted(() => {
     height: 36px;
     padding: 0 16px;
     background: #ffffff;
-    color: #000000;
-    border: 1px solid #000000;
+    color: #303133;
+    border: 1px solid var(--vea-theme, #409eff);
     font-family: var(--font-sans);
     font-size: 11px;
     font-weight: 800;
@@ -977,7 +1158,7 @@ onUnmounted(() => {
     }
 
     &.primary {
-      background: #000000;
+      background: var(--vea-theme, #409eff);
       color: #ffffff;
 
       &:hover {
@@ -1005,12 +1186,12 @@ onUnmounted(() => {
 
       :deep(.el-input__wrapper) {
         border-radius: 5px !important;
-        box-shadow: 0 0 0 1px #000000 inset !important;
+        box-shadow: 0 0 0 1px var(--vea-theme, #409eff) inset !important;
         height: 40px;
         background-color: #ffffff;
 
         &.is-focus {
-          box-shadow: 0 0 0 2px #000000 inset !important;
+          box-shadow: 0 0 0 2px var(--vea-theme, #409eff) inset !important;
         }
 
         input {
@@ -1029,9 +1210,9 @@ onUnmounted(() => {
     .btn-scan-trigger {
       height: 40px;
       padding: 0 18px;
-      background: #000000;
+      background: var(--vea-theme, #409eff);
       color: #ffffff;
-      border: 1px solid #000000;
+      border: 1px solid var(--vea-theme, #409eff);
       border-radius: 5px;
       font-family: var(--font-sans);
       font-size: 11px;
@@ -1056,8 +1237,8 @@ onUnmounted(() => {
       height: 40px;
       padding: 0 14px;
       background: #ffffff;
-      color: #000000;
-      border: 1px solid #000000;
+      color: #303133;
+      border: 1px solid var(--vea-theme, #409eff);
       border-radius: 5px;
       font-family: var(--font-sans);
       font-size: 11px;
@@ -1072,7 +1253,7 @@ onUnmounted(() => {
       white-space: nowrap;
 
       &:hover {
-        background: #000000;
+        background: var(--vea-theme, #409eff);
         color: #ffffff;
       }
     }
@@ -1112,7 +1293,7 @@ onUnmounted(() => {
         font-size: 10px;
         font-weight: 900;
         letter-spacing: 0.06em;
-        color: #000000;
+        color: #303133;
         white-space: nowrap;
         margin-right: 2px;
       }
@@ -1141,9 +1322,9 @@ onUnmounted(() => {
       .step-add-btn {
         height: 28px;
         padding: 0 10px;
-        background: #000000;
+        background: var(--vea-theme, #409eff);
         color: #ffffff;
-        border: 1px solid #000000;
+        border: 1px solid var(--vea-theme, #409eff);
         border-radius: 5px;
         font-family: var(--font-sans);
         font-size: 10px;
@@ -1187,7 +1368,7 @@ onUnmounted(() => {
     }
 
     strong {
-      color: #000000;
+      color: #303133;
     }
 
     .stock-num {
@@ -1214,7 +1395,7 @@ onUnmounted(() => {
       display: flex;
       align-items: center;
       justify-content: center;
-      background: #09090b;
+      background: var(--vea-theme, #409eff);
       color: #ffffff;
       font-size: 9px;
       font-weight: 800;
@@ -1230,7 +1411,7 @@ onUnmounted(() => {
     .pos-prod-title {
       font-size: 12px;
       font-weight: 700;
-      color: #000000;
+      color: #303133;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -1255,7 +1436,7 @@ onUnmounted(() => {
     font-size: 11px;
     font-weight: 800;
     background: #f4f4f5;
-    color: #000000;
+    color: #303133;
     border: 1px solid #d4d4d4;
     padding: 1px 6px;
     border-radius: 5px;
@@ -1320,7 +1501,7 @@ onUnmounted(() => {
     letter-spacing: 0.04em;
 
     strong {
-      color: #000000;
+      color: #303133;
     }
   }
 }
@@ -1348,7 +1529,7 @@ onUnmounted(() => {
         font-weight: 900;
         letter-spacing: 0.08em;
         text-transform: uppercase;
-        color: #000000;
+        color: #303133;
         margin: 0;
       }
 
@@ -1356,7 +1537,7 @@ onUnmounted(() => {
         font-family: var(--font-mono);
         font-size: 10.5px;
         font-weight: 800;
-        background: #000000;
+        background: var(--vea-theme, #409eff);
         color: #ffffff;
         padding: 2px 7px;
         border-radius: 5px;
@@ -1452,7 +1633,7 @@ onUnmounted(() => {
         .item-title {
           font-size: 12.5px;
           font-weight: 800;
-          color: #000000;
+          color: #303133;
         }
 
         .item-meta {
@@ -1518,20 +1699,20 @@ onUnmounted(() => {
         }
 
         &.is-active .el-radio-button__inner {
-          background-color: #000000 !important;
-          border-color: #000000 !important;
+          background-color: var(--vea-theme, #409eff) !important;
+          border-color: var(--vea-theme, #409eff) !important;
           color: #ffffff !important;
-          box-shadow: -1px 0 0 0 #000000 !important;
+          box-shadow: -1px 0 0 0 var(--vea-theme, #409eff) !important;
         }
       }
     }
 
     .summary-totals {
-      background: #000000;
+      background: var(--vea-theme, #409eff);
       color: #ffffff;
       padding: 16px 18px;
       border-radius: 5px;
-      border: 1px solid #000000;
+      border: 1px solid var(--vea-theme, #409eff);
       margin-bottom: 12px;
 
       .row {
@@ -1567,9 +1748,9 @@ onUnmounted(() => {
 .pos-cust-btn {
   height: 32px;
   padding: 0 12px;
-  background: #000000;
+  background: var(--vea-theme, #409eff);
   color: #ffffff;
-  border: 1px solid #000000;
+  border: 1px solid var(--vea-theme, #409eff);
   border-radius: 5px;
   font-family: var(--font-sans);
   font-size: 11px;
@@ -1613,9 +1794,9 @@ onUnmounted(() => {
 .pos-checkout-btn {
   width: 100%;
   height: 48px;
-  background: #000000;
+  background: var(--vea-theme, #409eff);
   color: #ffffff;
-  border: 1px solid #000000;
+  border: 1px solid var(--vea-theme, #409eff);
   border-radius: 5px;
   font-family: var(--font-sans);
   font-size: 13px;
@@ -1652,7 +1833,7 @@ onUnmounted(() => {
     position: relative;
     width: 100%;
     height: 280px;
-    background: #000;
+    background: var(--vea-theme, #409eff);
     overflow: hidden;
     border-radius: 5px;
     display: flex;
@@ -1725,5 +1906,132 @@ onUnmounted(() => {
   0% { top: 0%; }
   50% { top: 100%; }
   100% { top: 0%; }
+}
+
+.pos-voucher-box {
+  margin-bottom: 10px;
+  padding: 10px 12px;
+  background: #fafafa;
+  border: 1px solid #e5e5e5;
+  border-radius: 5px;
+
+  .pos-voucher-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+    .pos-voucher-title {
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      color: #303133;
+    }
+    .pos-voucher-count {
+      font-size: 11px;
+      font-weight: 700;
+      color: #059669;
+    }
+  }
+
+  .pos-voucher-input-row {
+    display: flex;
+    gap: 6px;
+  }
+
+  .pos-voucher-applied {
+    margin-top: 8px;
+    padding: 6px 10px;
+    background: #ecfdf5;
+    border: 1px solid #a7f3d0;
+    border-radius: 4px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    color: #065f46;
+    .pos-voucher-remove {
+      background: none;
+      border: none;
+      color: #dc2626;
+      font-weight: 700;
+      font-size: 11.5px;
+      cursor: pointer;
+      text-decoration: underline;
+    }
+  }
+
+  .pos-voucher-err {
+    margin-top: 6px;
+    font-size: 11.5px;
+    color: #dc2626;
+    font-weight: 600;
+  }
+
+  .pos-voucher-list {
+    margin-top: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 145px;
+    overflow-y: auto;
+  }
+
+  .pos-voucher-chip {
+    padding: 6px 8px;
+    background: #ffffff;
+    border: 1px solid #e5e5e5;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.14s ease;
+
+    &:hover:not(.disabled) {
+      border-color: var(--vea-theme, #409eff);
+    }
+    &.active {
+      border-color: var(--vea-theme, #409eff);
+      background: #f4f4f5;
+      box-shadow: inset 3px 0 0 var(--vea-theme, #409eff);
+    }
+    &.disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .chip-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      .chip-code {
+        font-family: var(--font-mono);
+        font-size: 12px;
+        font-weight: 800;
+        color: #303133;
+      }
+      .chip-tag {
+        font-size: 9.5px;
+        font-weight: 800;
+        padding: 1px 5px;
+        border-radius: 2px;
+        &.personal {
+          background: #fee2e2;
+          color: #b91c1c;
+        }
+        &.public {
+          background: #f1f5f9;
+          color: #334155;
+        }
+      }
+    }
+    .chip-desc {
+      font-size: 11.5px;
+      color: #404040;
+      margin-top: 2px;
+    }
+    .chip-reason {
+      font-size: 10.5px;
+      color: #dc2626;
+      margin-top: 2px;
+    }
+  }
 }
 </style>

@@ -72,6 +72,11 @@ services:
       - SEPAY_BANK_ACCOUNT=0346771322
       - SEPAY_ACCOUNT_NAME=ADHA SNEAKER
       - SEPAY_BANK_NAME=MBBank
+      - MAIL_HOST=${MAIL_HOST:-}
+      - MAIL_PORT=${MAIL_PORT:-587}
+      - MAIL_USERNAME=${MAIL_USERNAME:-}
+      - MAIL_PASSWORD=${MAIL_PASSWORD:-}
+      - MAIL_FROM=${MAIL_FROM:-no-reply@adhasneaker.vn}
     networks:
       - sneaker-net
     depends_on:

@@ -6,6 +6,7 @@ import com.sneakerstore.dto.response.RoleDto;
 import com.sneakerstore.dto.request.UserCreateRequest;
 import com.sneakerstore.dto.response.UserDto;
 import com.sneakerstore.dto.request.UserUpdateRequest;
+import com.sneakerstore.service.SoftDeleteService;
 import com.sneakerstore.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +24,7 @@ import java.util.Map;
 public class UserController {
 
     private final UserService userService;
+    private final SoftDeleteService softDeleteService;
 
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
@@ -70,6 +72,13 @@ public class UserController {
     public ApiResponse<UserDto> toggleStatus(@PathVariable Long id, @RequestBody Map<String, String> payload) {
         String status = payload.getOrDefault("status", "ACTIVE");
         return ApiResponse.ok("Cập nhật trạng thái tài khoản thành công", userService.toggleStatus(id, status));
+    }
+
+    @DeleteMapping("/{id}/soft-delete")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ApiResponse<Void> softDelete(@PathVariable Long id) {
+        softDeleteService.softDeleteUser(id);
+        return ApiResponse.ok("Đã xóa mềm tài khoản", null);
     }
 }
 

@@ -4,12 +4,15 @@ import com.sneakerstore.common.response.ApiResponse;
 import com.sneakerstore.common.response.PageResponse;
 import com.sneakerstore.dto.request.CreateReviewRequest;
 import com.sneakerstore.dto.request.StoreOrderRequest;
+import com.sneakerstore.dto.request.VoucherValidateRequest;
 import com.sneakerstore.dto.response.*;
 import com.sneakerstore.service.StoreService;
+import com.sneakerstore.service.VoucherService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 
@@ -19,6 +22,7 @@ import java.util.Map;
 public class StoreController {
 
     private final StoreService storeService;
+    private final VoucherService voucherService;
 
     @GetMapping("/brands")
     public ApiResponse<List<BrandDto>> getBrands() {
@@ -100,5 +104,19 @@ public class StoreController {
             @PathVariable Long id,
             @Valid @RequestBody CreateReviewRequest request) {
         return ApiResponse.ok("Gửi đánh giá thành công", storeService.submitProductReview(id, request));
+    }
+
+    @GetMapping("/vouchers/available")
+    public ApiResponse<List<CustomerVoucherDto>> getAvailableStoreVouchers(
+            @RequestParam(required = false) String phone,
+            @RequestParam(required = false) String email,
+            @RequestParam(required = false, defaultValue = "0") BigDecimal orderAmount) {
+        return ApiResponse.ok(voucherService.getAvailableVouchers("ONLINE", null, phone, email, orderAmount));
+    }
+
+    @PostMapping("/vouchers/validate")
+    public ApiResponse<VoucherValidationResponse> validateStoreVoucher(@RequestBody VoucherValidateRequest request) {
+        request.setChannel("ONLINE");
+        return ApiResponse.ok(voucherService.validateVoucher(request));
     }
 }

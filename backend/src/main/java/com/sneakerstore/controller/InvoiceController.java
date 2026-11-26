@@ -47,6 +47,12 @@ public class InvoiceController {
                 PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "issuedAt", "id"))));
     }
 
+    @GetMapping("/vat-config")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
+    public ApiResponse<Map<String, Object>> getVatConfig() {
+        return ApiResponse.ok(invoiceService.getVatConfig());
+    }
+
     @GetMapping("/kpi")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
     public ApiResponse<InvoiceKpiDto> getKpi(

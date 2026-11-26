@@ -31,16 +31,16 @@
       </div>
 
       <div v-if="invoice" class="header-actions">
-        <el-button class="btn-soft" @click="printVisible = true">
-          <el-icon><Printer /></el-icon>
+        <el-button @click="printVisible = true">
+          <el-icon style="margin-right: 4px"><Printer /></el-icon>
           <span>Xem trước &amp; In</span>
         </el-button>
-        <el-button class="btn-soft" :loading="downloadingPdf" @click="handleDownloadPdf">
-          <el-icon><Download /></el-icon>
+        <el-button type="success" plain :loading="downloadingPdf" @click="handleDownloadPdf">
+          <el-icon style="margin-right: 4px"><Download /></el-icon>
           <span>Tải PDF</span>
         </el-button>
-        <el-button type="primary" class="btn-primary-dark" @click="openSendEmail">
-          <el-icon><Message /></el-icon>
+        <el-button type="primary" @click="openSendEmail">
+          <el-icon style="margin-right: 4px"><Message /></el-icon>
           <span>{{ invoice.emailStatus === 'NOT_SENT' ? 'Gửi Email' : 'Gửi lại Email' }}</span>
         </el-button>
         <el-button
@@ -304,7 +304,8 @@ async function handleDownloadPdf() {
   downloadingPdf.value = true
   try {
     const res = await invoiceService.downloadPdf(invoice.value.id)
-    const blob = new Blob([res.data], { type: 'application/pdf' })
+    const raw = res instanceof Blob ? res : (res?.data ?? res)
+    const blob = new Blob([raw], { type: 'application/pdf' })
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
@@ -446,10 +447,8 @@ onMounted(() => {
 }
 
 .btn-primary-dark {
-  border-radius: 5px !important;
-  font-weight: 700;
-  background: #0f172a !important;
-  border-color: #0f172a !important;
+  border-radius: 4px !important;
+  font-weight: 500;
 }
 
 .cancel-review-banner {
@@ -534,11 +533,11 @@ onMounted(() => {
   }
 
   &.fin-grand {
-    border-top: 2px solid #0f172a;
+    border-top: 2px solid var(--vea-theme, #409eff);
     border-bottom: none;
     padding-top: 10px;
     font-size: 16px;
-    color: #dc2626;
+    color: var(--vea-theme, #409eff);
   }
 }
 
@@ -627,7 +626,7 @@ onMounted(() => {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #0f172a;
+  background: var(--vea-theme, #409eff);
   margin-top: 6px;
   flex-shrink: 0;
 }

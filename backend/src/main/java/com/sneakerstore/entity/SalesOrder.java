@@ -45,8 +45,23 @@ public class SalesOrder extends BaseEntity {
     @Column(name = "TOTAL_AMOUNT", nullable = false, precision = 18, scale = 2)
     private BigDecimal totalAmount;
 
+    @Column(name = "DISCOUNT_AMOUNT", nullable = false, precision = 18, scale = 2)
+    @Builder.Default
+    private BigDecimal discountAmount = BigDecimal.ZERO;
+
+    @Column(name = "SHIPPING_FEE", nullable = false, precision = 18, scale = 2)
+    @Builder.Default
+    private BigDecimal shippingFee = BigDecimal.ZERO;
+
     @Column(name = "FINAL_AMOUNT", nullable = false, precision = 18, scale = 2)
     private BigDecimal finalAmount;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "VOUCHER_ID")
+    private Voucher voucher;
+
+    @Column(name = "VOUCHER_CODE", length = 60)
+    private String voucherCode;
 
     @Column(name = "PAYMENT_METHOD", nullable = false, length = 30)
     private String paymentMethod;
@@ -67,6 +82,8 @@ public class SalesOrder extends BaseEntity {
         if (orderDate == null) orderDate = now;
         if (status == null) status = "DRAFT";
         if (paymentMethod == null) paymentMethod = "CASH";
+        if (discountAmount == null) discountAmount = BigDecimal.ZERO;
+        if (shippingFee == null) shippingFee = BigDecimal.ZERO;
     }
 }
 

@@ -5,6 +5,7 @@ import com.sneakerstore.common.response.PageResponse;
 import com.sneakerstore.dto.response.PurchaseOrderDto;
 import com.sneakerstore.dto.request.PurchaseOrderRequest;
 import com.sneakerstore.service.PurchaseService;
+import com.sneakerstore.service.SoftDeleteService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
@@ -21,6 +22,7 @@ import java.time.LocalDate;
 public class PurchaseController {
 
     private final PurchaseService purchaseService;
+    private final SoftDeleteService softDeleteService;
 
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
@@ -66,6 +68,13 @@ public class PurchaseController {
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ApiResponse<PurchaseOrderDto> cancel(@PathVariable Long id) {
         return ApiResponse.ok("Đã hủy phiếu nhập", purchaseService.cancel(id));
+    }
+
+    @DeleteMapping("/{id}/soft-delete")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ApiResponse<Void> softDelete(@PathVariable Long id) {
+        softDeleteService.softDeletePurchase(id);
+        return ApiResponse.ok("Đã xóa mềm phiếu nhập hàng", null);
     }
 }
 

@@ -14,12 +14,14 @@
           <el-tag :type="row.status === 'ACTIVE' ? 'success' : 'info'">{{ row.status }}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column v-if="canManageCatalog" label="Thao tác" width="65" align="center">
+      <el-table-column v-if="canManageCatalog" label="Thao tác" width="76" align="center" class-name="small-padding fixed-width">
         <template #default="{ row }">
-          <div class="row-actions">
-            <button class="action-btn" title="Chỉnh sửa" @click="openEditSize(row)">
-              <el-icon><Edit /></el-icon>
-            </button>
+          <div class="vea-table-actions">
+            <el-tooltip content="Chỉnh sửa Size" placement="top" :show-after="200">
+              <el-button size="small" class="vea-icon-btn vea-icon-primary" aria-label="Sửa Size" @click="openEditSize(row)">
+                <el-icon><Edit /></el-icon>
+              </el-button>
+            </el-tooltip>
           </div>
         </template>
       </el-table-column>

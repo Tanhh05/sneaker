@@ -48,6 +48,10 @@ public class User extends BaseEntity {
 
     @Column(name = "LAST_LOGIN_AT")
     private LocalDateTime lastLoginAt;
+
+    @Column(name = "IS_DELETED", nullable = false)
+    @Builder.Default
+    private boolean deleted = false;
 @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "USER_ROLES",

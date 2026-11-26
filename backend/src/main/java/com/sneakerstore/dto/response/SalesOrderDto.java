@@ -28,7 +28,10 @@ public class SalesOrderDto {
     private String channel;
     private LocalDateTime orderDate;
     private BigDecimal totalAmount;
+    private BigDecimal discountAmount;
+    private BigDecimal shippingFee;
     private BigDecimal finalAmount;
+    private String voucherCode;
     private String paymentMethod;
     private String status;
     private String note;

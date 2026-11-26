@@ -3,19 +3,19 @@
     <!-- 1. STICKY COMMAND BAR -->
     <div class="studio-topbar">
       <div class="topbar-left">
-        <button type="button" class="btn-back" @click="$router.push('/admin/products')">
-          <el-icon><ArrowLeft /></el-icon>
+        <el-button @click="$router.push('/admin/products')">
+          <el-icon style="margin-right: 4px"><ArrowLeft /></el-icon>
           <span>Quay lại</span>
-        </button>
+        </el-button>
 
-        <div class="mode-pill mode-detail">CHI TIẾT SẢN PHẨM</div>
+        <el-tag type="primary" effect="light" size="small">Chi tiết sản phẩm</el-tag>
 
         <div v-if="product" class="topbar-product-title">
           <span class="code-badge">{{ product.productCode }}</span>
           <h2 class="title-text">{{ product.productName }}</h2>
-          <span class="status-pill" :class="product.status === 'ACTIVE' ? 'st-active' : 'st-inactive'">
+          <el-tag :type="product.status === 'ACTIVE' ? 'success' : 'info'" size="small">
             {{ product.status }}
-          </span>
+          </el-tag>
         </div>
       </div>
 
@@ -24,29 +24,29 @@
           :href="`/product/${product.id}`"
           target="_blank"
           rel="noopener"
-          class="btn-ghost"
-          title="Xem trang sản phẩm ngoài cửa hàng"
+          style="text-decoration: none"
         >
-          <el-icon><TopRight /></el-icon>
-          <span>Xem Store</span>
+          <el-button>
+            <el-icon style="margin-right: 4px"><TopRight /></el-icon>
+            <span>Xem Store</span>
+          </el-button>
         </a>
-        <button
+        <el-button
           v-if="canManageCatalog"
-          type="button"
-          class="btn-outline"
+          type="success"
+          plain
           @click="goToVariantStudio"
         >
-          <el-icon><Grid /></el-icon>
+          <el-icon style="margin-right: 4px"><Grid /></el-icon>
           <span>Ma trận SKU</span>
-        </button>
+        </el-button>
         <el-button
           v-if="canManageCatalog"
           type="primary"
-          class="btn-primary-cmd"
           @click="$router.push(`/admin/products/${product.id}/edit`)"
         >
-          <el-icon style="margin-right: 6px"><Edit /></el-icon>
-          <span>CHỈNH SỬA SP</span>
+          <el-icon style="margin-right: 4px"><Edit /></el-icon>
+          <span>Chỉnh sửa SP</span>
         </el-button>
       </div>
     </div>
@@ -121,15 +121,16 @@
           <!-- Specs & Description Card -->
           <div class="studio-card specs-card">
             <div class="specs-header">
-              <span class="badge-black">THÔNG SỐ &amp; MÔ TẢ SẢN PHẨM</span>
-              <button
+              <span class="section-pill">Thông số &amp; mô tả sản phẩm</span>
+              <el-button
                 v-if="canManageCatalog && product.status === 'ACTIVE'"
-                type="button"
-                class="btn-danger-link"
+                type="danger"
+                plain
+                size="small"
                 @click="handleDiscontinue"
               >
-                ✕ Ngừng kinh doanh
-              </button>
+                Ngừng kinh doanh
+              </el-button>
             </div>
 
             <div class="specs-grid">
@@ -159,27 +160,11 @@
       <div class="studio-card workspace-card">
         <div class="workspace-toolbar">
           <div class="ws-left">
-            <span class="badge-black">DANH SÁCH BIẾN THỂ ({{ variants.length }} SKU)</span>
-            <div class="view-switch">
-              <button
-                type="button"
-                class="vs-btn"
-                :class="{ active: viewMode === 'matrix' }"
-                @click="viewMode = 'matrix'"
-              >
-                <el-icon><Grid /></el-icon>
-                <span>Ma trận gọn</span>
-              </button>
-              <button
-                type="button"
-                class="vs-btn"
-                :class="{ active: viewMode === 'table' }"
-                @click="viewMode = 'table'"
-              >
-                <el-icon><List /></el-icon>
-                <span>Bảng chi tiết</span>
-              </button>
-            </div>
+            <span class="section-pill">Danh sách biến thể ({{ variants.length }} SKU)</span>
+            <el-radio-group v-model="viewMode" size="small">
+              <el-radio-button value="matrix">Ma trận gọn</el-radio-button>
+              <el-radio-button value="table">Bảng chi tiết</el-radio-button>
+            </el-radio-group>
           </div>
 
           <div class="ws-right">
@@ -188,14 +173,14 @@
               <span class="leg"><i class="dot dot-low"></i>Sắp hết (≤5)</span>
               <span class="leg"><i class="dot dot-zero"></i>Hết hàng</span>
             </div>
-            <button
+            <el-button
               v-if="canManageCatalog"
-              type="button"
-              class="btn-add-variants"
+              type="primary"
+              size="small"
               @click="goToVariantStudio"
             >
               + Thêm / Sửa hàng loạt SKU
-            </button>
+            </el-button>
           </div>
         </div>
 
@@ -330,12 +315,14 @@
                   </el-tag>
                 </template>
               </el-table-column>
-              <el-table-column v-if="canManageCatalog" label="Thao tác" width="84" align="center" fixed="right">
+              <el-table-column v-if="canManageCatalog" label="Thao tác" width="76" align="center" fixed="right" class-name="small-padding fixed-width">
                 <template #default="{ row }">
-                  <div class="row-actions">
-                    <button type="button" class="action-btn" title="Cập nhật biến thể này" @click="editVariant(row)">
-                      <el-icon><Edit /></el-icon>
-                    </button>
+                  <div class="vea-table-actions">
+                    <el-tooltip content="Chỉnh sửa biến thể" placement="top" :show-after="200">
+                      <el-button size="small" class="vea-icon-btn vea-icon-primary" aria-label="Sửa biến thể" @click="editVariant(row)">
+                        <el-icon><Edit /></el-icon>
+                      </el-button>
+                    </el-tooltip>
                   </div>
                 </template>
               </el-table-column>
@@ -550,9 +537,10 @@ onMounted(loadProduct)
   gap: 12px;
   flex-wrap: wrap;
   background: #ffffff;
-  border: 1px solid #000000;
-  padding: 10px 14px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e6ebf5;
+  border-radius: 4px;
+  padding: 12px 16px;
+  box-shadow: 0 1px 4px rgba(0, 21, 41, 0.05);
 }
 
 .topbar-left {
@@ -578,7 +566,7 @@ onMounted(loadProduct)
   gap: 5px;
   background: #ffffff;
   border: 1px solid #d4d4d4;
-  color: #171717;
+  color: #303133;
   font-size: 11.5px;
   font-weight: 800;
   padding: 6px 10px;
@@ -586,8 +574,8 @@ onMounted(loadProduct)
   flex-shrink: 0;
 
   &:hover {
-    border-color: #000000;
-    background: #000000;
+    border-color: var(--vea-theme, #409eff);
+    background: var(--vea-theme, #409eff);
     color: #ffffff;
   }
 }
@@ -600,7 +588,7 @@ onMounted(loadProduct)
   flex-shrink: 0;
 
   &.mode-detail {
-    background: #000000;
+    background: var(--vea-theme, #409eff);
     color: #ffffff;
   }
 }
@@ -616,7 +604,7 @@ onMounted(loadProduct)
     margin: 0;
     font-size: 15px;
     font-weight: 900;
-    color: #000000;
+    color: #303133;
     letter-spacing: -0.01em;
   }
 }
@@ -645,7 +633,7 @@ onMounted(loadProduct)
   gap: 5px;
   background: #ffffff;
   border: 1px solid #d4d4d4;
-  color: #171717;
+  color: #303133;
   font-size: 11.5px;
   font-weight: 700;
   padding: 6px 11px;
@@ -653,8 +641,8 @@ onMounted(loadProduct)
   cursor: pointer;
 
   &:hover {
-    border-color: #000000;
-    color: #000000;
+    border-color: var(--vea-theme, #409eff);
+    color: #303133;
   }
 }
 
@@ -663,15 +651,15 @@ onMounted(loadProduct)
   align-items: center;
   gap: 5px;
   background: #fafafa;
-  border: 1px solid #000000;
-  color: #000000;
+  border: 1px solid var(--vea-theme, #409eff);
+  color: #303133;
   font-size: 11.5px;
   font-weight: 800;
   padding: 6px 11px;
   cursor: pointer;
 
   &:hover {
-    background: #000000;
+    background: var(--vea-theme, #409eff);
     color: #ffffff;
   }
 }
@@ -683,16 +671,20 @@ onMounted(loadProduct)
 
 .studio-card {
   background: #ffffff;
-  border: 1px solid #e5e5e5;
+  border: 1px solid #e6ebf5;
+  border-radius: 4px;
+  box-shadow: 0 1px 4px rgba(0, 21, 41, 0.04);
 }
 
+.section-pill,
 .badge-black {
-  background: #000000;
-  color: #ffffff;
-  font-size: 9.5px;
-  font-weight: 900;
-  letter-spacing: 0.08em;
-  padding: 4px 8px;
+  background: var(--vea-theme-light-9, #ecf5ff);
+  color: var(--vea-theme, #409eff);
+  border: 1px solid var(--vea-theme-light-7, #c6e2ff);
+  border-radius: 3px;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
   display: inline-block;
 }
 
@@ -774,7 +766,7 @@ onMounted(loadProduct)
       }
 
       &.active {
-        border: 2px solid #000000;
+        border: 2px solid var(--vea-theme, #409eff);
       }
 
       .star-mark {
@@ -818,11 +810,11 @@ onMounted(loadProduct)
     .kpi-val {
       font-size: 17px;
       font-weight: 900;
-      color: #000000;
+      color: #303133;
       font-variant-numeric: tabular-nums;
 
       &.price {
-        color: #000000;
+        color: #303133;
       }
     }
 
@@ -888,7 +880,7 @@ onMounted(loadProduct)
       }
       strong {
         font-size: 13px;
-        color: #171717;
+        color: #303133;
       }
     }
   }
@@ -936,7 +928,7 @@ onMounted(loadProduct)
 
 .view-switch {
   display: inline-flex;
-  border: 1px solid #000000;
+  border: 1px solid var(--vea-theme, #409eff);
 
   .vs-btn {
     display: inline-flex;
@@ -944,7 +936,7 @@ onMounted(loadProduct)
     gap: 5px;
     padding: 5px 10px;
     background: #ffffff;
-    color: #000000;
+    color: #303133;
     border: none;
     font-size: 11px;
     font-weight: 800;
@@ -952,7 +944,7 @@ onMounted(loadProduct)
     cursor: pointer;
 
     &.active {
-      background: #000000;
+      background: var(--vea-theme, #409eff);
       color: #ffffff;
     }
   }
@@ -975,7 +967,7 @@ onMounted(loadProduct)
     width: 9px;
     height: 9px;
     display: inline-block;
-    border: 1px solid #000;
+    border: 1px solid var(--vea-theme, #409eff);
 
     &.dot-ok { background: #ecfdf5; border-color: #10b981; }
     &.dot-low { background: #fffbeb; border-color: #f59e0b; }
@@ -984,9 +976,9 @@ onMounted(loadProduct)
 }
 
 .btn-add-variants {
-  background: #000000;
+  background: var(--vea-theme, #409eff);
   color: #ffffff;
-  border: 1px solid #000000;
+  border: 1px solid var(--vea-theme, #409eff);
   padding: 6px 12px;
   font-size: 11px;
   font-weight: 800;
@@ -994,7 +986,7 @@ onMounted(loadProduct)
   cursor: pointer;
 
   &:hover {
-    background: #262626;
+    background: var(--vea-theme-light-3, #66b1ff);
   }
 }
 
@@ -1008,7 +1000,7 @@ onMounted(loadProduct)
     margin: 0;
     font-size: 14px;
     font-weight: 800;
-    color: #171717;
+    color: #303133;
   }
   .empty-sub {
     margin: 6px 0 14px;
@@ -1036,25 +1028,26 @@ onMounted(loadProduct)
   }
 
   thead th {
-    background: #111111;
-    color: #ffffff;
-    font-size: 11px;
-    font-weight: 800;
-    padding: 7px 6px;
+    background: #f5f7fa;
+    color: #515a6e;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 8px 6px;
 
     &.size-col-head {
       min-width: 68px;
       small {
         display: block;
-        font-size: 9.5px;
-        color: #a3a3a3;
-        font-weight: 600;
+        font-size: 10px;
+        color: #909399;
+        font-weight: 500;
       }
     }
 
     &.row-total-head {
       min-width: 54px;
-      background: #262626;
+      background: #eef1f6;
+      color: #303133;
     }
   }
 
@@ -1064,11 +1057,12 @@ onMounted(loadProduct)
     z-index: 2;
     min-width: 180px;
     text-align: left;
-    background: #fafafa;
+    background: #f8f9fb;
   }
 
   thead .sticky-color-col {
-    background: #000000;
+    background: #f5f7fa;
+    color: #303133;
     z-index: 3;
     padding-left: 10px;
   }
@@ -1091,7 +1085,7 @@ onMounted(loadProduct)
       flex-direction: column;
       line-height: 1.2;
 
-      strong { font-size: 12px; color: #000; }
+      strong { font-size: 12px; color: #303133; }
       span { font-size: 10px; color: #737373; }
     }
   }
@@ -1140,28 +1134,28 @@ onMounted(loadProduct)
     }
 
     &:hover {
-      outline: 2px solid #000000;
+      outline: 2px solid var(--vea-theme, #409eff);
       outline-offset: -1px;
     }
   }
 
   .cell-empty {
-    color: #d4d4d4;
-    font-weight: 700;
+    color: #c0c4cc;
+    font-weight: 600;
   }
 
   .row-total-cell {
-    background: #fafafa;
+    background: #f8f9fb;
     font-family: var(--font-mono);
     font-size: 12px;
-    color: #000000;
+    color: #303133;
   }
 }
 
 .matrix-tip {
   margin-top: 8px;
-  font-size: 11px;
-  color: #737373;
+  font-size: 11.5px;
+  color: #909399;
 }
 
 .table-filter-bar {
@@ -1175,24 +1169,25 @@ onMounted(loadProduct)
   .filter-chips {
     display: flex;
     flex-wrap: wrap;
-    gap: 5px;
+    gap: 6px;
   }
 
   .filter-chip {
     display: inline-flex;
     align-items: center;
     gap: 5px;
-    padding: 4px 9px;
+    padding: 4px 10px;
     background: #ffffff;
-    border: 1px solid #d4d4d4;
-    font-size: 11px;
-    font-weight: 700;
-    color: #262626;
+    border: 1px solid #dcdfe6;
+    border-radius: 3px;
+    font-size: 12px;
+    font-weight: 500;
+    color: #606266;
     cursor: pointer;
 
     &.active {
-      background: #000000;
-      border-color: #000000;
+      background: var(--vea-theme, #409eff);
+      border-color: var(--vea-theme, #409eff);
       color: #ffffff;
     }
 

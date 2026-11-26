@@ -115,5 +115,11 @@ public interface SalesOrderRepository extends JpaRepository<SalesOrder, Long> {
            "AND (CAST(:toDate AS timestamp) IS NULL OR so.orderDate <= :toDate)")
     BigDecimal sumCompletedRevenue(@Param("fromDate") LocalDateTime fromDate,
                                    @Param("toDate") LocalDateTime toDate);
+
+    @Query("SELECT COUNT(so) FROM SalesOrder so WHERE so.customer.id = :customerId AND so.status = 'COMPLETED'")
+    long countCompletedByCustomerId(@Param("customerId") Long customerId);
+
+    @Query("SELECT COALESCE(SUM(so.finalAmount), 0) FROM SalesOrder so WHERE so.customer.id = :customerId AND so.status = 'COMPLETED'")
+    BigDecimal sumCompletedFinalAmountByCustomerId(@Param("customerId") Long customerId);
 }
 

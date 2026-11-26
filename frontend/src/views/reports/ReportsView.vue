@@ -1,54 +1,80 @@
 <template>
   <div class="page-container reports-workspace" v-loading="loading">
-    <!-- Header -->
+    <!-- Header (Compact Command Bar + Quick Time Pills + Filter Popover — 0px wasted height!) -->
     <div class="page-header">
       <div class="page-title-group">
-        <h2 class="page-title">BÁO CÁO THỐNG KÊ ĐA CHIỀU – ADHA SNEAKER</h2>
+        <div class="report-title-line">
+          <h2 class="page-title">BÁO CÁO &amp; THỐNG KÊ</h2>
+          <span class="report-period-chip">{{ activeReportPeriodLabel }}</span>
+        </div>
         <p class="page-subtitle">
-          5 chuyên đề phân tích chuyên sâu: Doanh thu &amp; Dòng tiền, Kênh bán (POS vs Online), Tỷ lệ Hủy/Bom hàng, Biến thể Size/Màu &amp; Hiệu suất Nhân viên.
+          Doanh thu, dòng tiền, kênh bán, đơn hủy, biến thể Size/Màu và hiệu suất nhân viên.
         </p>
       </div>
       <div class="header-actions">
-        <el-button class="btn-soft" :loading="loading" @click="loadReport">
-          <el-icon><Refresh /></el-icon>
-          <span>Tổng hợp lại</span>
-        </el-button>
-        <el-button type="success" class="btn-excel" :loading="exporting" @click="exportExcel">
+        <div class="quick-time-group">
+          <button
+            v-for="p in quickPresets"
+            :key="p.key"
+            type="button"
+            class="qt-btn"
+            :class="{ active: activeQuickPreset === p.key }"
+            @click="applyQuickPreset(p.key)"
+          >
+            {{ p.label }}
+          </button>
+        </div>
+
+        <el-popover placement="bottom-end" :width="780" trigger="click">
+          <template #reference>
+            <el-button size="small" :type="activeFilterCount > 0 ? 'primary' : ''" :plain="activeFilterCount > 0">
+              <el-icon><Filter /></el-icon>
+              <span>Bộ lọc</span>
+              <span v-if="activeFilterCount > 0" class="filter-count-dot">{{ activeFilterCount }}</span>
+            </el-button>
+          </template>
+          <AnalyticsFilterBar
+            v-model="filters"
+            :brands="brands"
+            :categories="categories"
+            @change="onAdvancedFilterChange"
+          />
+        </el-popover>
+
+        <el-tooltip content="Làm mới báo cáo" placement="bottom">
+          <el-button size="small" class="btn-soft" :loading="loading" @click="loadReport">
+            <el-icon><Refresh /></el-icon>
+          </el-button>
+        </el-tooltip>
+
+        <el-button type="success" size="small" class="btn-excel" :loading="exporting" @click="exportExcel">
           <el-icon><Download /></el-icon>
-          <span>Xuất Bảng kê Kế toán Excel (5 Sheets)</span>
+          <span>Xuất Excel</span>
         </el-button>
       </div>
     </div>
 
-    <!-- Shared Multidimensional Filter Bar -->
-    <AnalyticsFilterBar
-      v-model="filters"
-      :brands="brands"
-      :categories="categories"
-      @change="loadReport"
-    />
-
-    <!-- Financial Summary Strip -->
+    <!-- Minimalist Financial Summary Bar -->
     <div class="summary-strip">
       <div class="sum-box primary">
-        <span class="sum-label">Tổng doanh thu thực nhận</span>
+        <span class="sum-label">Doanh thu thực nhận</span>
         <strong class="sum-val">{{ formatCurrency(report.totalRevenue) }}</strong>
-        <span class="sum-sub">{{ report.totalCompletedOrders }} đơn hoàn thành &middot; {{ report.totalQuantitySold }} đôi</span>
+        <span class="sum-sub">{{ report.totalCompletedOrders }} đơn &middot; {{ report.totalQuantitySold }} đôi</span>
       </div>
       <div class="sum-box">
-        <span class="sum-label">Tiền hàng trước thuế</span>
+        <span class="sum-label">Trước thuế / VAT</span>
         <strong class="sum-val">{{ formatCurrency(report.totalPreTaxRevenue) }}</strong>
-        <span class="sum-sub">Thuế VAT: {{ formatCurrency(report.totalVatAmount) }}</span>
+        <span class="sum-sub">VAT: {{ formatCurrency(report.totalVatAmount) }}</span>
       </div>
       <div class="sum-box">
-        <span class="sum-label">Cơ cấu dòng tiền thực thu</span>
+        <span class="sum-label">Chuyển khoản / Tiền mặt</span>
         <strong class="sum-val">{{ formatCurrency(report.totalBankTransferRevenue) }}</strong>
-        <span class="sum-sub">CK SePay &middot; TM: {{ formatCurrency(report.totalCashRevenue) }} &middot; COD: {{ formatCurrency(report.totalCodRevenue) }}</span>
+        <span class="sum-sub">Tiền mặt: {{ formatCurrency(report.totalCashRevenue) }} &middot; COD: {{ formatCurrency(report.totalCodRevenue) }}</span>
       </div>
       <div class="sum-box">
-        <span class="sum-label">Tạm tính / Thất thoát hủy</span>
+        <span class="sum-label">Thất thoát hủy đơn</span>
         <strong class="sum-val text-red">{{ formatCurrency(report.cancelledValue) }}</strong>
-        <span class="sum-sub">Tỷ lệ hủy: {{ report.cancellationRate }}% &middot; Tạm tính: {{ formatCurrency(report.provisionalRevenue) }}</span>
+        <span class="sum-sub">Tỷ lệ hủy: {{ report.cancellationRate }}%</span>
       </div>
     </div>
 
@@ -58,7 +84,10 @@
         <!-- MODULE 1: Doanh thu & Dòng tiền -->
         <el-tab-pane label="1. Doanh thu & Dòng tiền" name="cashflow">
           <div class="tab-intro">
-            Bảng kê chi tiết theo chu kỳ đã chọn (đối soát tiền hàng trước thuế, VAT và 3 luồng tiền mặt / chuyển khoản SePay / thu hộ COD).
+            Biểu đồ dòng tiền và bảng kê chi tiết theo chu kỳ đã chọn (đối soát tiền hàng trước thuế, VAT và 3 luồng tiền mặt / chuyển khoản SePay / thu hộ COD).
+          </div>
+          <div v-if="(report.revenueSeries || []).length" class="report-chart-card">
+            <BaseChart :option="cashflowChartOption" height="260px" />
           </div>
           <el-table :data="report.revenueSeries || []" border stripe show-summary :summary-method="cashflowSummary" style="width: 100%">
             <template #empty><el-empty description="Không có dữ liệu doanh thu trong kỳ lọc" :image-size="70" /></template>
@@ -89,6 +118,9 @@
 
         <!-- MODULE 2: Hiệu quả Kênh bán (POS vs Online) -->
         <el-tab-pane label="2. Hiệu quả Kênh bán (POS vs Online)" name="channels">
+          <div v-if="(report.channelComparison || []).length" class="report-chart-card">
+            <BaseChart :option="reportChannelChartOption" height="230px" />
+          </div>
           <div class="channel-compare-cards">
             <div
               v-for="ch in report.channelComparison || []"
@@ -137,17 +169,10 @@
           <el-row :gutter="16">
             <el-col :xs="24" :lg="10">
               <h4 class="sub-heading">Phân loại lý do hủy đơn / bom hàng</h4>
-              <div class="reason-bars">
-                <div v-for="r in report.cancelReasonStats || []" :key="r.reasonCategory" class="reason-item">
-                  <div class="reason-top">
-                    <span>{{ r.reasonCategory }}</span>
-                    <strong>{{ r.count }} đơn ({{ r.percentage }}%) &middot; {{ formatCurrency(r.lostValue) }}</strong>
-                  </div>
-                  <div class="reason-track">
-                    <div class="reason-fill" :style="{ width: Math.max(r.count > 0 ? 5 : 0, r.percentage) + '%' }" />
-                  </div>
-                </div>
+              <div v-if="(report.cancelReasonStats || []).length" class="report-chart-card" style="margin-bottom: 0">
+                <BaseChart :option="cancelReasonChartOption" height="280px" />
               </div>
+              <el-empty v-else description="Chưa có dữ liệu hủy đơn" :image-size="60" />
             </el-col>
             <el-col :xs="24" :lg="14">
               <h4 class="sub-heading">Chi tiết danh sách đơn không thành công ({{ (report.cancelledOrders || []).length }} đơn)</h4>
@@ -189,6 +214,21 @@
               <div class="ins-val">{{ goldenSizesLabel }}</div>
             </div>
           </div>
+
+          <el-row v-if="(report.sizeStats || []).length || (report.brandStats || []).length" :gutter="16" style="margin-top: 14px">
+            <el-col :xs="24" :lg="14">
+              <div class="report-chart-card" style="margin-bottom: 0">
+                <div class="rc-title">Biểu đồ Hấp thụ Size giày (Màu vàng = Size Vàng ưu tiên nhập)</div>
+                <BaseChart :option="sizeAbsorptionChartOption" height="230px" />
+              </div>
+            </el-col>
+            <el-col :xs="24" :lg="10">
+              <div class="report-chart-card" style="margin-bottom: 0">
+                <div class="rc-title">Tỷ trọng Doanh thu theo Thương hiệu</div>
+                <BaseChart :option="brandDonutChartOption" height="230px" />
+              </div>
+            </el-col>
+          </el-row>
 
           <el-row :gutter="16" style="margin-top: 14px">
             <el-col :xs="24" :lg="12">
@@ -287,17 +327,39 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import * as echarts from 'echarts'
 import { ElMessage } from 'element-plus'
-import { Download, Refresh } from '@element-plus/icons-vue'
+import { Download, Refresh, Filter } from '@element-plus/icons-vue'
 import { reportService } from '@/services/reportService'
 import { brandService } from '@/services/brandService'
 import { categoryService } from '@/services/categoryService'
+import { useAppSettingsStore } from '@/stores/appSettings'
 import { formatCurrency } from '@/utils/formatters'
 import AnalyticsFilterBar from '@/components/AnalyticsFilterBar.vue'
+import BaseChart from '@/components/charts/BaseChart.vue'
+
+const settings = useAppSettingsStore()
+const themeColor = computed(() => settings.theme || '#409EFF')
+
+function formatShortMoney(val) {
+  const n = Number(val || 0)
+  if (n >= 1_000_000_000) return (n / 1_000_000_000).toFixed(1) + 'B'
+  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M'
+  if (n >= 1_000) return Math.round(n / 1_000) + 'K'
+  return String(n)
+}
 
 const loading = ref(false)
 const exporting = ref(false)
 const activeTab = ref('cashflow')
+const activeQuickPreset = ref('ALL')
+
+const quickPresets = [
+  { key: 'ALL', label: 'Tất cả' },
+  { key: 'TODAY', label: 'Hôm nay' },
+  { key: 'LAST_7', label: '7 ngày' },
+  { key: 'THIS_MONTH', label: 'Tháng này' }
+]
 
 const brands = ref([])
 const categories = ref([])
@@ -312,6 +374,54 @@ const filters = ref({
   brandId: null,
   categoryId: null
 })
+
+const activeFilterCount = computed(() => {
+  const f = filters.value
+  let c = 0
+  if (f.channel) c++
+  if (f.orderStatus) c++
+  if (f.paymentMethod) c++
+  if (f.brandId) c++
+  if (f.categoryId) c++
+  if (f.fromDate || f.toDate) c++
+  return c
+})
+
+const activeReportPeriodLabel = computed(() => {
+  const f = filters.value
+  if (f.fromDate && f.toDate) return `${f.fromDate} → ${f.toDate}`
+  return 'Toàn thời gian'
+})
+
+function ymd(d) {
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+
+function applyQuickPreset(key) {
+  activeQuickPreset.value = key
+  const now = new Date()
+  if (key === 'TODAY') {
+    filters.value = { ...filters.value, fromDate: ymd(now), toDate: ymd(now) }
+  } else if (key === 'LAST_7') {
+    const s = new Date(now)
+    s.setDate(s.getDate() - 6)
+    filters.value = { ...filters.value, fromDate: ymd(s), toDate: ymd(now) }
+  } else if (key === 'THIS_MONTH') {
+    const s = new Date(now.getFullYear(), now.getMonth(), 1)
+    filters.value = { ...filters.value, fromDate: ymd(s), toDate: ymd(now) }
+  } else {
+    filters.value = { ...filters.value, fromDate: null, toDate: null }
+  }
+  loadReport()
+}
+
+function onAdvancedFilterChange() {
+  activeQuickPreset.value = filters.value.fromDate ? 'CUSTOM' : 'ALL'
+  loadReport()
+}
 
 const report = ref({
   totalRevenue: 0,
@@ -362,6 +472,247 @@ const menSizeStats = computed(() => {
 const goldenSizesLabel = computed(() => {
   const golds = (report.value.sizeStats || []).filter((s) => s.goldenSize).map((s) => `EU ${s.sizeValue}`)
   return golds.length ? golds.join(', ') : 'Chưa có dữ liệu bán'
+})
+
+// ==================== ECHARTS FOR REPORTS ====================
+const cashflowChartOption = computed(() => {
+  const list = report.value.revenueSeries || []
+  return {
+    animationDuration: 500,
+    tooltip: {
+      trigger: 'axis',
+      axisPointer: { type: 'shadow' },
+      backgroundColor: '#ffffff',
+      borderColor: '#e2e8f0',
+      borderWidth: 1,
+      textStyle: { color: '#303133', fontSize: 12 }
+    },
+    legend: {
+      top: 0,
+      left: 0,
+      icon: 'roundRect',
+      itemWidth: 12,
+      itemHeight: 8,
+      textStyle: { color: '#606266', fontSize: 12 }
+    },
+    grid: { top: 38, left: 56, right: 44, bottom: 26 },
+    xAxis: {
+      type: 'category',
+      data: list.map((x) => x.period),
+      axisLine: { lineStyle: { color: '#e2e8f0' } },
+      axisTick: { show: false },
+      axisLabel: { color: '#64748b', fontSize: 11 }
+    },
+    yAxis: [
+      {
+        type: 'value',
+        splitLine: { lineStyle: { color: '#f1f5f9', type: 'dashed' } },
+        axisLabel: { color: '#64748b', fontSize: 11, formatter: (v) => formatShortMoney(v) }
+      },
+      {
+        type: 'value',
+        minInterval: 1,
+        splitLine: { show: false },
+        axisLabel: { color: '#f97316', fontSize: 11, formatter: (v) => `${v} đ` }
+      }
+    ],
+    series: [
+      {
+        name: 'Chuyển khoản (SePay)',
+        type: 'bar',
+        stack: 'cf',
+        barMaxWidth: 38,
+        data: list.map((x) => Number(x.bankTransferRevenue || 0)),
+        itemStyle: { color: '#3b82f6' }
+      },
+      {
+        name: 'Tiền mặt (CASH)',
+        type: 'bar',
+        stack: 'cf',
+        barMaxWidth: 38,
+        data: list.map((x) => Number(x.cashRevenue || 0)),
+        itemStyle: { color: '#f59e0b' }
+      },
+      {
+        name: 'Thu hộ (COD)',
+        type: 'bar',
+        stack: 'cf',
+        barMaxWidth: 38,
+        data: list.map((x) => Number(x.codRevenue || 0)),
+        itemStyle: { color: '#10b981', borderRadius: [6, 6, 0, 0] }
+      },
+      {
+        name: 'Số đơn hoàn thành',
+        type: 'line',
+        yAxisIndex: 1,
+        smooth: 0.35,
+        symbol: 'circle',
+        symbolSize: 7,
+        data: list.map((x) => Number(x.orderCount || 0)),
+        lineStyle: { color: '#f97316', width: 2.5 },
+        itemStyle: { color: '#ffffff', borderColor: '#f97316', borderWidth: 2 }
+      }
+    ]
+  }
+})
+
+const reportChannelChartOption = computed(() => {
+  const list = report.value.channelComparison || []
+  return {
+    animationDuration: 500,
+    tooltip: {
+      trigger: 'item',
+      formatter: (p) => `<strong>${p.name}</strong><br/>${formatCurrency(p.value)} (${p.percent}%)`
+    },
+    legend: {
+      orient: 'vertical',
+      right: '12%',
+      top: 'middle',
+      icon: 'circle',
+      textStyle: { color: '#475569', fontSize: 12.5, fontWeight: 600 }
+    },
+    series: [
+      {
+        name: 'Kênh bán hàng',
+        type: 'pie',
+        radius: ['52%', '78%'],
+        center: ['32%', '50%'],
+        itemStyle: { borderRadius: 8, borderColor: '#ffffff', borderWidth: 3 },
+        label: { show: true, formatter: '{d}%', fontWeight: 700, fontSize: 12 },
+        data: list.map((ch) => ({
+          name: ch.label || ch.channel,
+          value: Number(ch.actualRevenue || 0),
+          itemStyle: { color: ch.channel === 'POS' ? themeColor.value : '#f97316' }
+        }))
+      }
+    ]
+  }
+})
+
+const cancelReasonChartOption = computed(() => {
+  const list = [...(report.value.cancelReasonStats || [])].reverse()
+  return {
+    animationDuration: 500,
+    tooltip: {
+      trigger: 'axis',
+      axisPointer: { type: 'shadow' },
+      formatter: (params) => {
+        const idx = params?.[0]?.dataIndex ?? 0
+        const r = list[idx]
+        if (!r) return ''
+        return `<strong>${r.reasonCategory}</strong><br/>Số đơn: <b>${r.count} (${r.percentage}%)</b><br/>Thất thoát: <b style="color:#dc2626">${formatCurrency(r.lostValue)}</b>`
+      }
+    },
+    grid: { top: 10, left: 10, right: 48, bottom: 16, containLabel: true },
+    xAxis: {
+      type: 'value',
+      minInterval: 1,
+      splitLine: { lineStyle: { color: '#f1f5f9', type: 'dashed' } },
+      axisLabel: { color: '#94a3b8', fontSize: 11 }
+    },
+    yAxis: {
+      type: 'category',
+      data: list.map((r) => r.reasonCategory),
+      axisLine: { lineStyle: { color: '#e2e8f0' } },
+      axisTick: { show: false },
+      axisLabel: { color: '#334155', fontSize: 11.5, fontWeight: 600 }
+    },
+    series: [
+      {
+        type: 'bar',
+        barMaxWidth: 22,
+        data: list.map((r) => Number(r.count || 0)),
+        itemStyle: {
+          borderRadius: [0, 6, 6, 0],
+          color: new echarts.graphic.LinearGradient(0, 0, 1, 0, [
+            { offset: 0, color: '#fca5a5' },
+            { offset: 1, color: '#ef4444' }
+          ])
+        },
+        label: { show: true, position: 'right', fontSize: 11, fontWeight: 700, color: '#dc2626', formatter: '{c} đơn' }
+      }
+    ]
+  }
+})
+
+const sizeAbsorptionChartOption = computed(() => {
+  const list = report.value.sizeStats || []
+  return {
+    animationDuration: 500,
+    tooltip: {
+      trigger: 'axis',
+      axisPointer: { type: 'shadow' },
+      formatter: (params) => {
+        const idx = params?.[0]?.dataIndex ?? 0
+        const s = list[idx]
+        if (!s) return ''
+        return `<strong>EU ${s.sizeValue}</strong>${s.goldenSize ? ' (Size Vàng)' : ''}<br/>Đã bán: <b>${s.quantitySold} đôi (${s.sharePercent}%)</b><br/>Tồn kho: <b>${s.currentStock}</b><br/>Doanh thu: <b>${formatCurrency(s.revenue)}</b>`
+      }
+    },
+    grid: { top: 18, left: 36, right: 16, bottom: 24 },
+    xAxis: {
+      type: 'category',
+      data: list.map((s) => `EU ${s.sizeValue}`),
+      axisLine: { lineStyle: { color: '#e2e8f0' } },
+      axisTick: { show: false },
+      axisLabel: { color: '#475569', fontSize: 11, fontWeight: 600 }
+    },
+    yAxis: {
+      type: 'value',
+      minInterval: 1,
+      splitLine: { lineStyle: { color: '#f1f5f9', type: 'dashed' } },
+      axisLabel: { color: '#94a3b8', fontSize: 11 }
+    },
+    series: [
+      {
+        type: 'bar',
+        barMaxWidth: 30,
+        data: list.map((s) => ({
+          value: Number(s.quantitySold || 0),
+          itemStyle: {
+            borderRadius: [6, 6, 0, 0],
+            color: s.goldenSize ? '#f59e0b' : themeColor.value
+          }
+        })),
+        label: { show: true, position: 'top', fontSize: 10.5, fontWeight: 700, color: '#475569' }
+      }
+    ]
+  }
+})
+
+const brandDonutChartOption = computed(() => {
+  const list = report.value.brandStats || []
+  const palette = [themeColor.value, '#10b981', '#f59e0b', '#f97316', '#8b5cf6', '#ec4899', '#14b8a6']
+  return {
+    animationDuration: 500,
+    tooltip: {
+      trigger: 'item',
+      formatter: (p) => `<strong>${p.name}</strong><br/>${formatCurrency(p.value)} (${p.percent}%)`
+    },
+    legend: {
+      orient: 'vertical',
+      right: 4,
+      top: 'middle',
+      icon: 'circle',
+      itemWidth: 9,
+      itemHeight: 9,
+      textStyle: { color: '#475569', fontSize: 11.5 }
+    },
+    series: [
+      {
+        type: 'pie',
+        radius: ['48%', '74%'],
+        center: ['36%', '50%'],
+        itemStyle: { borderRadius: 6, borderColor: '#ffffff', borderWidth: 2 },
+        label: { show: false },
+        data: list.map((b, i) => ({
+          name: b.brandName,
+          value: Number(b.revenue || 0),
+          itemStyle: { color: palette[i % palette.length] }
+        }))
+      }
+    ]
+  }
 })
 
 function cashflowSummary({ columns, data }) {
@@ -415,7 +766,8 @@ async function exportExcel() {
   exporting.value = true
   try {
     const res = await reportService.exportReportExcel(buildParams())
-    const blob = new Blob([res.data], {
+    const raw = res instanceof Blob ? res : (res?.data ?? res)
+    const blob = new Blob([raw], {
       type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     })
     const url = URL.createObjectURL(blob)
@@ -472,15 +824,15 @@ onMounted(() => {
   }
 
   &.primary {
-    background: #0a0a0a;
-    border-color: #0a0a0a;
-    .sum-label { color: #a3a3a3; }
+    background: var(--vea-theme, #409eff);
+    border-color: var(--vea-theme, #409eff);
+    .sum-label { color: rgba(255, 255, 255, 0.9); }
     .sum-val { color: #ffffff; }
-    .sum-sub { color: #a3a3a3; }
+    .sum-sub { color: rgba(255, 255, 255, 0.82); }
   }
 
   .sum-label { font-size: 11px; font-weight: 800; color: #737373; text-transform: uppercase; letter-spacing: 0.05em; }
-  .sum-val { font-size: 22px; font-weight: 900; color: #000000; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .sum-val { font-size: 22px; font-weight: 900; color: #303133; font-variant-numeric: tabular-nums; white-space: nowrap; }
   .sum-sub { font-size: 12px; color: #737373; line-height: 1.4; }
 }
 
@@ -498,13 +850,13 @@ onMounted(() => {
     color: #525252;
 
     &.is-active {
-      color: #000000;
+      color: #303133;
       font-weight: 800;
     }
   }
 
   :deep(.el-tabs__active-bar) {
-    background-color: #000000;
+    background-color: var(--vea-theme, #409eff);
     height: 2.5px;
   }
 
@@ -525,7 +877,7 @@ onMounted(() => {
   font-weight: 900;
   text-transform: uppercase;
   letter-spacing: 0.03em;
-  color: #000000;
+  color: #303133;
 }
 
 .mono-tag {
@@ -536,7 +888,7 @@ onMounted(() => {
   font-family: var(--font-mono);
   font-size: 12px;
   font-weight: 800;
-  color: #000000;
+  color: #303133;
 }
 
 .text-red { color: #dc2626; }
@@ -563,7 +915,7 @@ onMounted(() => {
   padding: 18px 20px;
   background: #fafafa;
 
-  &.is-pos { border-top: 3px solid #000000; }
+  &.is-pos { border-top: 3px solid var(--vea-theme, #409eff); }
   &.is-online { border-top: 3px solid #ea580c; }
 }
 
@@ -572,7 +924,7 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   font-size: 14px;
-  color: #000000;
+  color: #303133;
 }
 
 .share-pill {
@@ -587,7 +939,7 @@ onMounted(() => {
 .ch-big-money {
   font-size: 24px;
   font-weight: 900;
-  color: #000000;
+  color: #303133;
   margin: 10px 0 14px;
   font-variant-numeric: tabular-nums;
 }
@@ -664,7 +1016,7 @@ onMounted(() => {
   }
 
   .ins-label { font-size: 11.5px; font-weight: 800; text-transform: uppercase; color: #737373; letter-spacing: 0.03em; }
-  .ins-val { font-size: 19px; font-weight: 900; color: #000000; margin-top: 6px; }
+  .ins-val { font-size: 19px; font-weight: 900; color: #303133; margin-top: 6px; }
 }
 
 .gold-badge {
@@ -691,10 +1043,143 @@ onMounted(() => {
   margin-left: 8px;
   padding: 2px 6px;
   border-radius: 3px;
-  background: #000000;
+  background: var(--vea-theme, #409eff);
   color: #ffffff;
   font-size: 10px;
   font-weight: 800;
+}
+
+.report-chart-card {
+  background: #fafbfc;
+  border: 1px solid #e6ebf5;
+  border-radius: 6px;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+}
+
+.rc-title {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #475569;
+  margin-bottom: 6px;
+}
+
+.report-title-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.report-period-chip {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--vea-theme-light-9, #ecf5ff);
+  color: var(--vea-theme, #409eff);
+  border: 1px solid var(--vea-theme-light-7, #c6e2ff);
+  white-space: nowrap;
+}
+
+.quick-time-group {
+  display: inline-flex;
+  background: #f4f6f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 5px;
+  padding: 2px;
+  gap: 2px;
+}
+
+.qt-btn {
+  border: none;
+  background: transparent;
+  color: #606266;
+  font-family: inherit;
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 4px 9px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.14s ease;
+  white-space: nowrap;
+
+  &:hover {
+    color: var(--vea-theme, #409eff);
+  }
+
+  &.active {
+    background: #ffffff;
+    color: var(--vea-theme, #409eff);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+  }
+}
+
+.filter-count-dot {
+  margin-left: 4px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--vea-theme, #409eff);
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@media (min-width: 1025px) {
+  .summary-strip {
+    flex-shrink: 0;
+    gap: 10px;
+  }
+
+  .sum-box {
+    padding: 10px 14px;
+    gap: 2px;
+
+    .sum-val {
+      font-size: 17px;
+    }
+  }
+
+  .reports-surface {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .report-tabs {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+
+    :deep(.el-tabs__header) {
+      flex-shrink: 0;
+      margin-bottom: 10px;
+    }
+
+    :deep(.el-tabs__content) {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    :deep(.el-tab-pane) {
+      flex: 1;
+      min-height: 0;
+      height: 100%;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+  }
 }
 
 @media (max-width: 1200px) {

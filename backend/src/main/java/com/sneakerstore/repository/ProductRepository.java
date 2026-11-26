@@ -19,7 +19,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     Optional<Product> findWithDetailsById(Long id);
 
     @EntityGraph(attributePaths = {"brand", "category"})
-    @Query("SELECT p FROM Product p WHERE " +
+    @Query("SELECT p FROM Product p WHERE p.deleted = false AND " +
            "(:keyword IS NULL OR :keyword = '' OR LOWER(p.productCode) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
            "OR LOWER(p.productName) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
            "AND (:brandId IS NULL OR p.brand.id = :brandId) " +
@@ -32,6 +32,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
                                  Pageable pageable);
 
     @EntityGraph(attributePaths = {"brand", "category"})
+    @Query("SELECT p FROM Product p WHERE p.deleted = false ORDER BY p.id DESC")
     List<Product> findAllByOrderByIdDesc();
 
     long countByStatus(String status);

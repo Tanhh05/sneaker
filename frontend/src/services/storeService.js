@@ -39,6 +39,12 @@ export const storeService = {
   },
   submitProductReview(productId, data) {
     return api.post(`/store/products/${productId}/reviews`, data)
+  },
+  getAvailableVouchers(params = {}) {
+    return api.get('/store/vouchers/available', { params })
+  },
+  validateVoucher(payload) {
+    return api.post('/store/vouchers/validate', payload)
   }
 }
 

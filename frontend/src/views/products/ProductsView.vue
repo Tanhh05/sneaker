@@ -104,23 +104,33 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="Thao tác" width="115" fixed="right" align="center">
+        <el-table-column label="Thao tác" width="160" fixed="right" align="center" class-name="small-padding fixed-width">
           <template #default="{ row }">
-            <div class="row-actions">
-              <button class="action-btn" title="Xem chi tiết" @click="openDetail(row)">
-                <el-icon><View /></el-icon>
-              </button>
-              <button v-if="canManageCatalog" class="action-btn" title="Chỉnh sửa" @click="openEdit(row)">
-                <el-icon><Edit /></el-icon>
-              </button>
+            <div class="vea-table-actions">
+              <el-tooltip content="Xem chi tiết sản phẩm" placement="top" :show-after="200">
+                <el-button size="small" class="vea-icon-btn vea-icon-info" aria-label="Xem chi tiết" @click="openDetail(row)">
+                  <el-icon><View /></el-icon>
+                </el-button>
+              </el-tooltip>
+
+              <el-tooltip v-if="canManageCatalog" content="Chỉnh sửa sản phẩm" placement="top" :show-after="200">
+                <el-button size="small" class="vea-icon-btn vea-icon-primary" aria-label="Chỉnh sửa" @click="openEdit(row)">
+                  <el-icon><Edit /></el-icon>
+                </el-button>
+              </el-tooltip>
+
               <el-dropdown
                 v-if="canManageCatalog"
                 trigger="click"
                 @command="(cmd) => handleProductAction(cmd, row)"
               >
-                <button class="action-btn action-more" title="Thao tác khác">
-                  <el-icon><MoreFilled /></el-icon>
-                </button>
+                <span>
+                  <el-tooltip content="Thêm thao tác" placement="top" :show-after="200">
+                    <el-button size="small" class="vea-icon-btn vea-icon-more" aria-label="Thêm thao tác">
+                      <el-icon><MoreFilled /></el-icon>
+                    </el-button>
+                  </el-tooltip>
+                </span>
                 <template #dropdown>
                   <el-dropdown-menu>
                     <el-dropdown-item command="variants">
@@ -130,13 +140,24 @@
                       v-if="row.status === 'ACTIVE'"
                       command="discontinue"
                       divided
-                      style="color: #ef4444"
+                      style="color: #ff4949"
                     >
-                      ✕ Ngừng KD
+                      Ngừng kinh doanh
                     </el-dropdown-item>
                   </el-dropdown-menu>
                 </template>
               </el-dropdown>
+
+              <el-tooltip v-if="authStore.isAdmin" content="Xóa mềm sản phẩm" placement="top" :show-after="200">
+                <el-button
+                  size="small"
+                  class="vea-icon-btn vea-icon-danger"
+                  aria-label="Xóa mềm"
+                  @click="handleSoftDelete(row)"
+                >
+                  <el-icon><Delete /></el-icon>
+                </el-button>
+              </el-tooltip>
             </div>
           </template>
         </el-table-column>
@@ -161,15 +182,18 @@
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus, View, Edit, MoreFilled } from '@element-plus/icons-vue'
+import { Plus, View, Edit, MoreFilled, Delete } from '@element-plus/icons-vue'
 import { productService } from '@/services/productService'
 import { brandService } from '@/services/brandService'
 import { categoryService } from '@/services/categoryService'
+import { softDeleteService } from '@/services/softDeleteService'
+import { useAuthStore } from '@/stores/auth'
 import { formatCurrency } from '@/utils/formatters'
 import { usePermission } from '@/composables/usePermission'
 import { useDebouncedWatch } from '@/composables/useDebounce'
 
 const router = useRouter()
+const authStore = useAuthStore()
 const { canManageCatalog } = usePermission()
 
 const loading = ref(false)
@@ -267,6 +291,18 @@ function handleDiscontinue(row) {
   }).catch(() => {})
 }
 
+function handleSoftDelete(row) {
+  ElMessageBox.confirm(
+    `Bạn có chắc chắn muốn xóa mềm sản phẩm "${row.productName}"? Dữ liệu đơn hàng lịch sử vẫn được giữ nguyên.`,
+    'Xác nhận xóa mềm',
+    { type: 'warning', confirmButtonText: 'Xóa mềm', cancelButtonText: 'Hủy', confirmButtonClass: 'el-button--danger' }
+  ).then(async () => {
+    await softDeleteService.remove('products', row.id)
+    ElMessage.success(`Đã xóa mềm sản phẩm ${row.productName}`)
+    loadData()
+  }).catch(() => {})
+}
+
 onMounted(() => {
   loadMeta()
   loadData()
@@ -286,7 +322,7 @@ onMounted(() => {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: #09090b;
+    background: var(--vea-theme, #409eff);
     color: #ffffff;
     font-size: 10px;
     font-weight: 800;
@@ -297,14 +333,14 @@ onMounted(() => {
 .clickable-link {
   cursor: pointer;
   &:hover {
-    background: #000000;
+    background: var(--vea-theme, #409eff);
     color: #ffffff;
   }
 }
 
 .product-name-link {
   font-weight: 700;
-  color: #171717;
+  color: #303133;
   cursor: pointer;
   &:hover {
     text-decoration: underline;

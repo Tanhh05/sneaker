@@ -25,7 +25,7 @@
       <el-tabs v-model="activeTab">
         <!-- TAB 1: PRODUCT VARIANTS (SKU) -->
         <el-tab-pane label="Danh sách Biến thể (SKU)" name="variants">
-          <el-row :gutter="12" style="margin-bottom: 16px">
+          <el-row :gutter="10" style="margin-bottom: 10px; align-items: center;">
             <el-col :xs="24" :sm="8" :md="6">
               <el-input
                 v-model="vFilters.keyword"
@@ -78,8 +78,10 @@
               </QuickSelect>
             </el-col>
             <el-col :xs="12" :sm="24" :md="4">
-              <el-button type="primary" @click="loadVariants">Tìm SKU</el-button>
-              <el-button @click="resetVariantFilter">Làm mới</el-button>
+              <div style="display: flex; gap: 6px; justify-content: flex-end;">
+                <el-button type="primary" @click="loadVariants">Tìm SKU</el-button>
+                <el-button @click="resetVariantFilter">Làm mới</el-button>
+              </div>
             </el-col>
           </el-row>
 
@@ -122,15 +124,29 @@
                 </el-tag>
               </template>
             </el-table-column>
-            <el-table-column v-if="canManageCatalog" label="Thao tác" width="95" fixed="right" align="center">
+            <el-table-column v-if="canManageCatalog || authStore.isAdmin" label="Thao tác" width="130" fixed="right" align="center" class-name="small-padding fixed-width">
               <template #default="{ row }">
-                <div class="row-actions">
-                  <button class="action-btn" title="In tem mã vạch dán hộp giày" @click="printSingleVariant(row)">
-                    <el-icon><Printer /></el-icon>
-                  </button>
-                  <button class="action-btn" title="Chỉnh sửa" @click="openEditVariant(row)">
-                    <el-icon><Edit /></el-icon>
-                  </button>
+                <div class="vea-table-actions">
+                  <el-tooltip v-if="canManageCatalog" content="In tem mã vạch SKU" placement="top" :show-after="200">
+                    <el-button size="small" class="vea-icon-btn vea-icon-success" aria-label="In tem mã vạch" @click="printSingleVariant(row)">
+                      <el-icon><Printer /></el-icon>
+                    </el-button>
+                  </el-tooltip>
+                  <el-tooltip v-if="canManageCatalog" content="Chỉnh sửa biến thể" placement="top" :show-after="200">
+                    <el-button size="small" class="vea-icon-btn vea-icon-primary" aria-label="Chỉnh sửa biến thể" @click="openEditVariant(row)">
+                      <el-icon><Edit /></el-icon>
+                    </el-button>
+                  </el-tooltip>
+                  <el-tooltip v-if="authStore.isAdmin" content="Xóa mềm biến thể" placement="top" :show-after="200">
+                    <el-button
+                      size="small"
+                      class="vea-icon-btn vea-icon-danger"
+                      aria-label="Xóa mềm biến thể"
+                      @click="handleSoftDeleteVariant(row)"
+                    >
+                      <el-icon><Delete /></el-icon>
+                    </el-button>
+                  </el-tooltip>
                 </div>
               </template>
             </el-table-column>
@@ -182,10 +198,12 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
-import { Plus, Edit, Printer } from '@element-plus/icons-vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { Plus, Edit, Printer, Delete } from '@element-plus/icons-vue'
 import { variantService } from '@/services/variantService'
 import { productService } from '@/services/productService'
+import { softDeleteService } from '@/services/softDeleteService'
+import { useAuthStore } from '@/stores/auth'
 import { formatCurrency } from '@/utils/formatters'
 import { usePermission } from '@/composables/usePermission'
 import { useDebouncedWatch } from '@/composables/useDebounce'
@@ -194,6 +212,7 @@ import ColorManagerTab from './components/ColorManagerTab.vue'
 import BarcodeLabelPrintModal from '@/components/common/BarcodeLabelPrintModal.vue'
 
 const router = useRouter()
+const authStore = useAuthStore()
 const { canManageCatalog } = usePermission()
 const activeTab = ref('variants')
 const loading = ref(false)
@@ -301,6 +320,18 @@ function openCreateVariant() {
 
 function openEditVariant(row) {
   router.push(`/admin/variants/${row.id}/edit`)
+}
+
+function handleSoftDeleteVariant(row) {
+  ElMessageBox.confirm(
+    `Bạn có chắc chắn muốn xóa mềm biến thể SKU "${row.sku}"? Dữ liệu lịch sử đơn hàng & nhập kho vẫn được giữ nguyên.`,
+    'Xác nhận xóa mềm',
+    { type: 'warning', confirmButtonText: 'Xóa mềm', cancelButtonText: 'Hủy', confirmButtonClass: 'el-button--danger' }
+  ).then(async () => {
+    await softDeleteService.remove('variants', row.id)
+    ElMessage.success(`Đã xóa mềm biến thể ${row.sku}`)
+    loadVariants()
+  }).catch(() => {})
 }
 
 onMounted(() => {

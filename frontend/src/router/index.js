@@ -136,6 +136,12 @@ const routes = [
         meta: { title: 'Chi tiết hóa đơn', roles: ['ADMIN', 'MANAGER', 'STAFF'] }
       },
       {
+        path: 'vouchers',
+        name: 'Vouchers',
+        component: () => import('@/views/vouchers/VouchersView.vue'),
+        meta: { title: 'Quản lý Voucher & Khuyến mãi', roles: ['ADMIN', 'MANAGER', 'STAFF'] }
+      },
+      {
         path: 'products',
         name: 'Products',
         component: () => import('@/views/products/ProductsView.vue'),
@@ -234,6 +240,7 @@ const routes = [
   { path: '/orders/:id', redirect: (to) => `/admin/orders/${to.params.id}` },
   { path: '/invoices', redirect: '/admin/invoices' },
   { path: '/invoices/:id', redirect: (to) => `/admin/invoices/${to.params.id}` },
+  { path: '/vouchers', redirect: '/admin/vouchers' },
   { path: '/products', redirect: '/admin/products' },
   { path: '/products/create', redirect: '/admin/products/create' },
   { path: '/products/:id/edit', redirect: (to) => `/admin/products/${to.params.id}/edit` },

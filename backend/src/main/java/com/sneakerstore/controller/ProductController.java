@@ -5,6 +5,7 @@ import com.sneakerstore.common.response.PageResponse;
 import com.sneakerstore.dto.response.ProductDto;
 import com.sneakerstore.dto.request.ProductRequest;
 import com.sneakerstore.service.ProductService;
+import com.sneakerstore.service.SoftDeleteService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
@@ -20,6 +21,7 @@ import java.util.List;
 public class ProductController {
 
     private final ProductService productService;
+    private final SoftDeleteService softDeleteService;
 
     @GetMapping
     public ApiResponse<PageResponse<ProductDto>> getProducts(
@@ -60,6 +62,13 @@ public class ProductController {
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ApiResponse<ProductDto> discontinue(@PathVariable Long id) {
         return ApiResponse.ok("Đã ngừng kinh doanh sản phẩm", productService.discontinue(id));
+    }
+
+    @DeleteMapping("/{id}/soft-delete")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ApiResponse<Void> softDelete(@PathVariable Long id) {
+        softDeleteService.softDeleteProduct(id);
+        return ApiResponse.ok("Đã xóa mềm sản phẩm", null);
     }
 }
 

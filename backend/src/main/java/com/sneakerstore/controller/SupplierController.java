@@ -4,6 +4,7 @@ import com.sneakerstore.common.response.ApiResponse;
 import com.sneakerstore.common.response.PageResponse;
 import com.sneakerstore.dto.response.SupplierDto;
 import com.sneakerstore.dto.request.SupplierRequest;
+import com.sneakerstore.service.SoftDeleteService;
 import com.sneakerstore.service.SupplierService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +21,7 @@ import java.util.List;
 public class SupplierController {
 
     private final SupplierService supplierService;
+    private final SoftDeleteService softDeleteService;
 
     @GetMapping
     public ApiResponse<PageResponse<SupplierDto>> getSuppliers(
@@ -57,6 +59,13 @@ public class SupplierController {
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ApiResponse<SupplierDto> deactivate(@PathVariable Long id) {
         return ApiResponse.ok("Đã ngừng hợp tác với nhà cung cấp", supplierService.deactivate(id));
+    }
+
+    @DeleteMapping("/{id}/soft-delete")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ApiResponse<Void> softDelete(@PathVariable Long id) {
+        softDeleteService.softDeleteSupplier(id);
+        return ApiResponse.ok("Đã xóa mềm nhà cung cấp", null);
     }
 }
 

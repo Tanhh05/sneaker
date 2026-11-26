@@ -89,43 +89,44 @@
           </template>
         </el-table-column>
         <el-table-column prop="note" label="Ghi chú" min-width="180" show-overflow-tooltip />
-        <el-table-column label="Thao tác" width="115" fixed="right" align="center">
+        <el-table-column label="Thao tác" width="215" fixed="right" align="center" class-name="small-padding fixed-width">
           <template #default="{ row }">
-            <div class="row-actions">
-              <button class="action-btn" title="Xem chi tiết" @click="openDetail(row)">
-                <el-icon><View /></el-icon>
-              </button>
-              <template v-if="row.status === 'DRAFT'">
-                <button class="action-btn" title="Chỉnh sửa" @click="openEdit(row)">
+            <div class="vea-table-actions">
+              <el-button
+                v-if="row.status === 'DRAFT'"
+                type="success"
+                size="small"
+                class="vea-cta-btn"
+                @click="handleConfirm(row)"
+              >
+                <el-icon><Check /></el-icon>
+                <span>Duyệt</span>
+              </el-button>
+              <el-tooltip content="Xem chi tiết phiếu nhập" placement="top" :show-after="200">
+                <el-button size="small" class="vea-icon-btn vea-icon-info" aria-label="Xem chi tiết" @click="openDetail(row)">
+                  <el-icon><View /></el-icon>
+                </el-button>
+              </el-tooltip>
+              <el-tooltip v-if="row.status === 'DRAFT'" content="Chỉnh sửa phiếu nháp" placement="top" :show-after="200">
+                <el-button size="small" class="vea-icon-btn vea-icon-primary" aria-label="Sửa phiếu nháp" @click="openEdit(row)">
                   <el-icon><Edit /></el-icon>
-                </button>
-                <el-dropdown
-                  trigger="click"
-                  @command="(cmd) => handlePurchaseAction(cmd, row)"
+                </el-button>
+              </el-tooltip>
+              <el-tooltip v-if="row.status === 'DRAFT'" content="Hủy phiếu nhập nháp" placement="top" :show-after="200">
+                <el-button size="small" class="vea-icon-btn vea-icon-warning" aria-label="Hủy phiếu nhập" @click="handleCancel(row)">
+                  <el-icon><Close /></el-icon>
+                </el-button>
+              </el-tooltip>
+              <el-tooltip v-if="authStore.isAdmin" content="Xóa mềm phiếu nhập" placement="top" :show-after="200">
+                <el-button
+                  size="small"
+                  class="vea-icon-btn vea-icon-danger"
+                  aria-label="Xóa mềm"
+                  @click="handleSoftDelete(row)"
                 >
-                  <button class="action-btn action-more" title="Thao tác khác">
-                    <el-icon><MoreFilled /></el-icon>
-                  </button>
-                  <template #dropdown>
-                    <el-dropdown-menu>
-                      <el-dropdown-item command="confirm">
-                        ✓ Xác nhận nhập kho
-                      </el-dropdown-item>
-                      <el-dropdown-item command="cancel" divided style="color: #ef4444">
-                        ✕ Hủy phiếu nhập
-                      </el-dropdown-item>
-                    </el-dropdown-menu>
-                  </template>
-                </el-dropdown>
-              </template>
-              <template v-else>
-                <button class="action-btn is-disabled" disabled title="Phiếu đã xác nhận hoặc đã hủy, không thể chỉnh sửa">
-                  <el-icon><Edit /></el-icon>
-                </button>
-                <button class="action-btn action-more is-disabled" disabled title="Không có thao tác khả dụng">
-                  <el-icon><MoreFilled /></el-icon>
-                </button>
-              </template>
+                  <el-icon><Delete /></el-icon>
+                </el-button>
+              </el-tooltip>
             </div>
           </template>
         </el-table-column>
@@ -213,17 +214,19 @@
             </template>
           </el-table-column>
 
-          <el-table-column label="Xóa" width="65" align="center">
+          <el-table-column label="" width="56" align="center">
             <template #default="{ $index }">
-              <el-button
-                type="danger"
-                text
-                size="small"
-                :disabled="form.items.length <= 1"
-                @click="form.items.splice($index, 1)"
-              >
-                Xóa
-              </el-button>
+              <el-tooltip content="Xóa dòng" placement="top" :show-after="200">
+                <el-button
+                  size="small"
+                  class="vea-icon-btn vea-icon-danger"
+                  aria-label="Xóa dòng"
+                  :disabled="form.items.length <= 1"
+                  @click="form.items.splice($index, 1)"
+                >
+                  <el-icon><Delete /></el-icon>
+                </el-button>
+              </el-tooltip>
             </template>
           </el-table-column>
         </el-table>
@@ -252,14 +255,18 @@
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus, View, Edit, MoreFilled } from '@element-plus/icons-vue'
+import { Plus, View, Edit, Check, Close, Delete } from '@element-plus/icons-vue'
 import { purchaseService } from '@/services/purchaseService'
 import { supplierService } from '@/services/supplierService'
 import { variantService } from '@/services/variantService'
+import { softDeleteService } from '@/services/softDeleteService'
+import { useAuthStore } from '@/stores/auth'
 import { formatCurrency, formatDateTime } from '@/utils/formatters'
 import { PURCHASE_STATUS_MAP } from '@/constants'
 import { useDebouncedWatch } from '@/composables/useDebounce'
 import PurchaseDetailDialog from './components/PurchaseDetailDialog.vue'
+
+const authStore = useAuthStore()
 
 const loading = ref(false)
 const saving = ref(false)
@@ -447,6 +454,18 @@ function handleCancel(row) {
   ).then(async () => {
     await purchaseService.cancelPurchase(row.id)
     ElMessage.success(`Đã hủy phiếu nhập ${row.purchaseCode}`)
+    loadData()
+  }).catch(() => {})
+}
+
+function handleSoftDelete(row) {
+  ElMessageBox.confirm(
+    `Bạn có chắc chắn muốn xóa mềm phiếu nhập "${row.purchaseCode}"? Dữ liệu lịch sử vẫn được lưu giữ trong hệ thống.`,
+    'Xác nhận xóa mềm',
+    { type: 'warning', confirmButtonText: 'Xóa mềm', cancelButtonText: 'Hủy', confirmButtonClass: 'el-button--danger' }
+  ).then(async () => {
+    await softDeleteService.remove('purchases', row.id)
+    ElMessage.success(`Đã xóa mềm phiếu nhập ${row.purchaseCode}`)
     loadData()
   }).catch(() => {})
 }

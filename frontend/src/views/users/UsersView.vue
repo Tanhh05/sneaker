@@ -86,29 +86,46 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column v-if="canManageUsers" label="Thao tác" width="85" fixed="right" align="center">
+        <el-table-column v-if="canManageUsers || authStore.isAdmin" label="Thao tác" width="130" fixed="right" align="center" class-name="small-padding fixed-width">
           <template #default="{ row }">
-            <div class="row-actions">
-              <button class="action-btn" title="Chỉnh sửa" @click="openEdit(row)">
-                <el-icon><Edit /></el-icon>
-              </button>
-              <button
-                v-if="row.status === 'ACTIVE'"
-                class="action-btn danger"
-                :disabled="row.username === 'admin'"
-                :title="row.username === 'admin' ? 'Không thể khóa tài khoản quản trị tối cao' : 'Khóa tài khoản'"
-                @click="handleToggleStatus(row, 'LOCKED')"
-              >
-                <el-icon><Lock /></el-icon>
-              </button>
-              <button
-                v-else
-                class="action-btn"
-                title="Mở khóa tài khoản"
-                @click="handleToggleStatus(row, 'ACTIVE')"
-              >
-                <el-icon><Unlock /></el-icon>
-              </button>
+            <div class="vea-table-actions">
+              <el-tooltip v-if="canManageUsers" content="Chỉnh sửa tài khoản & quyền" placement="top" :show-after="200">
+                <el-button size="small" class="vea-icon-btn vea-icon-primary" aria-label="Sửa tài khoản" @click="openEdit(row)">
+                  <el-icon><Edit /></el-icon>
+                </el-button>
+              </el-tooltip>
+              <el-tooltip v-if="canManageUsers && row.status === 'ACTIVE'" content="Khóa tài khoản" placement="top" :show-after="200">
+                <el-button
+                  size="small"
+                  class="vea-icon-btn vea-icon-warning"
+                  aria-label="Khóa tài khoản"
+                  :disabled="row.username === 'admin'"
+                  @click="handleToggleStatus(row, 'LOCKED')"
+                >
+                  <el-icon><Lock /></el-icon>
+                </el-button>
+              </el-tooltip>
+              <el-tooltip v-else-if="canManageUsers" content="Mở khóa tài khoản" placement="top" :show-after="200">
+                <el-button
+                  size="small"
+                  class="vea-icon-btn vea-icon-success"
+                  aria-label="Mở khóa tài khoản"
+                  @click="handleToggleStatus(row, 'ACTIVE')"
+                >
+                  <el-icon><Unlock /></el-icon>
+                </el-button>
+              </el-tooltip>
+              <el-tooltip v-if="authStore.isAdmin" content="Xóa mềm tài khoản" placement="top" :show-after="200">
+                <el-button
+                  size="small"
+                  class="vea-icon-btn vea-icon-danger"
+                  aria-label="Xóa mềm tài khoản"
+                  :disabled="row.username === 'admin' || row.username === authStore.user?.username"
+                  @click="handleSoftDelete(row)"
+                >
+                  <el-icon><Delete /></el-icon>
+                </el-button>
+              </el-tooltip>
             </div>
           </template>
         </el-table-column>
@@ -196,12 +213,15 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus, Edit, Lock, Unlock } from '@element-plus/icons-vue'
+import { Plus, Edit, Lock, Unlock, Delete } from '@element-plus/icons-vue'
 import { userService } from '@/services/userService'
+import { softDeleteService } from '@/services/softDeleteService'
+import { useAuthStore } from '@/stores/auth'
 import { formatDateTime } from '@/utils/formatters'
 import { usePermission } from '@/composables/usePermission'
 import { useDebouncedWatch } from '@/composables/useDebounce'
 
+const authStore = useAuthStore()
 const { canManageUsers } = usePermission()
 const loading = ref(false)
 const saving = ref(false)
@@ -349,6 +369,18 @@ function handleToggleStatus(row, targetStatus) {
   ).then(async () => {
     await userService.updateUserStatus(row.id, targetStatus)
     ElMessage.success(`Đã ${actionLabel} tài khoản ${row.username}`)
+    loadData()
+  }).catch(() => {})
+}
+
+function handleSoftDelete(row) {
+  ElMessageBox.confirm(
+    `Bạn có chắc chắn muốn xóa mềm tài khoản "@${row.username}"? Dữ liệu lịch sử vẫn được giữ nguyên trong hệ thống.`,
+    'Xác nhận xóa mềm',
+    { type: 'warning', confirmButtonText: 'Xóa mềm', cancelButtonText: 'Hủy', confirmButtonClass: 'el-button--danger' }
+  ).then(async () => {
+    await softDeleteService.remove('users', row.id)
+    ElMessage.success(`Đã xóa mềm tài khoản @${row.username}`)
     loadData()
   }).catch(() => {})
 }

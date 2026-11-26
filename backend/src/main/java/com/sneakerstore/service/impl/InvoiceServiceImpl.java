@@ -57,6 +57,7 @@ public class InvoiceServiceImpl implements InvoiceService {
     private final SalesOrderRepository salesOrderRepository;
     private final SalesOrderDetailRepository salesOrderDetailRepository;
     private final PaymentRepository paymentRepository;
+    private final SystemSettingRepository systemSettingRepository;
     private final InvoicePdfGenerator pdfGenerator;
     private final InvoiceExcelExporter excelExporter;
     private final InvoiceEmailSender emailSender;
@@ -141,6 +142,34 @@ public class InvoiceServiceImpl implements InvoiceService {
     }
 
     // ==================== AUTO & MANUAL ISSUANCE ====================
+
+    @Override
+    @Transactional(readOnly = true)
+    public Map<String, Object> getVatConfig() {
+        BigDecimal dbRate = resolveDbPosVatRate();
+        String desc = systemSettingRepository.findById("POS_VAT_RATE")
+                .map(SystemSetting::getDescription)
+                .orElse("Thuế suất VAT (%) áp dụng tại quầy POS — cấu hình động trong DB");
+        Map<String, Object> map = new LinkedHashMap<>();
+        map.put("posVatRate", dbRate);
+        map.put("locked", true);
+        map.put("source", "DATABASE");
+        map.put("description", desc);
+        return map;
+    }
+
+    private BigDecimal resolveDbPosVatRate() {
+        return systemSettingRepository.findById("POS_VAT_RATE")
+                .map(SystemSetting::getSettingValue)
+                .map(v -> {
+                    try {
+                        return normalizeTaxRate(new BigDecimal(v.trim()));
+                    } catch (Exception e) {
+                        return configuredDefaultTaxRate != null ? configuredDefaultTaxRate : BigDecimal.valueOf(8);
+                    }
+                })
+                .orElse(configuredDefaultTaxRate != null ? configuredDefaultTaxRate : BigDecimal.valueOf(8));
+    }
 
     @Override
     @Transactional
@@ -265,9 +294,13 @@ public class InvoiceServiceImpl implements InvoiceService {
             throw new BusinessException("Email nhận hóa đơn không đúng định dạng: " + custEmail);
         }
 
-        BigDecimal defaultRate = normalizeTaxRate(cfg != null && cfg.getDefaultTaxRate() != null
-                ? cfg.getDefaultTaxRate()
-                : configuredDefaultTaxRate);
+        BigDecimal dbPosVatRate = resolveDbPosVatRate();
+        // Với kênh POS, luôn ép dùng thuế suất VAT cấu hình động từ DB (không cho phép sửa từ giao diện, kể cả Admin)
+        BigDecimal defaultRate = "POS".equals(channel)
+                ? dbPosVatRate
+                : normalizeTaxRate(cfg != null && cfg.getDefaultTaxRate() != null
+                        ? cfg.getDefaultTaxRate()
+                        : dbPosVatRate);
         boolean taxIncluded = cfg == null || cfg.getTaxIncluded() == null || cfg.getTaxIncluded();
 
         Map<Long, InvoiceIssueRequest.ItemTaxOverride> overrideMap = new HashMap<>();
@@ -283,6 +316,8 @@ public class InvoiceServiceImpl implements InvoiceService {
         BigDecimal orderDiscount = BigDecimal.ZERO;
         if (cfg != null && cfg.getDiscountAmount() != null && cfg.getDiscountAmount().compareTo(BigDecimal.ZERO) >= 0) {
             orderDiscount = cfg.getDiscountAmount();
+        } else if (order.getDiscountAmount() != null && order.getDiscountAmount().compareTo(BigDecimal.ZERO) > 0) {
+            orderDiscount = order.getDiscountAmount();
         } else if (order.getTotalAmount() != null && order.getFinalAmount() != null
                 && order.getTotalAmount().compareTo(order.getFinalAmount()) > 0) {
             orderDiscount = order.getTotalAmount().subtract(order.getFinalAmount());
@@ -290,7 +325,9 @@ public class InvoiceServiceImpl implements InvoiceService {
 
         BigDecimal shippingFee = (cfg != null && cfg.getShippingFee() != null && cfg.getShippingFee().compareTo(BigDecimal.ZERO) >= 0)
                 ? cfg.getShippingFee()
-                : BigDecimal.ZERO;
+                : (order.getShippingFee() != null && order.getShippingFee().compareTo(BigDecimal.ZERO) > 0
+                        ? order.getShippingFee()
+                        : BigDecimal.ZERO);
 
         List<InvoiceDetail> invoiceDetails = new ArrayList<>();
         BigDecimal subtotalBeforeTax = BigDecimal.ZERO;

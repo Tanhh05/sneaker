@@ -59,6 +59,10 @@
           <span>Tổng cộng tiền hàng:</span>
           <strong>{{ formatCurrency(order.totalAmount) }}</strong>
         </div>
+        <div v-if="order.discountAmount > 0" class="summary-row">
+          <span>Giảm giá Voucher ({{ order.voucherCode }}):</span>
+          <strong style="color: #dc2626">-{{ formatCurrency(order.discountAmount) }}</strong>
+        </div>
         <div class="summary-row grand-total">
           <span>THÀNH TIỀN THANH TOÁN:</span>
           <span>{{ formatCurrency(order.finalAmount) }}</span>

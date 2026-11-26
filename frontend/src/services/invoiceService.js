@@ -4,6 +4,9 @@ export const invoiceService = {
   getInvoices(params) {
     return api.get('/invoices', { params })
   },
+  getVatConfig() {
+    return api.get('/invoices/vat-config')
+  },
   getKpi(params) {
     return api.get('/invoices/kpi', { params })
   },

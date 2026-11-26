@@ -3,10 +3,10 @@
     <!-- TOP STICKY ACTION BAR -->
     <div class="top-action-bar">
       <div class="bar-left">
-        <button type="button" class="btn-back" @click="goBack">
-          <el-icon><Back /></el-icon>
-          <span>QUAY LẠI DANH SÁCH</span>
-        </button>
+        <el-button @click="goBack">
+          <el-icon style="margin-right: 4px"><Back /></el-icon>
+          <span>Quay lại danh sách</span>
+        </el-button>
         <div class="bar-divider"></div>
         <div class="bar-title-group" v-if="order">
           <div class="bar-badges">
@@ -14,67 +14,64 @@
             <el-tag :type="ORDER_STATUS_MAP[order.status]?.type || 'info'" size="small">
               {{ ORDER_STATUS_MAP[order.status]?.label || order.status }}
             </el-tag>
-            <span class="channel-pill" :class="isOnlineOrder ? 'channel-online' : 'channel-pos'">
-              {{ isOnlineOrder ? 'ONLINE STORE' : 'BÁN TẠI QUẦY (POS)' }}
-            </span>
+            <el-tag :type="isOnlineOrder ? 'primary' : 'success'" size="small" effect="plain">
+              {{ isOnlineOrder ? 'Online Store' : 'Tại quầy (POS)' }}
+            </el-tag>
           </div>
           <h2 class="bar-title">
-            CHI TIẾT ĐƠN HÀNG: {{ order.orderCode }}
+            Chi tiết đơn hàng: {{ order.orderCode }}
           </h2>
         </div>
       </div>
 
       <div class="bar-right" v-if="order">
-        <button type="button" class="btn-print" style="margin-right: 8px" @click="fetchOrderDetail">
-          <el-icon><Refresh /></el-icon>
-          <span>LÀM MỚI</span>
-        </button>
+        <el-button @click="fetchOrderDetail">
+          <el-icon style="margin-right: 4px"><Refresh /></el-icon>
+          <span>Làm mới</span>
+        </el-button>
 
-        <button type="button" class="btn-print" @click="invoiceVisible = true">
-          <el-icon><Printer /></el-icon>
-          <span>IN HÓA ĐƠN</span>
-        </button>
+        <el-button type="info" plain @click="invoiceVisible = true">
+          <el-icon style="margin-right: 4px"><Printer /></el-icon>
+          <span>In hóa đơn</span>
+        </el-button>
 
         <!-- Status Actions -->
-        <button
+        <el-button
           v-if="order.status === 'DRAFT' || order.status === 'PENDING'"
-          type="button"
-          class="btn-action-status btn-confirm"
+          type="primary"
           @click="changeStatus('CONFIRMED', 'Xác nhận đơn hàng')"
         >
-          <el-icon><Check /></el-icon>
+          <el-icon style="margin-right: 4px"><Check /></el-icon>
           <span>Xác nhận đơn</span>
-        </button>
+        </el-button>
 
-        <button
+        <el-button
           v-if="order.status === 'CONFIRMED'"
-          type="button"
-          class="btn-action-status btn-ship"
+          type="warning"
           @click="changeStatus('SHIPPING', 'Bắt đầu giao hàng')"
         >
-          <el-icon><Van /></el-icon>
+          <el-icon style="margin-right: 4px"><Van /></el-icon>
           <span>Bắt đầu giao hàng</span>
-        </button>
+        </el-button>
 
-        <button
+        <el-button
           v-if="['CONFIRMED', 'SHIPPING', 'DRAFT', 'PENDING'].includes(order.status)"
-          type="button"
-          class="btn-action-status btn-complete"
+          type="success"
           @click="changeStatus('COMPLETED', 'Hoàn thành đơn hàng')"
         >
-          <el-icon><Check /></el-icon>
+          <el-icon style="margin-right: 4px"><Check /></el-icon>
           <span>Hoàn thành đơn</span>
-        </button>
+        </el-button>
 
-        <button
+        <el-button
           v-if="order.status !== 'COMPLETED' && order.status !== 'CANCELLED'"
-          type="button"
-          class="btn-action-status btn-cancel"
+          type="danger"
+          plain
           @click="changeStatus('CANCELLED', 'Hủy đơn hàng')"
         >
-          <el-icon><Close /></el-icon>
+          <el-icon style="margin-right: 4px"><Close /></el-icon>
           <span>Hủy đơn</span>
-        </button>
+        </el-button>
       </div>
     </div>
 
@@ -161,12 +158,19 @@
                 <span class="fin-val">{{ formatCurrency(order.totalAmount) }}</span>
               </div>
               <div class="fin-row">
-                <span class="fin-label">Chiết khấu / Giảm giá:</span>
-                <span class="fin-val text-muted">0 đ</span>
+                <span class="fin-label">
+                  Chiết khấu / Voucher
+                  <el-tag v-if="order.voucherCode" size="small" type="danger" style="margin-left: 4px">{{ order.voucherCode }}</el-tag>:
+                </span>
+                <span class="fin-val" :style="{ color: Number(order.discountAmount || 0) > 0 ? '#ff4949' : '#909399' }">
+                  {{ Number(order.discountAmount || 0) > 0 ? `-${formatCurrency(order.discountAmount)}` : '0 ₫' }}
+                </span>
               </div>
               <div class="fin-row">
                 <span class="fin-label">Phí vận chuyển:</span>
-                <span class="fin-val text-muted">0 đ (Miễn phí)</span>
+                <span class="fin-val text-muted">
+                  {{ Number(order.shippingFee || 0) > 0 ? formatCurrency(order.shippingFee) : '0 ₫ (Miễn phí)' }}
+                </span>
               </div>
               <div class="fin-divider"></div>
               <div class="fin-row total-highlight">
@@ -328,10 +332,10 @@
 
           <!-- CARD: QUICK ACTIONS -->
           <div class="side-card print-action-card">
-            <button type="button" class="btn-full-print" @click="invoiceVisible = true">
-              <el-icon><Printer /></el-icon>
-              <span>IN HÓA ĐƠN BÁN LẺ (A4 / POS)</span>
-            </button>
+            <el-button type="primary" style="width: 100%; height: 40px" @click="invoiceVisible = true">
+              <el-icon style="margin-right: 6px"><Printer /></el-icon>
+              <span>In hóa đơn bán lẻ (A4 / POS)</span>
+            </el-button>
           </div>
         </div>
       </div>
@@ -524,53 +528,34 @@ onUnmounted(() => {
 .top-action-bar {
   position: sticky;
   top: 0;
-  z-index: 50;
+  z-index: 20;
   background: #ffffff;
-  border-bottom: 2px solid #000000;
-  padding: 14px 28px;
+  border-bottom: 1px solid #e6ebf5;
+  padding: 14px 24px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 12px;
+  box-shadow: 0 1px 4px rgba(0, 21, 41, 0.06);
+  margin-bottom: 20px;
 
   .bar-left {
     display: flex;
     align-items: center;
-    gap: 16px;
-
-    .btn-back {
-      background: #ffffff;
-      border: 1px solid #000000;
-      color: #000000;
-      font-size: 11px;
-      font-weight: 800;
-      letter-spacing: 0.06em;
-      padding: 6px 14px;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      cursor: pointer;
-      border-radius: 5px;
-      transition: all 0.12s ease;
-      font-family: var(--font-sans);
-
-      &:hover {
-        background: #000000;
-        color: #ffffff;
-      }
-    }
+    gap: 14px;
+    flex-wrap: wrap;
 
     .bar-divider {
       width: 1px;
-      height: 32px;
-      background: #e2e8f0;
+      height: 30px;
+      background: #e6ebf5;
     }
 
     .bar-title-group {
       display: flex;
       flex-direction: column;
-      gap: 2px;
+      gap: 3px;
 
       .bar-badges {
         display: flex;
@@ -578,22 +563,11 @@ onUnmounted(() => {
         gap: 8px;
       }
 
-      .code-badge {
-        background: #000000;
-        color: #ffffff;
-        font-family: var(--font-mono);
-        font-size: 11px;
-        font-weight: 800;
-        padding: 2px 7px;
-        letter-spacing: 0.05em;
-      }
-
       .bar-title {
-        font-size: 18px;
-        font-weight: 900;
-        letter-spacing: -0.02em;
+        font-size: 16px;
+        font-weight: 600;
         margin: 0;
-        color: #000000;
+        color: #303133;
       }
     }
   }
@@ -601,91 +575,27 @@ onUnmounted(() => {
   .bar-right {
     display: flex;
     align-items: center;
-    gap: 10px;
-
-    .btn-print {
-      background: #ffffff;
-      border: 1px solid #000000;
-      color: #000000;
-      font-size: 11px;
-      font-weight: 800;
-      padding: 7px 14px;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      cursor: pointer;
-      border-radius: 5px;
-      transition: all 0.12s ease;
-
-      &:hover {
-        background: #f1f5f9;
-      }
-    }
-
-    .btn-action-status {
-      font-size: 11px;
-      font-weight: 800;
-      padding: 7px 16px;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      cursor: pointer;
-      border-radius: 5px;
-      border: 1px solid transparent;
-      transition: all 0.12s ease;
-
-      &.btn-confirm {
-        background: #2563eb;
-        color: #ffffff;
-        &:hover {
-          background: #1d4ed8;
-        }
-      }
-
-      &.btn-ship {
-        background: #d97706;
-        color: #ffffff;
-        &:hover {
-          background: #b45309;
-        }
-      }
-
-      &.btn-complete {
-        background: #10b981;
-        color: #ffffff;
-        &:hover {
-          background: #059669;
-        }
-      }
-
-      &.btn-cancel {
-        background: #ffffff;
-        border-color: #ef4444;
-        color: #ef4444;
-        &:hover {
-          background: #ef4444;
-          color: #ffffff;
-        }
-      }
-    }
+    gap: 8px;
+    flex-wrap: wrap;
   }
 }
 
 .channel-pill {
-  font-size: 9px;
-  font-weight: 800;
-  letter-spacing: 0.05em;
-  padding: 2px 6px;
-  border-radius: 2px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 3px;
 
   &.channel-online {
-    background: #0284c7;
-    color: #ffffff;
+    background: var(--vea-theme-light-9, #ecf5ff);
+    color: var(--vea-theme, #409eff);
+    border: 1px solid var(--vea-theme-light-7, #c6e2ff);
   }
 
   &.channel-pos {
-    background: #000000;
-    color: #ffffff;
+    background: #e7faf0;
+    color: #13ce66;
+    border: 1px solid #d0f5e0;
   }
 }
 
@@ -693,15 +603,17 @@ onUnmounted(() => {
 .order-detail-container {
   max-width: 1400px;
   margin: 0 auto;
-  padding: 0 24px;
+  padding: 0 20px;
 }
 
 /* STEPPER CARD */
 .stepper-card {
   background: #ffffff;
-  border: 1px solid #cbd5e1;
+  border: 1px solid #e6ebf5;
+  border-radius: 4px;
+  box-shadow: 0 1px 4px rgba(0, 21, 41, 0.04);
   padding: 16px 20px;
-  margin-bottom: 20px;
+  margin-bottom: 18px;
 
   .stepper-header {
     display: flex;
@@ -709,19 +621,17 @@ onUnmounted(() => {
     justify-content: space-between;
     margin-bottom: 14px;
     padding-bottom: 10px;
-    border-bottom: 1px dashed #e2e8f0;
+    border-bottom: 1px solid #ebeef5;
 
     .stepper-title {
-      font-size: 11px;
-      font-weight: 800;
-      letter-spacing: 0.05em;
-      color: #0f172a;
-      text-transform: uppercase;
+      font-size: 13px;
+      font-weight: 600;
+      color: #303133;
     }
 
     .stepper-created {
-      font-size: 11px;
-      color: #64748b;
+      font-size: 12px;
+      color: #909399;
     }
   }
 }
@@ -730,7 +640,7 @@ onUnmounted(() => {
 .detail-grid {
   display: grid;
   grid-template-columns: 1fr 380px;
-  gap: 20px;
+  gap: 18px;
   align-items: start;
 
   @media (max-width: 1024px) {
@@ -741,68 +651,60 @@ onUnmounted(() => {
 /* INFO BLOCK CARDS (LEFT) */
 .info-block-card {
   background: #ffffff;
-  border: 1px solid #cbd5e1;
-  margin-bottom: 20px;
+  border: 1px solid #e6ebf5;
+  border-radius: 4px;
+  box-shadow: 0 1px 4px rgba(0, 21, 41, 0.04);
+  margin-bottom: 18px;
   overflow: hidden;
 
   .block-header {
     padding: 12px 18px;
-    background: #f8fafc;
-    border-bottom: 1px solid #e2e8f0;
+    background: #f8f8f9;
+    border-bottom: 1px solid #ebeef5;
 
     .block-badge {
-      font-size: 11px;
-      font-weight: 800;
-      color: #000000;
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
+      font-size: 13px;
+      font-weight: 600;
+      color: #303133;
     }
   }
 
   .items-table-wrap {
-    padding: 0;
+    padding: 14px;
 
     .prod-cell {
       .prod-name {
-        font-weight: 700;
-        color: #0f172a;
+        font-weight: 600;
+        color: #303133;
       }
     }
 
-    .code-badge {
-      background: #f1f5f9;
-      border: 1px solid #cbd5e1;
-      color: #0f172a;
-      font-family: var(--font-mono);
-      font-size: 10px;
-      font-weight: 800;
-      padding: 2px 6px;
-    }
-
     .size-pill {
-      background: #000000;
-      color: #ffffff;
-      font-size: 10px;
-      font-weight: 800;
-      padding: 2px 5px;
+      background: var(--vea-theme-light-9, #ecf5ff);
+      color: var(--vea-theme, #409eff);
+      border: 1px solid var(--vea-theme-light-7, #c6e2ff);
+      border-radius: 3px;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 6px;
       margin-right: 6px;
     }
 
     .color-text {
-      color: #475569;
-      font-size: 12px;
+      color: #606266;
+      font-size: 12.5px;
     }
 
     .price-val {
       font-family: var(--font-mono);
-      font-weight: 800;
-      color: #000000;
+      font-weight: 600;
+      color: #303133;
     }
   }
 
   .financial-summary-panel {
-    background: #f8fafc;
-    border-top: 1px solid #e2e8f0;
+    background: #f8f9fb;
+    border-top: 1px solid #ebeef5;
     padding: 16px 24px;
     display: flex;
     flex-direction: column;
@@ -816,34 +718,33 @@ onUnmounted(() => {
       font-size: 13px;
 
       .fin-label {
-        color: #64748b;
+        color: #606266;
       }
 
       .fin-val {
         font-family: var(--font-mono);
-        font-weight: 700;
-        color: #0f172a;
+        font-weight: 600;
+        color: #303133;
         min-width: 140px;
         text-align: right;
       }
 
       .text-muted {
-        color: #94a3b8;
+        color: #909399;
       }
 
       &.total-highlight {
         margin-top: 4px;
         .fin-total-label {
           font-size: 14px;
-          font-weight: 900;
-          color: #000000;
-          letter-spacing: 0.03em;
+          font-weight: 700;
+          color: #303133;
         }
 
         .fin-total-val {
           font-size: 20px;
-          font-weight: 900;
-          color: #000000;
+          font-weight: 700;
+          color: var(--vea-theme, #409eff);
           font-family: var(--font-mono);
           min-width: 160px;
           text-align: right;
@@ -854,7 +755,7 @@ onUnmounted(() => {
     .fin-divider {
       width: 280px;
       height: 1px;
-      background: #cbd5e1;
+      background: #dcdfe6;
       margin: 4px 0;
     }
   }
@@ -871,19 +772,19 @@ onUnmounted(() => {
 
         .entry-status {
           font-size: 13px;
-          font-weight: 800;
-          color: #0f172a;
+          font-weight: 600;
+          color: #303133;
         }
 
         .entry-actor {
-          font-size: 11px;
-          color: #64748b;
+          font-size: 11.5px;
+          color: #909399;
         }
       }
 
       .entry-note {
-        font-size: 12px;
-        color: #475569;
+        font-size: 12.5px;
+        color: #606266;
         margin: 0;
       }
     }
@@ -893,21 +794,22 @@ onUnmounted(() => {
 /* SIDE CARDS (RIGHT) */
 .side-card {
   background: #ffffff;
-  border: 1px solid #cbd5e1;
+  border: 1px solid #e6ebf5;
+  border-radius: 4px;
+  box-shadow: 0 1px 4px rgba(0, 21, 41, 0.04);
   margin-bottom: 16px;
+  overflow: hidden;
 
   .side-card-title {
     padding: 12px 16px;
-    background: #f8fafc;
-    border-bottom: 1px solid #e2e8f0;
-    font-size: 11px;
-    font-weight: 800;
-    letter-spacing: 0.05em;
-    color: #000000;
+    background: #f8f8f9;
+    border-bottom: 1px solid #ebeef5;
+    font-size: 13px;
+    font-weight: 600;
+    color: #303133;
     display: flex;
     align-items: center;
     gap: 8px;
-    text-transform: uppercase;
   }
 
   .side-card-body {
@@ -924,12 +826,12 @@ onUnmounted(() => {
       font-size: 13px;
 
       .side-label {
-        color: #64748b;
+        color: #909399;
         flex-shrink: 0;
       }
 
       .side-val {
-        color: #0f172a;
+        color: #303133;
         text-align: right;
 
         &.mono {
@@ -942,12 +844,13 @@ onUnmounted(() => {
         align-items: stretch;
 
         .general-note {
-          background: #f8fafc;
-          border: 1px dashed #cbd5e1;
+          background: #f8f9fb;
+          border: 1px dashed #dcdfe6;
+          border-radius: 4px;
           padding: 8px 10px;
           margin: 4px 0 0;
-          font-size: 12px;
-          color: #334155;
+          font-size: 12.5px;
+          color: #606266;
           line-height: 1.4;
         }
       }
@@ -955,18 +858,18 @@ onUnmounted(() => {
 
     .delivery-intel-box {
       margin-top: 8px;
-      background: #f0fdf4;
-      border: 1px solid #bbf7d0;
+      background: #f0f9eb;
+      border: 1px solid #e1f3d8;
+      border-radius: 4px;
       padding: 12px;
 
       .delivery-title {
         display: flex;
         align-items: center;
         gap: 6px;
-        font-size: 10px;
-        font-weight: 800;
-        letter-spacing: 0.05em;
-        color: #166534;
+        font-size: 11.5px;
+        font-weight: 700;
+        color: #67c23a;
         margin-bottom: 8px;
       }
 
@@ -974,12 +877,12 @@ onUnmounted(() => {
         display: flex;
         align-items: flex-start;
         gap: 8px;
-        font-size: 12px;
+        font-size: 12.5px;
         margin-bottom: 4px;
 
         .del-lbl {
-          color: #15803d;
-          font-weight: 700;
+          color: #529b2e;
+          font-weight: 600;
           flex-shrink: 0;
         }
 
@@ -989,7 +892,7 @@ onUnmounted(() => {
 
         .note-quote {
           font-style: italic;
-          color: #166534;
+          color: #529b2e;
         }
       }
     }
@@ -997,28 +900,8 @@ onUnmounted(() => {
 
   &.print-action-card {
     border: none;
+    box-shadow: none;
     background: transparent;
-
-    .btn-full-print {
-      width: 100%;
-      background: #000000;
-      color: #ffffff;
-      border: none;
-      font-size: 12px;
-      font-weight: 800;
-      letter-spacing: 0.05em;
-      padding: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      cursor: pointer;
-      transition: all 0.15s ease;
-
-      &:hover {
-        background: #334155;
-      }
-    }
   }
 }
 </style>

@@ -1,0 +1,903 @@
+/* ============================================================================
+   VUE-ELEMENT-ADMIN (PanJiaChen) AUTHENTIC ENTERPRISE UI/UX SYSTEM
+   Scoped cleanly to body.vea-admin-mode & .admin-layout so the public
+   customer storefront (.store-layout) keeps its own visual identity.
+   ============================================================================ */
+
+:root {
+  --vea-theme: #409EFF;
+  --vea-theme-light-3: #79bbff;
+  --vea-theme-light-5: #a0cfff;
+  --vea-theme-light-7: #c6e2ff;
+  --vea-theme-light-8: #d9ecff;
+  --vea-theme-light-9: #ecf5ff;
+  --vea-theme-dark-2: #337ecc;
+
+  --vea-menu-bg: #304156;
+  --vea-menu-hover: #263445;
+  --vea-submenu-bg: #1f2d3d;
+  --vea-submenu-hover: #001528;
+  --vea-menu-text: #bfcbd9;
+  --vea-sidebar-logo-bg: #2b2f3a;
+  --vea-sidebar-width: 210px;
+  --vea-sidebar-collapsed-width: 54px;
+  --vea-canvas-bg: #f0f2f5;
+}
+
+/* Activate Element Plus classic vue-element-admin theme across Admin + Portals (Dialogs, Poppers, Dropdowns) */
+body.vea-admin-mode {
+  background-color: var(--vea-canvas-bg) !important;
+  font-family: 'Helvetica Neue', Helvetica, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Plus Jakarta Sans', Arial, sans-serif !important;
+  color: #303133;
+
+  --el-color-primary: var(--vea-theme);
+  --el-color-primary-light-3: var(--vea-theme-light-3);
+  --el-color-primary-light-5: var(--vea-theme-light-5);
+  --el-color-primary-light-7: var(--vea-theme-light-7);
+  --el-color-primary-light-8: var(--vea-theme-light-8);
+  --el-color-primary-light-9: var(--vea-theme-light-9);
+  --el-color-primary-dark-2: var(--vea-theme-dark-2);
+  --el-border-radius-base: 4px !important;
+  --el-border-radius-small: 3px !important;
+
+  /* ---------- Element Plus Buttons (vue-element-admin crisp style) ---------- */
+  .el-button {
+    border-radius: 4px !important;
+    font-weight: 500 !important;
+    letter-spacing: 0 !important;
+    font-size: 13px !important;
+    border-color: #dcdfe6;
+    color: #606266;
+    background-color: #ffffff;
+
+    &:hover,
+    &:focus {
+      color: var(--vea-theme) !important;
+      border-color: var(--vea-theme-light-7) !important;
+      background-color: var(--vea-theme-light-9) !important;
+    }
+
+    &--primary {
+      background-color: var(--vea-theme) !important;
+      border-color: var(--vea-theme) !important;
+      color: #ffffff !important;
+
+      &:hover,
+      &:focus {
+        background-color: var(--vea-theme-light-3) !important;
+        border-color: var(--vea-theme-light-3) !important;
+        color: #ffffff !important;
+      }
+
+      &.is-plain {
+        color: var(--vea-theme) !important;
+        background: var(--vea-theme-light-9) !important;
+        border-color: var(--vea-theme-light-5) !important;
+
+        &:hover,
+        &:focus {
+          background: var(--vea-theme) !important;
+          border-color: var(--vea-theme) !important;
+          color: #ffffff !important;
+        }
+      }
+    }
+
+    &--success {
+      background-color: #13ce66 !important;
+      border-color: #13ce66 !important;
+      color: #ffffff !important;
+      &:hover,
+      &:focus {
+        background-color: #42d885 !important;
+        border-color: #42d885 !important;
+        color: #ffffff !important;
+      }
+      &.is-plain {
+        color: #13ce66 !important;
+        background: #e7faf0 !important;
+        border-color: #a1ebc2 !important;
+        &:hover,
+        &:focus {
+          background: #13ce66 !important;
+          border-color: #13ce66 !important;
+          color: #ffffff !important;
+        }
+      }
+    }
+
+    &--warning {
+      background-color: #ffba00 !important;
+      border-color: #ffba00 !important;
+      color: #ffffff !important;
+      &:hover,
+      &:focus {
+        background-color: #ffc833 !important;
+        border-color: #ffc833 !important;
+        color: #ffffff !important;
+      }
+      &.is-plain {
+        color: #e6a23c !important;
+        background: #fdf6ec !important;
+        border-color: #f5dab1 !important;
+        &:hover,
+        &:focus {
+          background: #e6a23c !important;
+          border-color: #e6a23c !important;
+          color: #ffffff !important;
+        }
+      }
+    }
+
+    &--danger {
+      background-color: #ff4949 !important;
+      border-color: #ff4949 !important;
+      color: #ffffff !important;
+      &:hover,
+      &:focus {
+        background-color: #ff6d6d !important;
+        border-color: #ff6d6d !important;
+        color: #ffffff !important;
+      }
+      &.is-plain {
+        color: #ff4949 !important;
+        background: #ffeded !important;
+        border-color: #ffb6b6 !important;
+        &:hover,
+        &:focus {
+          background: #ff4949 !important;
+          border-color: #ff4949 !important;
+          color: #ffffff !important;
+        }
+      }
+    }
+
+    &--info {
+      background-color: #909399 !important;
+      border-color: #909399 !important;
+      color: #ffffff !important;
+      &:hover,
+      &:focus {
+        background-color: #a6a9ad !important;
+        border-color: #a6a9ad !important;
+        color: #ffffff !important;
+      }
+      &.is-plain {
+        color: #909399 !important;
+        background: #f4f4f5 !important;
+        border-color: #d3d4d6 !important;
+      }
+    }
+  }
+
+  /* ---------- Inputs / Selects / DatePickers ---------- */
+  .el-input__wrapper,
+  .el-select__wrapper,
+  .el-textarea__inner {
+    border-radius: 4px !important;
+    border: 1px solid #dcdfe6 !important;
+    box-shadow: none !important;
+
+    &:hover {
+      border-color: #c0c4cc !important;
+    }
+
+    &.is-focus,
+    &:focus {
+      border-color: var(--vea-theme) !important;
+    }
+  }
+
+  /* ---------- Radio Button Group ---------- */
+  .el-radio-button__original-radio:checked + .el-radio-button__inner {
+    background-color: var(--vea-theme) !important;
+    border-color: var(--vea-theme) !important;
+    box-shadow: -1px 0 0 0 var(--vea-theme) !important;
+    color: #ffffff !important;
+  }
+
+  /* ---------- Tags (Element UI Soft Tinted Tags) ---------- */
+  .el-tag {
+    border-radius: 4px !important;
+    font-weight: 500 !important;
+    font-size: 12px !important;
+    letter-spacing: 0 !important;
+    text-transform: none !important;
+
+    &--primary {
+      background-color: var(--vea-theme-light-9) !important;
+      color: var(--vea-theme) !important;
+      border-color: var(--vea-theme-light-7) !important;
+    }
+    &--success {
+      background-color: #e7faf0 !important;
+      color: #13ce66 !important;
+      border-color: #d0f5e0 !important;
+    }
+    &--warning {
+      background-color: #fff8e6 !important;
+      color: #e6a23c !important;
+      border-color: #fff1cc !important;
+    }
+    &--danger {
+      background-color: #ffeded !important;
+      color: #ff4949 !important;
+      border-color: #ffdbdb !important;
+    }
+    &--info {
+      background-color: #f4f4f5 !important;
+      color: #909399 !important;
+      border-color: #e9e9eb !important;
+    }
+    &.el-tag--dark {
+      &.el-tag--primary {
+        background-color: var(--vea-theme) !important;
+        color: #ffffff !important;
+      }
+      &.el-tag--danger {
+        background-color: #ff4949 !important;
+        color: #ffffff !important;
+      }
+      &.el-tag--warning {
+        background-color: #ffba00 !important;
+        color: #ffffff !important;
+      }
+      &.el-tag--success {
+        background-color: #13ce66 !important;
+        color: #ffffff !important;
+      }
+    }
+  }
+
+  /* ---------- Element Table (vue-element-admin clean table) ---------- */
+  .el-table {
+    border-radius: 4px !important;
+    --el-table-header-bg-color: #f5f7fa;
+    --el-table-border-color: #dfe6ec;
+    --el-table-row-hover-bg-color: #f5f7fa;
+    font-size: 13px;
+    color: #606266;
+
+    th.el-table__cell {
+      font-size: 12.5px !important;
+      font-weight: 600 !important;
+      text-transform: none !important;
+      letter-spacing: 0 !important;
+      color: #515a6e !important;
+      background-color: #f8f8f9 !important;
+      border-bottom: 1px solid #dfe6ec !important;
+      padding: 10px 0;
+    }
+
+    td.el-table__cell {
+      border-bottom: 1px solid #dfe6ec !important;
+      padding: 10px 0;
+    }
+  }
+
+  /* ---------- Tabs ---------- */
+  .el-tabs__item {
+    font-weight: 500;
+    color: #606266;
+    &.is-active {
+      color: var(--vea-theme) !important;
+      font-weight: 600;
+    }
+    &:hover {
+      color: var(--vea-theme) !important;
+    }
+  }
+  .el-tabs__active-bar {
+    background-color: var(--vea-theme) !important;
+  }
+
+  /* ---------- Pagination (vue-element-admin classic) ---------- */
+  .el-pagination {
+    button,
+    .el-pager li {
+      border-radius: 3px !important;
+      font-weight: 500 !important;
+      border: 1px solid #dfe6ec !important;
+      background: #ffffff !important;
+      color: #606266 !important;
+
+      &:hover {
+        color: var(--vea-theme) !important;
+        border-color: var(--vea-theme-light-7) !important;
+      }
+
+      &.is-active {
+        background: var(--vea-theme) !important;
+        color: #ffffff !important;
+        border-color: var(--vea-theme) !important;
+      }
+    }
+  }
+
+  /* ---------- Dialogs & Drawers ---------- */
+  .el-dialog {
+    border-radius: 4px !important;
+    border: none !important;
+    box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.14) !important;
+
+    .el-dialog__header {
+      border-bottom: 1px solid #e6ebf5;
+      padding: 16px 20px;
+      .el-dialog__title {
+        font-size: 16px;
+        font-weight: 600;
+        letter-spacing: 0;
+        text-transform: none;
+        color: #303133;
+      }
+    }
+
+    .el-dialog__footer {
+      border-top: 1px solid #e6ebf5;
+      padding: 12px 20px;
+    }
+  }
+
+  /* ---------- Dropdown ---------- */
+  .el-dropdown-menu {
+    border-radius: 4px !important;
+    border: 1px solid #e6ebf5 !important;
+    box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1) !important;
+
+    .el-dropdown-menu__item {
+      font-size: 13px;
+      font-weight: 400;
+      color: #606266;
+      &:hover {
+        background-color: var(--vea-theme-light-9) !important;
+        color: var(--vea-theme) !important;
+      }
+    }
+  }
+
+  /* ---------- Admin Workspace Page Containers & Cards ---------- */
+  .page-container {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    background-color: var(--vea-canvas-bg);
+    min-height: 100%;
+  }
+
+  .page-header {
+    background: #ffffff;
+    padding: 16px 20px;
+    border-radius: 4px !important;
+    border: 1px solid #e6ebf5;
+    box-shadow: 0 1px 4px rgba(0, 21, 41, 0.04);
+
+    .page-title-group {
+      .page-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #303133;
+        letter-spacing: 0;
+        text-transform: none;
+      }
+      .page-subtitle {
+        font-size: 12.5px;
+        color: #909399;
+        margin-top: 3px;
+      }
+    }
+  }
+
+  .filter-card,
+  .table-card {
+    background: #ffffff;
+    padding: 18px 20px;
+    border-radius: 4px !important;
+    border: 1px solid #e6ebf5;
+    box-shadow: 0 1px 4px rgba(0, 21, 41, 0.04);
+  }
+
+  .code-badge {
+    background: var(--vea-theme-light-9);
+    color: var(--vea-theme);
+    border: 1px solid var(--vea-theme-light-7);
+    font-weight: 600;
+    border-radius: 3px !important;
+  }
+
+  .price-text {
+    color: #303133;
+    font-weight: 600;
+  }
+
+  /* Table row action buttons (PanJiaChen/vue-element-admin complex-table mini style) */
+  .el-table .small-padding .cell {
+    padding-left: 6px !important;
+    padding-right: 6px !important;
+  }
+
+  .el-table .fixed-width .el-button--small {
+    padding: 5px 10px !important;
+    height: 26px !important;
+    font-size: 12px !important;
+    border-radius: 3px !important;
+    line-height: 1 !important;
+    margin-left: 0 !important;
+  }
+
+  .vea-table-actions {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    flex-wrap: nowrap;
+    white-space: nowrap;
+
+    .el-button + .el-button {
+      margin-left: 0 !important;
+    }
+
+    .el-dropdown {
+      display: inline-flex;
+      align-items: center;
+    }
+
+    .vea-cta-btn {
+      height: 30px !important;
+      padding: 0 10px !important;
+      border-radius: 6px !important;
+      font-size: 12px !important;
+      font-weight: 600 !important;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .vea-icon-btn {
+      width: 30px !important;
+      height: 30px !important;
+      min-width: 30px !important;
+      padding: 0 !important;
+      border-radius: 6px !important;
+      display: inline-flex !important;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.16s ease;
+
+      .el-icon {
+        font-size: 14px;
+        margin: 0 !important;
+      }
+
+      &.vea-icon-primary {
+        background: var(--vea-theme-light-9) !important;
+        border-color: var(--vea-theme-light-7) !important;
+        color: var(--vea-theme) !important;
+
+        &:hover,
+        &:focus {
+          background: var(--vea-theme) !important;
+          border-color: var(--vea-theme) !important;
+          color: #ffffff !important;
+        }
+      }
+
+      &.vea-icon-success {
+        background: #e7faf0 !important;
+        border-color: #b7f0d0 !important;
+        color: #13ce66 !important;
+
+        &:hover,
+        &:focus {
+          background: #13ce66 !important;
+          border-color: #13ce66 !important;
+          color: #ffffff !important;
+        }
+      }
+
+      &.vea-icon-info {
+        background: #f1f5f9 !important;
+        border-color: #d5dde7 !important;
+        color: #475569 !important;
+
+        &:hover,
+        &:focus {
+          background: #475569 !important;
+          border-color: #475569 !important;
+          color: #ffffff !important;
+        }
+      }
+
+      &.vea-icon-warning {
+        background: #fff8e6 !important;
+        border-color: #fde09b !important;
+        color: #d97706 !important;
+
+        &:hover,
+        &:focus {
+          background: #f59e0b !important;
+          border-color: #f59e0b !important;
+          color: #ffffff !important;
+        }
+      }
+
+      &.vea-icon-danger {
+        background: #ffeded !important;
+        border-color: #ffb6b6 !important;
+        color: #ff4949 !important;
+
+        &:hover,
+        &:focus {
+          background: #ff4949 !important;
+          border-color: #ff4949 !important;
+          color: #ffffff !important;
+        }
+      }
+
+      &.vea-icon-more {
+        background: #ffffff !important;
+        border-color: #dcdfe6 !important;
+        color: #606266 !important;
+
+        &:hover,
+        &:focus {
+          background: var(--vea-theme-light-9) !important;
+          border-color: var(--vea-theme-light-5) !important;
+          color: var(--vea-theme) !important;
+        }
+      }
+    }
+  }
+
+  .row-actions .action-btn,
+  .admin-layout .el-table .action-btn {
+    border-radius: 3px;
+    border-color: #dcdfe6;
+    color: #606266;
+
+    &:hover {
+      background: var(--vea-theme);
+      border-color: var(--vea-theme);
+      color: #ffffff;
+    }
+
+    &.primary {
+      background: var(--vea-theme);
+      border-color: var(--vea-theme);
+      color: #ffffff;
+      &:hover {
+        background: var(--vea-theme-light-3);
+        border-color: var(--vea-theme-light-3);
+      }
+    }
+
+    &.danger {
+      border-color: #ffb6b6;
+      color: #ff4949;
+      background: #ffeded;
+      &:hover {
+        background: #ff4949;
+        border-color: #ff4949;
+        color: #ffffff;
+      }
+    }
+  }
+  /* ---------- Unified Admin Descriptions, QuickSelect & Custom Studio Controls ---------- */
+  .el-descriptions__label.el-descriptions__cell.is-bordered-label {
+    background: #f8f8f9 !important;
+    color: #515a6e !important;
+    font-weight: 600 !important;
+  }
+
+  .qs-trigger:focus,
+  .qs-trigger.is-open {
+    border-color: var(--vea-theme) !important;
+  }
+
+  .qs-option.is-selected {
+    color: var(--vea-theme) !important;
+    background: var(--vea-theme-light-9) !important;
+  }
+
+  .btn-dark,
+  .btn-primary-dark {
+    background-color: var(--vea-theme) !important;
+    border-color: var(--vea-theme) !important;
+    color: #ffffff !important;
+    &:hover,
+    &:focus {
+      background-color: var(--vea-theme-light-3) !important;
+      border-color: var(--vea-theme-light-3) !important;
+    }
+  }
+
+  /* ============================================================================
+     GLOBAL SINGLE-VIEWPORT WORKSPACE ENGINE (Desktop >= 1025px)
+     Fits ALL Admin screens cleanly inside 1 screen (zero outer page scroll):
+     Header & Filters stay pinned on top, Table scrolls internally with sticky
+     column headers, Pagination stays pinned at the bottom!
+     ============================================================================ */
+  @media (min-width: 1025px) {
+    .page-container:not(.invoice-detail-page) {
+      height: calc(100vh - var(--vea-header-h, 84px));
+      min-height: 0 !important;
+      padding: 12px 16px !important;
+      gap: 10px !important;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-sizing: border-box;
+    }
+
+    .page-container:not(.invoice-detail-page) > .page-header {
+      padding: 10px 16px !important;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+
+      .page-title-group {
+        min-width: 0;
+        .page-title {
+          font-size: 16px !important;
+          line-height: 1.3;
+          margin: 0;
+        }
+        .page-subtitle {
+          font-size: 11.5px !important;
+          margin: 2px 0 0 !important;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          max-width: 680px;
+        }
+      }
+    }
+
+    .page-container:not(.invoice-detail-page) > .filter-card {
+      padding: 10px 14px !important;
+      flex-shrink: 0;
+    }
+
+    /* Auto-fill Table Card (Powers Products, Variants, Categories, Brands, Purchases, Suppliers, Customers, Employees, Users, Vouchers) */
+    .page-container:not(.invoice-detail-page):not(.pos-page) > .table-card {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      padding: 12px 14px !important;
+
+      > .el-table {
+        flex: 1;
+        min-height: 0;
+        height: 100% !important;
+      }
+
+      .el-table__inner-wrapper {
+        height: 100% !important;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .el-table__header-wrapper {
+        flex-shrink: 0;
+      }
+
+      .el-table__body-wrapper {
+        flex: 1;
+        min-height: 0;
+        overflow-y: auto !important;
+      }
+
+      .el-table__footer-wrapper {
+        flex-shrink: 0;
+      }
+
+      .pagination-bar {
+        flex-shrink: 0;
+        padding: 10px 2px 0 !important;
+        margin-top: 0 !important;
+      }
+
+      /* Tabbed table-cards (VariantsView, VouchersView) */
+      > .el-tabs {
+        flex: 1;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+
+        > .el-tabs__header {
+          flex-shrink: 0;
+          margin-bottom: 10px !important;
+        }
+
+        > .el-tabs__content {
+          flex: 1;
+          min-height: 0;
+          display: flex;
+          flex-direction: column;
+          overflow: hidden;
+
+          > .el-tab-pane {
+            flex: 1;
+            min-height: 0;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+
+            .filter-bar,
+            .rule-intro-banner,
+            > .el-row {
+              flex-shrink: 0;
+              margin-bottom: 10px !important;
+            }
+
+            > .el-table {
+              flex: 1;
+              min-height: 0;
+              height: 100% !important;
+            }
+
+            /* Child tab components wrapping an el-table directly (SizeManagerTab, ColorManagerTab) */
+            > div:has(> .el-table) {
+              flex: 1;
+              min-height: 0;
+              display: flex;
+              flex-direction: column;
+              overflow: hidden;
+
+              > .el-table {
+                flex: 1;
+                min-height: 0;
+                height: 100% !important;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    /* Shared flex table scrolling for Orders & Invoices surfaces */
+    .orders-surface,
+    .invoices-surface {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+
+      .table-wrapper,
+      .table-wrap {
+        flex: 1;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+
+        > .el-table {
+          flex: 1;
+          min-height: 0;
+          height: 100% !important;
+
+          .el-table__inner-wrapper {
+            height: 100% !important;
+            display: flex;
+            flex-direction: column;
+          }
+
+          .el-table__header-wrapper {
+            flex-shrink: 0;
+          }
+
+          .el-table__body-wrapper {
+            flex: 1;
+            min-height: 0;
+            overflow-y: auto !important;
+          }
+        }
+
+        .pagination-bar {
+          flex-shrink: 0;
+          padding: 9px 16px !important;
+        }
+      }
+    }
+
+    /* POS Counter single-viewport 2-column split */
+    .pos-page {
+      > .el-row {
+        flex: 1;
+        min-height: 0;
+        overflow: hidden;
+
+        > .el-col {
+          height: 100%;
+          display: flex;
+          flex-direction: column;
+          min-height: 0;
+        }
+      }
+
+      .pos-catalog-card {
+        flex: 1;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        padding: 12px 14px !important;
+
+        .pos-master-toolbar {
+          flex-shrink: 0;
+        }
+
+        .el-table {
+          flex: 1;
+          min-height: 0;
+          height: 100% !important;
+
+          .el-table__inner-wrapper {
+            height: 100% !important;
+            display: flex;
+            flex-direction: column;
+          }
+
+          .el-table__body-wrapper {
+            flex: 1;
+            min-height: 0;
+            overflow-y: auto !important;
+          }
+        }
+
+        .pos-pagination-bar {
+          flex-shrink: 0;
+        }
+      }
+
+      .pos-cart-card {
+        flex: 1;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        overflow-y: auto !important;
+        padding: 12px 14px !important;
+      }
+    }
+  }
+}
+
+/* ============================================================================
+   VUE-ELEMENT-ADMIN TRANSITIONS (fade-transform & breadcrumb)
+   ============================================================================ */
+.fade-transform-leave-active,
+.fade-transform-enter-active {
+  transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.fade-transform-enter-from {
+  opacity: 0;
+  transform: translateX(-16px);
+}
+
+.fade-transform-leave-to {
+  opacity: 0;
+  transform: translateX(16px);
+}
+
+.breadcrumb-enter-active,
+.breadcrumb-leave-active {
+  transition: all 0.3s;
+}
+
+.breadcrumb-enter-from,
+.breadcrumb-leave-active {
+  opacity: 0;
+  transform: translateX(16px);
+}
+
+.breadcrumb-leave-active {
+  position: absolute;
+}

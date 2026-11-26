@@ -800,7 +800,7 @@ onUnmounted(() => {
   gap: 12px;
   flex-wrap: wrap;
   background: #ffffff;
-  border: 1px solid #000000;
+  border: 1px solid var(--vea-theme, #409eff);
   padding: 10px 14px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
 }
@@ -828,15 +828,15 @@ onUnmounted(() => {
   gap: 5px;
   background: #ffffff;
   border: 1px solid #d4d4d4;
-  color: #171717;
+  color: #303133;
   font-size: 11.5px;
   font-weight: 800;
   padding: 6px 10px;
   cursor: pointer;
 
   &:hover {
-    border-color: #000000;
-    background: #000000;
+    border-color: var(--vea-theme, #409eff);
+    background: var(--vea-theme, #409eff);
     color: #ffffff;
   }
 }
@@ -849,7 +849,7 @@ onUnmounted(() => {
   flex-shrink: 0;
 
   &.mode-create {
-    background: #000000;
+    background: var(--vea-theme, #409eff);
     color: #ffffff;
   }
   &.mode-edit {
@@ -869,7 +869,7 @@ onUnmounted(() => {
   .live-name {
     font-size: 13.5px;
     font-weight: 800;
-    color: #000000;
+    color: #303133;
     max-width: 260px;
     white-space: nowrap;
     overflow: hidden;
@@ -884,7 +884,7 @@ onUnmounted(() => {
     padding: 3px 7px;
     font-variant-numeric: tabular-nums;
 
-    strong { color: #000000; }
+    strong { color: #303133; }
 
     &.kpi-green {
       background: #ecfdf5;
@@ -907,14 +907,14 @@ onUnmounted(() => {
   gap: 5px;
   background: #ffffff;
   border: 1px solid #d4d4d4;
-  color: #171717;
+  color: #303133;
   font-size: 11.5px;
   font-weight: 700;
   padding: 6px 10px;
   cursor: pointer;
 
   &:hover {
-    border-color: #000000;
+    border-color: var(--vea-theme, #409eff);
   }
 }
 
@@ -923,15 +923,15 @@ onUnmounted(() => {
   align-items: center;
   gap: 5px;
   background: #fafafa;
-  border: 1px solid #000000;
-  color: #000000;
+  border: 1px solid var(--vea-theme, #409eff);
+  color: #303133;
   font-size: 11.5px;
   font-weight: 800;
   padding: 6px 10px;
   cursor: pointer;
 
   &:hover {
-    background: #000000;
+    background: var(--vea-theme, #409eff);
     color: #ffffff;
   }
 }
@@ -964,7 +964,7 @@ onUnmounted(() => {
 }
 
 .badge-black {
-  background: #000000;
+  background: var(--vea-theme, #409eff);
   color: #ffffff;
   font-size: 9.5px;
   font-weight: 900;
@@ -1098,7 +1098,7 @@ onUnmounted(() => {
     .lc-price {
       font-size: 15px;
       font-weight: 900;
-      color: #000000;
+      color: #303133;
       font-variant-numeric: tabular-nums;
     }
     .lc-code {
@@ -1130,7 +1130,7 @@ onUnmounted(() => {
 
     strong {
       font-size: 11.5px;
-      color: #171717;
+      color: #303133;
     }
     span {
       font-size: 10.5px;
@@ -1140,7 +1140,7 @@ onUnmounted(() => {
 
   &:hover,
   &.dragover {
-    border-color: #000000;
+    border-color: var(--vea-theme, #409eff);
     background: #f5f5f5;
   }
 }
@@ -1170,7 +1170,7 @@ onUnmounted(() => {
   cursor: pointer;
 
   &:focus {
-    border-color: #000000;
+    border-color: var(--vea-theme, #409eff);
   }
 }
 
@@ -1189,11 +1189,11 @@ onUnmounted(() => {
   }
 
   &.primary {
-    border-color: #000000;
+    border-color: var(--vea-theme, #409eff);
   }
 
   &.viewing {
-    outline: 2px solid #000000;
+    outline: 2px solid var(--vea-theme, #409eff);
     outline-offset: -1px;
   }
 
@@ -1232,7 +1232,7 @@ onUnmounted(() => {
       height: 17px;
       border: none;
       background: rgba(255, 255, 255, 0.92);
-      color: #000000;
+      color: #303133;
       font-size: 11px;
       font-weight: 800;
       line-height: 1;
@@ -1242,7 +1242,7 @@ onUnmounted(() => {
       justify-content: center;
 
       &:hover {
-        background: #000000;
+        background: var(--vea-theme, #409eff);
         color: #ffffff;
       }
 
@@ -1316,9 +1316,9 @@ onUnmounted(() => {
   }
 
   .btn-gen-code {
-    background: #000000;
+    background: var(--vea-theme, #409eff);
     color: #ffffff;
-    border: 1px solid #000000;
+    border: 1px solid var(--vea-theme, #409eff);
     padding: 0 10px;
     font-size: 11px;
     font-weight: 800;
@@ -1326,7 +1326,7 @@ onUnmounted(() => {
     white-space: nowrap;
 
     &:hover {
-      background: #262626;
+      background: var(--vea-theme-light-3, #66b1ff);
     }
   }
 }
@@ -1341,15 +1341,15 @@ onUnmounted(() => {
   button {
     background: #fafafa;
     border: 1px solid #d4d4d4;
-    color: #171717;
+    color: #303133;
     font-size: 10.5px;
     font-weight: 800;
     padding: 2px 7px;
     cursor: pointer;
 
     &:hover {
-      border-color: #000000;
-      background: #000000;
+      border-color: var(--vea-theme, #409eff);
+      background: var(--vea-theme, #409eff);
       color: #ffffff;
     }
   }
@@ -1420,8 +1420,8 @@ onUnmounted(() => {
     cursor: pointer;
 
     &:hover {
-      border-color: #000000;
-      background: #000000;
+      border-color: var(--vea-theme, #409eff);
+      background: var(--vea-theme, #409eff);
       color: #ffffff;
     }
   }
@@ -1429,16 +1429,16 @@ onUnmounted(() => {
 
 /* CARD 4 MINI VARIANT MATRIX */
 .btn-manage-sku {
-  background: #000000;
+  background: var(--vea-theme, #409eff);
   color: #ffffff;
-  border: 1px solid #000000;
+  border: 1px solid var(--vea-theme, #409eff);
   font-size: 11px;
   font-weight: 800;
   padding: 5px 11px;
   cursor: pointer;
 
   &:hover {
-    background: #262626;
+    background: var(--vea-theme-light-3, #66b1ff);
   }
 }
 
@@ -1455,15 +1455,15 @@ onUnmounted(() => {
 
   .btn-outline-xs {
     background: #ffffff;
-    border: 1px solid #000000;
-    color: #000000;
+    border: 1px solid var(--vea-theme, #409eff);
+    color: #303133;
     font-size: 11px;
     font-weight: 800;
     padding: 5px 10px;
     cursor: pointer;
 
     &:hover {
-      background: #000000;
+      background: var(--vea-theme, #409eff);
       color: #ffffff;
     }
   }
@@ -1486,7 +1486,7 @@ onUnmounted(() => {
   }
 
   thead th {
-    background: #171717;
+    background: var(--vea-theme, #409eff);
     color: #ffffff;
     font-size: 10.5px;
     font-weight: 800;
@@ -1503,7 +1503,7 @@ onUnmounted(() => {
   }
 
   thead .sticky-col {
-    background: #000000;
+    background: var(--vea-theme, #409eff);
   }
 
   .swatch-sm {
@@ -1517,7 +1517,7 @@ onUnmounted(() => {
 
   .cname {
     font-weight: 700;
-    color: #171717;
+    color: #303133;
   }
 
   .m-cell {
@@ -1538,8 +1538,8 @@ onUnmounted(() => {
     }
 
     &:hover {
-      background: #000000;
-      border-color: #000000;
+      background: var(--vea-theme, #409eff);
+      border-color: var(--vea-theme, #409eff);
       color: #ffffff;
     }
   }

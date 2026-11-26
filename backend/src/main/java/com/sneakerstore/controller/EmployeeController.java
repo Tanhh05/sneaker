@@ -5,6 +5,7 @@ import com.sneakerstore.common.response.PageResponse;
 import com.sneakerstore.dto.response.EmployeeDto;
 import com.sneakerstore.dto.request.EmployeeRequest;
 import com.sneakerstore.service.EmployeeService;
+import com.sneakerstore.service.SoftDeleteService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
@@ -21,6 +22,7 @@ import java.util.Map;
 public class EmployeeController {
 
     private final EmployeeService employeeService;
+    private final SoftDeleteService softDeleteService;
 
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
@@ -61,6 +63,13 @@ public class EmployeeController {
     public ApiResponse<EmployeeDto> toggleStatus(@PathVariable Long id, @RequestBody Map<String, String> payload) {
         String status = payload.getOrDefault("status", "INACTIVE");
         return ApiResponse.ok("Đã cập nhật trạng thái nhân viên", employeeService.toggleStatus(id, status));
+    }
+
+    @DeleteMapping("/{id}/soft-delete")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ApiResponse<Void> softDelete(@PathVariable Long id) {
+        softDeleteService.softDeleteEmployee(id);
+        return ApiResponse.ok("Đã xóa mềm nhân viên", null);
     }
 }
 

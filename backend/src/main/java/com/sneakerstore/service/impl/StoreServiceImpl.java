@@ -15,6 +15,7 @@ import com.sneakerstore.service.BrandService;
 import com.sneakerstore.service.CategoryService;
 import com.sneakerstore.service.ProductService;
 import com.sneakerstore.service.StoreService;
+import com.sneakerstore.service.VoucherService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
@@ -49,6 +50,7 @@ public class StoreServiceImpl implements StoreService {
     private final ReportQueryRepository reportQueryRepository;
     private final OrderMapper orderMapper;
     private final UserRepository userRepository;
+    private final VoucherService voucherService;
 
     @Value("${sepay.bank-account:0346771322}")
     private String configuredBankAccount;
@@ -223,19 +225,37 @@ public class StoreServiceImpl implements StoreService {
             noteBuilder.append(" | Ghi chú: ").append(request.getNote().trim());
         }
 
+        BigDecimal shippingFee = totalAmount.compareTo(BigDecimal.valueOf(1_000_000)) >= 0
+                ? BigDecimal.ZERO
+                : BigDecimal.valueOf(30_000);
+
         SalesOrder order = SalesOrder.builder()
                 .orderCode(orderCode)
                 .customer(customer)
                 .employee(null) // Khách đặt online, không có nhân viên tại quầy
                 .orderDate(LocalDateTime.now())
                 .totalAmount(totalAmount)
-                .finalAmount(totalAmount)
+                .discountAmount(BigDecimal.ZERO)
+                .shippingFee(shippingFee)
+                .finalAmount(totalAmount.add(shippingFee))
                 .paymentMethod(paymentMethod)
                 .status(AppConstants.ORDER_PENDING)
                 .note(noteBuilder.toString())
                 .build();
 
         SalesOrder savedOrder = salesOrderRepository.save(order);
+
+        // Áp dụng Voucher kênh Online (nếu khách nhập/chọn mã)
+        BigDecimal discountAmount = BigDecimal.ZERO;
+        if (request.getVoucherCode() != null && !request.getVoucherCode().isBlank()) {
+            discountAmount = voucherService.applyVoucherToOrder(
+                    savedOrder, request.getVoucherCode(), "ONLINE", customer, totalAmount);
+            BigDecimal finalAmt = totalAmount.subtract(discountAmount).max(BigDecimal.ZERO).add(shippingFee);
+            savedOrder.setDiscountAmount(discountAmount);
+            savedOrder.setFinalAmount(finalAmt);
+            savedOrder = salesOrderRepository.save(savedOrder);
+        }
+        BigDecimal finalAmount = savedOrder.getFinalAmount();
 
         // Lưu chi tiết đơn hàng
         for (SalesOrderDetail detail : details) {
@@ -260,7 +280,7 @@ public class StoreServiceImpl implements StoreService {
         String bankId = configuredBankName != null ? configuredBankName : "MBBank";
         String accountName = configuredAccountName != null ? configuredAccountName : "ADHA SNEAKER";
         if (AppConstants.PAYMENT_BANK_TRANSFER.equals(paymentMethod)) {
-            long amount = totalAmount.longValue();
+            long amount = finalAmount.longValue();
             String memo = URLEncoder.encode(orderCode, StandardCharsets.UTF_8);
             qrUrl = String.format("https://qr.sepay.vn/img?acc=%s&bank=%s&amount=%d&des=%s&template=compact",
                     accountNo, bankId, amount, memo);
@@ -279,6 +299,10 @@ public class StoreServiceImpl implements StoreService {
                 .customerPhone(request.getCustomerPhone())
                 .shippingAddress(request.getShippingAddress())
                 .totalAmount(totalAmount)
+                .discountAmount(discountAmount)
+                .shippingFee(shippingFee)
+                .finalAmount(finalAmount)
+                .voucherCode(savedOrder.getVoucherCode())
                 .paymentMethod(paymentMethod)
                 .status(savedOrder.getStatus())
                 .qrPaymentUrl(qrUrl)
@@ -448,6 +472,10 @@ public class StoreServiceImpl implements StoreService {
         order.setStatus(AppConstants.ORDER_CANCELLED);
         order.setUpdatedBy(actor);
         SalesOrder savedOrder = salesOrderRepository.save(order);
+
+        // 2.5 Hoàn trả lượt sử dụng Voucher & khôi phục voucher cá nhân nếu đơn có áp dụng voucher
+        voucherService.refundVoucherForCancelledOrder(savedOrder.getId(),
+                reason != null && !reason.trim().isEmpty() ? reason.trim() : "Khách hàng hủy đơn trực tuyến");
 
         // 3. Ghi vết lịch sử trạng thái
         String cancelNote = (reason != null && !reason.trim().isEmpty())
