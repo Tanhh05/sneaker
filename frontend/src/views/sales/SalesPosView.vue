@@ -236,196 +236,229 @@
             </button>
           </div>
 
-          <!-- Customer Selection + Quick Add Customer -->
-          <div class="customer-box">
-            <div class="box-label">Khách hàng mua tại quầy:</div>
-            <div class="cust-row">
-              <QuickSelect
-                v-model="checkoutForm.customerId"
-                :options="customers"
-                value-key="id"
-                :label-key="(c) => `${c.fullName} - ${c.phone} (${c.customerCode})`"
-                :search-keys="['fullName', 'phone', 'customerCode']"
-                clearable
-                placeholder="Khách lẻ tại quầy (Hoặc tìm theo tên/SĐT)"
-                search-placeholder="Tìm nhanh tên, SĐT hoặc mã KH..."
-                style="flex: 1"
-              />
-              <button class="pos-cust-btn" @click="quickCustVisible = true">
-                + Khách mới
-              </button>
-            </div>
-          </div>
-
-          <!-- Cart Items -->
-          <div v-if="cart.length === 0" class="empty-cart-state">
-            <div class="empty-box-icon">
-              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#a1a1aa" stroke-width="1.5">
-                <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
-                <line x1="3" y1="6" x2="21" y2="6"></line>
-                <path d="M16 10a4 4 0 0 1-8 0"></path>
-              </svg>
-            </div>
-            <div class="empty-title">CHƯA CÓ SẢN PHẨM TRONG ĐƠN</div>
-            <div class="empty-hint">Quét mã vạch hộp giày hoặc chọn từ danh mục bên trái</div>
-          </div>
-          <div v-else class="cart-list">
-            <div v-for="(item, index) in cart" :key="item.variant.id" class="cart-item">
-              <div class="item-info">
-                <div class="item-title">{{ item.variant.productName }}</div>
-                <div class="item-meta">
-                  <span class="code-badge">{{ item.variant.sku }}</span>
-                  <span class="attr-text">Size {{ item.variant.sizeValue }} · {{ item.variant.colorName }}</span>
-                  <span class="avail">(Sẵn có: {{ item.variant.availableQuantity }})</span>
-                </div>
-                <div class="item-price">
-                  {{ formatCurrency(item.variant.salePrice) }} &times; {{ item.quantity }} =
-                  <strong class="price-text">{{ formatCurrency(item.variant.salePrice * item.quantity) }}</strong>
-                </div>
-              </div>
-              <div class="item-actions">
-                <el-input-number
-                  v-model="item.quantity"
-                  :min="1"
-                  :max="item.variant.availableQuantity"
-                  size="small"
-                  style="width: 95px"
+          <!-- Scrollable Middle Body: Customer + Cart Items (never squished!) + Checkout Options -->
+          <div class="pos-cart-scroll-body">
+            <!-- Customer Selection + Quick Add Customer -->
+            <div class="customer-box">
+              <div class="box-label">Khách hàng mua tại quầy:</div>
+              <div class="cust-row">
+                <QuickSelect
+                  v-model="checkoutForm.customerId"
+                  :options="customers"
+                  value-key="id"
+                  :label-key="(c) => `${c.fullName} - ${c.phone} (${c.customerCode})`"
+                  :search-keys="['fullName', 'phone', 'customerCode']"
+                  clearable
+                  placeholder="Khách lẻ tại quầy (Hoặc tìm theo tên/SĐT)"
+                  search-placeholder="Tìm nhanh tên, SĐT hoặc mã KH..."
+                  style="flex: 1"
                 />
-                <button
-                  class="cart-delete-btn"
-                  title="Xóa khỏi đơn"
-                  @click="cart.splice(index, 1)"
-                >
-                  <el-icon><Delete /></el-icon>
+                <button class="pos-cust-btn" @click="quickCustVisible = true">
+                  + Khách mới
                 </button>
               </div>
             </div>
+
+            <!-- Cart Items -->
+            <div v-if="cart.length === 0" class="empty-cart-state">
+              <div class="empty-box-icon">
+                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#a1a1aa" stroke-width="1.5">
+                  <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+                  <line x1="3" y1="6" x2="21" y2="6"></line>
+                  <path d="M16 10a4 4 0 0 1-8 0"></path>
+                </svg>
+              </div>
+              <div class="empty-title">CHƯA CÓ SẢN PHẨM TRONG ĐƠN</div>
+              <div class="empty-hint">Quét mã vạch hộp giày hoặc chọn từ danh mục bên trái</div>
+            </div>
+            <div v-else class="cart-list">
+              <div v-for="(item, index) in cart" :key="item.variant.id" class="cart-item">
+                <div class="item-info">
+                  <div class="item-title">{{ item.variant.productName }}</div>
+                  <div class="item-meta">
+                    <span class="code-badge">{{ item.variant.sku }}</span>
+                    <span class="attr-text">Size {{ item.variant.sizeValue }} · {{ item.variant.colorName }}</span>
+                    <span class="avail">(Còn: {{ item.variant.availableQuantity }})</span>
+                  </div>
+                  <div class="item-price">
+                    {{ formatCurrency(item.variant.salePrice) }} &times; {{ item.quantity }} =
+                    <strong class="price-text">{{ formatCurrency(item.variant.salePrice * item.quantity) }}</strong>
+                  </div>
+                </div>
+                <div class="item-actions">
+                  <el-input-number
+                    v-model="item.quantity"
+                    :min="1"
+                    :max="item.variant.availableQuantity"
+                    size="small"
+                    style="width: 92px"
+                  />
+                  <button
+                    class="cart-delete-btn"
+                    title="Xóa khỏi đơn"
+                    @click="cart.splice(index, 1)"
+                  >
+                    <el-icon><Delete /></el-icon>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Payment, Note, Voucher & VAT Form -->
+            <div class="checkout-section">
+              <el-form label-position="top" size="small" class="pos-checkout-form">
+                <el-row :gutter="10">
+                  <el-col :span="12">
+                    <el-form-item label="PHƯƠNG THỨC THANH TOÁN">
+                      <el-radio-group v-model="checkoutForm.paymentMethod" class="pos-radio-group">
+                        <el-radio-button label="CASH">Tiền mặt</el-radio-button>
+                        <el-radio-button label="BANK_TRANSFER">Chuyển khoản</el-radio-button>
+                      </el-radio-group>
+                    </el-form-item>
+                  </el-col>
+                  <el-col :span="12">
+                    <el-form-item label="TRẠNG THÁI XÁC NHẬN">
+                      <el-select filterable v-model="checkoutForm.status" style="width: 100%">
+                        <el-option label="Hoàn thành ngay (COMPLETED)" value="COMPLETED" />
+                        <el-option label="Xác nhận giữ đơn (CONFIRMED)" value="CONFIRMED" />
+                        <el-option label="Lưu đơn nháp (DRAFT)" value="DRAFT" />
+                      </el-select>
+                    </el-form-item>
+                  </el-col>
+                </el-row>
+
+                <el-form-item
+                  v-if="checkoutForm.paymentMethod === 'BANK_TRANSFER'"
+                  label="MÃ GIAO DỊCH CHUYỂN KHOẢN / NGÂN HÀNG"
+                >
+                  <el-input v-model="checkoutForm.paymentReference" placeholder="VD: Vietcombank FT26313 hoặc SePay..." />
+                </el-form-item>
+
+                <el-form-item label="GHI CHÚ ĐƠN HÀNG">
+                  <el-input v-model="checkoutForm.note" placeholder="Ghi chú thêm nếu có..." />
+                </el-form-item>
+
+                <!-- VOUCHER POS & VÍ VOUCHER KHÁCH HÀNG (Thu gọn / Mở rộng) -->
+                <div class="pos-voucher-box" :class="{ 'is-expanded': voucherExpanded }">
+                  <div
+                    class="pos-voucher-head"
+                    role="button"
+                    tabindex="0"
+                    @click="voucherExpanded = !voucherExpanded"
+                    @keyup.enter="voucherExpanded = !voucherExpanded"
+                  >
+                    <div class="pv-head-left">
+                      <el-icon class="pv-icon"><Tickets /></el-icon>
+                      <span class="pos-voucher-title">VOUCHER / MÃ GIẢM GIÁ</span>
+                    </div>
+                    <div class="pv-head-right">
+                      <span v-if="appliedPosVoucher" class="pv-applied-pill">
+                        ✓ {{ appliedPosVoucher.appliedCode }} (-{{ formatCurrency(appliedPosVoucher.discountAmount) }})
+                        <button
+                          type="button"
+                          class="pv-inline-clear"
+                          title="Gỡ voucher"
+                          @click.stop="clearPosVoucher"
+                        >
+                          &times;
+                        </button>
+                      </span>
+                      <span v-else-if="posAvailableVouchers.length" class="pos-voucher-count">
+                        {{ posAvailableVouchers.length }} khả dụng
+                      </span>
+                      <el-icon class="pv-chevron" :class="{ rotated: voucherExpanded }"><ArrowDown /></el-icon>
+                    </div>
+                  </div>
+
+                  <div v-if="voucherExpanded" class="pos-voucher-body">
+                    <div class="pos-voucher-input-row">
+                      <el-input
+                        v-model="posVoucherInput"
+                        size="small"
+                        placeholder="Nhập mã voucher (VD: POS50K, SNEAKER10...)"
+                        clearable
+                        @keyup.enter="applyPosVoucherCode()"
+                        @input="posVoucherInput = posVoucherInput.toUpperCase()"
+                      />
+                      <el-button
+                        type="primary"
+                        size="small"
+                        :loading="validatingPosVoucher"
+                        :disabled="!posVoucherInput.trim() || cart.length === 0"
+                        @click="applyPosVoucherCode()"
+                      >
+                        Áp dụng
+                      </el-button>
+                    </div>
+
+                    <div v-if="appliedPosVoucher" class="pos-voucher-applied">
+                      <div>
+                        <strong>✓ {{ appliedPosVoucher.appliedCode }}</strong>
+                        <span> — Giảm {{ formatCurrency(appliedPosVoucher.discountAmount) }}</span>
+                      </div>
+                      <button type="button" class="pos-voucher-remove" @click="clearPosVoucher">Gỡ</button>
+                    </div>
+                    <div v-else-if="posVoucherError" class="pos-voucher-err">
+                      {{ posVoucherError }}
+                    </div>
+
+                    <div v-if="posAvailableVouchers.length > 0" class="pos-voucher-list">
+                      <div
+                        v-for="v in posAvailableVouchers"
+                        :key="v.code"
+                        class="pos-voucher-chip"
+                        :class="{
+                          active: appliedPosVoucher?.appliedCode === v.code,
+                          disabled: !v.eligible || cart.length === 0
+                        }"
+                        @click="v.eligible && cart.length > 0 && applyPosVoucherCode(v.code)"
+                      >
+                        <div class="chip-top">
+                          <span class="chip-code">{{ v.code }}</span>
+                          <span class="chip-tag" :class="v.sourceType === 'PERSONAL' ? 'personal' : 'public'">
+                            {{ v.sourceType === 'PERSONAL' ? 'Ví KH' : 'Công khai' }}
+                          </span>
+                        </div>
+                        <div class="chip-desc">
+                          {{ v.discountType === 'PERCENT' ? `Giảm ${v.discountValue}%` : `Giảm ${formatCurrency(v.discountValue)}` }}
+                          <span v-if="v.minOrderAmount > 0"> · Đơn từ {{ formatCurrency(v.minOrderAmount) }}</span>
+                        </div>
+                        <div v-if="!v.eligible && cart.length > 0" class="chip-reason">{{ v.ineligibleReason }}</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Tùy chọn phát hành hóa đơn VAT tại quầy -->
+                <div v-if="checkoutForm.status === 'COMPLETED'" style="margin-top: 6px; padding: 8px 10px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 5px;">
+                  <el-checkbox v-model="vatForm.requestVat">
+                    <strong style="font-size: 12px; color: #303133">Xuất hóa đơn VAT theo yêu cầu khách hàng</strong>
+                  </el-checkbox>
+                  <div v-if="vatForm.requestVat" style="margin-top: 8px; display: flex; flex-direction: column; gap: 6px;">
+                    <el-input v-model="vatForm.companyName" size="small" placeholder="Tên công ty / Đơn vị mua hàng *" />
+                    <el-row :gutter="8">
+                      <el-col :span="14">
+                        <el-input v-model="vatForm.taxCode" size="small" placeholder="Mã số thuế (MST) *" />
+                      </el-col>
+                      <el-col :span="10">
+                        <el-input
+                          :model-value="`VAT ${dbPosVatRate}% (DB)`"
+                          size="small"
+                          disabled
+                          title="Thuế suất VAT lấy động từ cấu hình hệ thống (DB), không được phép sửa trên giao diện"
+                        />
+                      </el-col>
+                    </el-row>
+                    <el-input v-model="vatForm.address" size="small" placeholder="Địa chỉ công ty" />
+                    <el-input v-model="vatForm.email" size="small" placeholder="Email nhận hóa đơn PDF (không bắt buộc)" />
+                  </div>
+                </div>
+              </el-form>
+            </div>
           </div>
 
-          <!-- Payment & Summary -->
-          <div class="checkout-section">
-            <el-form label-position="top" size="small" class="pos-checkout-form">
-              <el-row :gutter="12">
-                <el-col :span="12">
-                  <el-form-item label="PHƯƠNG THỨC THANH TOÁN">
-                    <el-radio-group v-model="checkoutForm.paymentMethod" class="pos-radio-group">
-                      <el-radio-button label="CASH">Tiền mặt</el-radio-button>
-                      <el-radio-button label="BANK_TRANSFER">Chuyển khoản</el-radio-button>
-                    </el-radio-group>
-                  </el-form-item>
-                </el-col>
-                <el-col :span="12">
-                  <el-form-item label="TRẠNG THÁI XÁC NHẬN">
-                    <el-select filterable v-model="checkoutForm.status" style="width: 100%">
-                      <el-option label="Hoàn thành ngay (COMPLETED)" value="COMPLETED" />
-                      <el-option label="Xác nhận giữ đơn (CONFIRMED)" value="CONFIRMED" />
-                      <el-option label="Lưu đơn nháp (DRAFT)" value="DRAFT" />
-                    </el-select>
-                  </el-form-item>
-                </el-col>
-              </el-row>
-
-              <el-form-item
-                v-if="checkoutForm.paymentMethod === 'BANK_TRANSFER'"
-                label="MÃ GIAO DỊCH CHUYỂN KHOẢN / NGÂN HÀNG"
-              >
-                <el-input v-model="checkoutForm.paymentReference" placeholder="VD: Vietcombank FT26313 hoặc SePay..." />
-              </el-form-item>
-
-              <el-form-item label="GHI CHÚ ĐƠN HÀNG">
-                <el-input v-model="checkoutForm.note" placeholder="Ghi chú thêm nếu có..." />
-              </el-form-item>
-
-              <!-- VOUCHER POS & VÍ VOUCHER KHÁCH HÀNG -->
-              <div class="pos-voucher-box">
-                <div class="pos-voucher-head">
-                  <span class="pos-voucher-title">VOUCHER / MÃ GIẢM GIÁ</span>
-                  <span v-if="posAvailableVouchers.length" class="pos-voucher-count">{{ posAvailableVouchers.length }} khả dụng</span>
-                </div>
-                <div class="pos-voucher-input-row">
-                  <el-input
-                    v-model="posVoucherInput"
-                    size="small"
-                    placeholder="Nhập mã voucher (VD: POS50K, SNEAKER10...)"
-                    clearable
-                    @keyup.enter="applyPosVoucherCode()"
-                    @input="posVoucherInput = posVoucherInput.toUpperCase()"
-                  />
-                  <el-button
-                    type="primary"
-                    size="small"
-                    :loading="validatingPosVoucher"
-                    :disabled="!posVoucherInput.trim() || cart.length === 0"
-                    @click="applyPosVoucherCode()"
-                  >
-                    Áp dụng
-                  </el-button>
-                </div>
-
-                <div v-if="appliedPosVoucher" class="pos-voucher-applied">
-                  <div>
-                    <strong>✓ {{ appliedPosVoucher.appliedCode }}</strong>
-                    <span> — Giảm {{ formatCurrency(appliedPosVoucher.discountAmount) }}</span>
-                  </div>
-                  <button type="button" class="pos-voucher-remove" @click="clearPosVoucher">Gỡ</button>
-                </div>
-                <div v-else-if="posVoucherError" class="pos-voucher-err">
-                  {{ posVoucherError }}
-                </div>
-
-                <!-- Danh sách voucher khả dụng từ ví khách hàng & ưu đãi POS -->
-                <div v-if="posAvailableVouchers.length > 0" class="pos-voucher-list">
-                  <div
-                    v-for="v in posAvailableVouchers"
-                    :key="v.code"
-                    class="pos-voucher-chip"
-                    :class="{
-                      active: appliedPosVoucher?.appliedCode === v.code,
-                      disabled: !v.eligible || cart.length === 0
-                    }"
-                    @click="v.eligible && cart.length > 0 && applyPosVoucherCode(v.code)"
-                  >
-                    <div class="chip-top">
-                      <span class="chip-code">{{ v.code }}</span>
-                      <span class="chip-tag" :class="v.sourceType === 'PERSONAL' ? 'personal' : 'public'">
-                        {{ v.sourceType === 'PERSONAL' ? 'Ví KH' : 'Công khai' }}
-                      </span>
-                    </div>
-                    <div class="chip-desc">
-                      {{ v.discountType === 'PERCENT' ? `Giảm ${v.discountValue}%` : `Giảm ${formatCurrency(v.discountValue)}` }}
-                      <span v-if="v.minOrderAmount > 0"> · Đơn từ {{ formatCurrency(v.minOrderAmount) }}</span>
-                    </div>
-                    <div v-if="!v.eligible && cart.length > 0" class="chip-reason">{{ v.ineligibleReason }}</div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Tùy chọn phát hành hóa đơn VAT tại quầy -->
-              <div v-if="checkoutForm.status === 'COMPLETED'" style="margin-top: 6px; padding: 8px 10px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 5px;">
-                <el-checkbox v-model="vatForm.requestVat">
-                  <strong style="font-size: 12px; color: #0f172a">Xuất hóa đơn VAT theo yêu cầu khách hàng</strong>
-                </el-checkbox>
-                <div v-if="vatForm.requestVat" style="margin-top: 8px; display: flex; flex-direction: column; gap: 6px;">
-                  <el-input v-model="vatForm.companyName" size="small" placeholder="Tên công ty / Đơn vị mua hàng *" />
-                  <el-row :gutter="8">
-                    <el-col :span="14">
-                      <el-input v-model="vatForm.taxCode" size="small" placeholder="Mã số thuế (MST) *" />
-                    </el-col>
-                    <el-col :span="10">
-                      <el-input
-                        :model-value="`VAT ${dbPosVatRate}% (DB)`"
-                        size="small"
-                        disabled
-                        title="Thuế suất VAT lấy động từ cấu hình hệ thống (DB), không được phép sửa trên giao diện"
-                      />
-                    </el-col>
-                  </el-row>
-                  <el-input v-model="vatForm.address" size="small" placeholder="Địa chỉ công ty" />
-                  <el-input v-model="vatForm.email" size="small" placeholder="Email nhận hóa đơn PDF (không bắt buộc)" />
-                </div>
-              </div>
-            </el-form>
-
+          <!-- Pinned Bottom Checkout Summary & CTA -->
+          <div class="pos-cart-sticky-footer">
             <div class="summary-totals">
               <div class="row">
                 <span>Tổng số lượng:</span>
@@ -437,7 +470,7 @@
               </div>
               <div v-if="posVoucherDiscount > 0" class="row voucher-discount-row">
                 <span>Giảm giá Voucher ({{ appliedPosVoucher?.appliedCode }}):</span>
-                <strong style="color: #dc2626">-{{ formatCurrency(posVoucherDiscount) }}</strong>
+                <strong style="color: #fef08a">-{{ formatCurrency(posVoucherDiscount) }}</strong>
               </div>
               <div class="row final">
                 <span>THÀNH TIỀN THANH TOÁN:</span>
@@ -514,7 +547,7 @@
 <script setup>
 import { ref, reactive, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { ElMessage } from 'element-plus'
-import { Search, Delete, Plus, Printer, Tickets, Camera, Refresh } from '@element-plus/icons-vue'
+import { Search, Delete, Plus, Printer, Tickets, Camera, Refresh, ArrowDown } from '@element-plus/icons-vue'
 import { variantService } from '@/services/variantService'
 import { productService } from '@/services/productService'
 import { customerService } from '@/services/customerService'
@@ -529,6 +562,7 @@ import BarcodeLabelPrintModal from '@/components/common/BarcodeLabelPrintModal.v
 
 const loading = ref(false)
 const submitting = ref(false)
+const voucherExpanded = ref(false)
 
 // High-speed Barcode Scanner State
 const barcodeScanInput = ref('')
@@ -1561,9 +1595,27 @@ onUnmounted(() => {
     }
   }
 
+  .pos-cart-scroll-body {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding-right: 3px;
+  }
+
+  .pos-cart-sticky-footer {
+    flex-shrink: 0;
+    padding-top: 10px;
+    border-top: 1px solid #e6ebf5;
+    background: #ffffff;
+  }
+
   .customer-box {
+    flex-shrink: 0;
     background: #fafafa;
-    padding: 12px 14px;
+    padding: 10px 12px;
     border-radius: 5px;
     border: 1px solid #e5e5e5;
 
@@ -1587,62 +1639,70 @@ onUnmounted(() => {
   }
 
   .empty-cart-state {
-    padding: 36px 16px;
+    flex-shrink: 0;
+    padding: 20px 16px;
     text-align: center;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 8px;
-    border: 1px dashed #e5e5e5;
+    gap: 6px;
+    border: 1px dashed #dcdfe6;
+    border-radius: 5px;
     background: #fafafa;
 
     .empty-title {
       font-size: 12px;
-      font-weight: 900;
-      letter-spacing: 0.08em;
-      color: #18181b;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      color: #303133;
       text-transform: uppercase;
     }
 
     .empty-hint {
       font-size: 11px;
       color: #71717a;
-      max-width: 250px;
+      max-width: 260px;
       line-height: 1.4;
     }
   }
 
   .cart-list {
-    max-height: 290px;
-    overflow-y: auto;
+    flex-shrink: 0;
     display: flex;
     flex-direction: column;
     gap: 8px;
 
     .cart-item {
+      flex-shrink: 0;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 10px 12px;
+      gap: 10px;
+      padding: 9px 11px;
       border-radius: 5px;
-      border: 1px solid #e5e5e5;
-      background: #ffffff;
+      border: 1px solid var(--vea-theme-light-7, #c6e2ff);
+      background: #f8fbff;
 
       .item-info {
+        min-width: 0;
+        flex: 1;
+
         .item-title {
           font-size: 12.5px;
-          font-weight: 800;
+          font-weight: 700;
           color: #303133;
+          line-height: 1.3;
         }
 
         .item-meta {
           display: flex;
           align-items: center;
-          gap: 6px;
+          flex-wrap: wrap;
+          gap: 5px;
           font-size: 11px;
-          color: #737373;
-          margin: 4px 0;
+          color: #64748b;
+          margin: 3px 0;
 
           .avail {
             color: #10b981;
@@ -1652,6 +1712,7 @@ onUnmounted(() => {
 
         .item-price {
           font-size: 12px;
+          color: #475569;
         }
       }
 
@@ -1659,22 +1720,28 @@ onUnmounted(() => {
         display: flex;
         align-items: center;
         gap: 6px;
+        flex-shrink: 0;
       }
     }
   }
 
   .checkout-section {
-    border-top: 1px solid #e5e5e5;
-    padding-top: 14px;
+    flex-shrink: 0;
+    border-top: 1px solid #e6ebf5;
+    padding-top: 10px;
 
     .pos-checkout-form {
+      :deep(.el-form-item) {
+        margin-bottom: 10px !important;
+      }
+
       :deep(.el-form-item__label) {
         font-size: 10px !important;
         font-weight: 800 !important;
-        letter-spacing: 0.08em !important;
+        letter-spacing: 0.06em !important;
         text-transform: uppercase !important;
-        color: #71717a !important;
-        padding-bottom: 4px !important;
+        color: #64748b !important;
+        padding-bottom: 3px !important;
       }
 
       :deep(.el-input__wrapper) {
@@ -1706,40 +1773,43 @@ onUnmounted(() => {
         }
       }
     }
+  }
 
-    .summary-totals {
-      background: var(--vea-theme, #409eff);
-      color: #ffffff;
-      padding: 16px 18px;
-      border-radius: 5px;
-      border: 1px solid var(--vea-theme, #409eff);
-      margin-bottom: 12px;
+  .summary-totals {
+    background: linear-gradient(135deg, var(--vea-theme, #409eff) 0%, var(--vea-theme-dark-2, #337ecc) 100%);
+    color: #ffffff;
+    padding: 10px 14px;
+    border-radius: 6px;
+    margin-bottom: 8px;
 
-      .row {
-        display: flex;
-        justify-content: space-between;
-        font-size: 13px;
-        color: #a1a1aa;
-        margin-bottom: 4px;
+    .row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12.5px;
+      color: rgba(255, 255, 255, 0.9);
+      margin-bottom: 3px;
 
-        span:last-child {
-          color: #ffffff;
-          font-variant-numeric: tabular-nums;
-        }
-      }
-
-      .final {
-        border-top: 1px solid #27272a;
-        padding-top: 10px;
-        margin-top: 8px;
-        font-size: 16px;
-        font-weight: 900;
+      strong,
+      span:last-child {
         color: #ffffff;
+        font-variant-numeric: tabular-nums;
+      }
+    }
 
-        span:last-child {
-          color: #ffffff;
-          font-size: 19px;
-        }
+    .final {
+      border-top: 1px solid rgba(255, 255, 255, 0.25);
+      padding-top: 7px;
+      margin-top: 5px;
+      margin-bottom: 0;
+      font-size: 14px;
+      font-weight: 800;
+      color: #ffffff;
+
+      span:last-child {
+        color: #ffffff;
+        font-size: 17px;
+        font-weight: 900;
       }
     }
   }
@@ -1793,15 +1863,15 @@ onUnmounted(() => {
 
 .pos-checkout-btn {
   width: 100%;
-  height: 48px;
+  height: 40px;
   background: var(--vea-theme, #409eff);
   color: #ffffff;
   border: 1px solid var(--vea-theme, #409eff);
-  border-radius: 5px;
+  border-radius: 6px;
   font-family: var(--font-sans);
-  font-size: 13px;
-  font-weight: 900;
-  letter-spacing: 0.08em;
+  font-size: 12.5px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   cursor: pointer;
   transition: all 0.15s ease;
@@ -1810,8 +1880,8 @@ onUnmounted(() => {
   justify-content: center;
 
   &:hover:not(:disabled) {
-    background: #27272a;
-    border-color: #27272a;
+    background: var(--vea-theme-dark-2, #337ecc);
+    border-color: var(--vea-theme-dark-2, #337ecc);
   }
 
   &:disabled {
@@ -1909,28 +1979,106 @@ onUnmounted(() => {
 }
 
 .pos-voucher-box {
-  margin-bottom: 10px;
-  padding: 10px 12px;
-  background: #fafafa;
-  border: 1px solid #e5e5e5;
+  margin-bottom: 8px;
+  padding: 8px 10px;
+  background: #fafbfc;
+  border: 1px solid #e6ebf5;
   border-radius: 5px;
+  transition: border-color 0.15s ease;
+
+  &:hover,
+  &.is-expanded {
+    border-color: var(--vea-theme-light-5, #a0cfff);
+  }
 
   .pos-voucher-head {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 6px;
+    gap: 8px;
+    cursor: pointer;
+    user-select: none;
+
+    .pv-head-left {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      min-width: 0;
+    }
+
+    .pv-icon {
+      color: var(--vea-theme, #409eff);
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+
     .pos-voucher-title {
       font-size: 11px;
       font-weight: 800;
-      letter-spacing: 0.06em;
+      letter-spacing: 0.05em;
       color: #303133;
+      white-space: nowrap;
     }
+
+    .pv-head-right {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
     .pos-voucher-count {
-      font-size: 11px;
+      font-size: 10.5px;
       font-weight: 700;
       color: #059669;
+      background: #ecfdf5;
+      border: 1px solid #a7f3d0;
+      padding: 1px 6px;
+      border-radius: 999px;
+      white-space: nowrap;
     }
+
+    .pv-applied-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 10.5px;
+      font-weight: 700;
+      color: #065f46;
+      background: #ecfdf5;
+      border: 1px solid #6ee7b7;
+      padding: 1px 6px;
+      border-radius: 4px;
+      white-space: nowrap;
+
+      .pv-inline-clear {
+        border: none;
+        background: transparent;
+        color: #dc2626;
+        font-weight: 800;
+        font-size: 13px;
+        line-height: 1;
+        cursor: pointer;
+        padding: 0 2px;
+      }
+    }
+
+    .pv-chevron {
+      font-size: 13px;
+      color: #909399;
+      transition: transform 0.18s ease;
+
+      &.rotated {
+        transform: rotate(180deg);
+        color: var(--vea-theme, #409eff);
+      }
+    }
+  }
+
+  .pos-voucher-body {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px dashed #e2e8f0;
   }
 
   .pos-voucher-input-row {
