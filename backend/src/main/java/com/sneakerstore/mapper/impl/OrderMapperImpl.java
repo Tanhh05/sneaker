@@ -32,6 +32,7 @@ public class OrderMapperImpl implements OrderMapper {
                 .customerAddress(so.getCustomer() != null ? so.getCustomer().getAddress() : null)
                 .employeeId(so.getEmployee() != null ? so.getEmployee().getId() : null)
                 .employeeName(so.getEmployee() != null ? so.getEmployee().getFullName() : so.getCreatedBy())
+                .channel(so.getEmployee() != null ? "POS" : "ONLINE")
                 .orderDate(so.getOrderDate())
                 .totalAmount(so.getTotalAmount())
                 .finalAmount(so.getFinalAmount())

@@ -9,8 +9,11 @@ import com.sneakerstore.entity.Customer;
 import com.sneakerstore.repository.CustomerRepository;
 import com.sneakerstore.entity.Employee;
 import com.sneakerstore.repository.EmployeeRepository;
+import com.sneakerstore.dto.request.InvoiceIssueRequest;
 import com.sneakerstore.dto.request.SalesOrderRequest;
 import com.sneakerstore.dto.response.SalesOrderDto;
+import com.sneakerstore.service.InvoiceService;
+import org.springframework.beans.factory.ObjectProvider;
 import com.sneakerstore.entity.OrderStatusHistory;
 import com.sneakerstore.entity.SalesOrder;
 import com.sneakerstore.entity.SalesOrderDetail;
@@ -49,40 +52,115 @@ public class OrderServiceImpl implements OrderService {
     private final EmployeeRepository employeeRepository;
     private final ProductVariantRepository variantRepository;
     private final OrderMapper orderMapper;
+    private final ObjectProvider<InvoiceService> invoiceServiceProvider;
 
     @Override
     @Transactional(readOnly = true)
     public PageResponse<SalesOrderDto> searchOrders(
-            String keyword, String status, LocalDate fromDate, LocalDate toDate, Pageable pageable) {
+            String keyword, String status, String paymentMethod, String channel,
+            LocalDate fromDate, LocalDate toDate, Pageable pageable) {
         // Bước 1: Chuẩn hóa khoảng thời gian lọc & từ khóa
         LocalDateTime start = fromDate != null ? fromDate.atStartOfDay() : null;
         LocalDateTime end = toDate != null ? toDate.atTime(LocalTime.MAX) : null;
 
         String trimmedKeyword = (keyword != null && !keyword.isBlank()) ? keyword.trim() : null;
-        String altKeyword = null;
-        if (trimmedKeyword != null) {
-            // Hỗ trợ tìm kiếm thông minh: nếu nhập hd019, hd19, 19, HD19 -> chuẩn hóa sang mã chuẩn HD0019
-            if (trimmedKeyword.matches("(?i)^HD0*(\\d+)$")) {
-                try {
-                    long num = Long.parseLong(trimmedKeyword.replaceAll("(?i)^HD0*", ""));
-                    altKeyword = String.format("HD%04d", num);
-                } catch (Exception ignored) {
-                }
-            } else if (trimmedKeyword.matches("^\\d+$")) {
-                try {
-                    long num = Long.parseLong(trimmedKeyword);
-                    altKeyword = String.format("HD%04d", num);
-                } catch (Exception ignored) {
-                }
-            }
-        }
+        String altKeyword = buildAltOrderCodeKeyword(trimmedKeyword);
+        String cleanStatus = (status != null && !status.isBlank() && !"ALL".equalsIgnoreCase(status.trim()))
+                ? status.trim().toUpperCase() : null;
+        String cleanPayment = (paymentMethod != null && !paymentMethod.isBlank() && !"ALL".equalsIgnoreCase(paymentMethod.trim()))
+                ? paymentMethod.trim().toUpperCase() : null;
+        String cleanChannel = (channel != null && !channel.isBlank() && !"ALL".equalsIgnoreCase(channel.trim()))
+                ? channel.trim().toUpperCase() : null;
 
         // Bước 2-3: Truy vấn phân trang trong Transaction ReadOnly
         Page<SalesOrderDto> page = salesOrderRepository
-                .searchOrders(trimmedKeyword, altKeyword, status, start, end, pageable)
-                // Bước 5: Output Mapping qua OrderMapper
+                .searchOrders(trimmedKeyword, altKeyword, cleanStatus, cleanPayment, cleanChannel, start, end, pageable)
                 .map(orderMapper::toSummaryDto);
+
+        // Bước 4: Batch-load chi tiết sản phẩm (Quick Glance) & bản ghi thanh toán (SePay / COD) tránh N+1
+        List<Long> orderIds = page.getContent().stream()
+                .map(SalesOrderDto::getId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+
+        if (!orderIds.isEmpty()) {
+            Map<Long, List<SalesOrderDetail>> detailsByOrder = detailRepository
+                    .findBySalesOrderIdInOrderByIdAsc(orderIds)
+                    .stream()
+                    .collect(Collectors.groupingBy(d -> d.getSalesOrder().getId(), LinkedHashMap::new, Collectors.toList()));
+
+            Map<Long, List<Payment>> paymentsByOrder = paymentRepository
+                    .findBySalesOrderIdInOrderByIdAsc(orderIds)
+                    .stream()
+                    .collect(Collectors.groupingBy(p -> p.getSalesOrder().getId(), LinkedHashMap::new, Collectors.toList()));
+
+            for (SalesOrderDto dto : page.getContent()) {
+                List<SalesOrderDetail> dList = detailsByOrder.getOrDefault(dto.getId(), Collections.emptyList());
+                dto.setDetails(dList.stream().map(orderMapper::toDetailDto).collect(Collectors.toList()));
+
+                List<Payment> pList = paymentsByOrder.getOrDefault(dto.getId(), Collections.emptyList());
+                dto.setPayments(pList.stream().map(orderMapper::toPaymentDto).collect(Collectors.toList()));
+            }
+        }
+
         return PageResponse.of(page);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Map<String, Long> getStatusCounts(
+            String keyword, String paymentMethod, String channel,
+            LocalDate fromDate, LocalDate toDate) {
+        LocalDateTime start = fromDate != null ? fromDate.atStartOfDay() : null;
+        LocalDateTime end = toDate != null ? toDate.atTime(LocalTime.MAX) : null;
+
+        String trimmedKeyword = (keyword != null && !keyword.isBlank()) ? keyword.trim() : null;
+        String altKeyword = buildAltOrderCodeKeyword(trimmedKeyword);
+        String cleanPayment = (paymentMethod != null && !paymentMethod.isBlank() && !"ALL".equalsIgnoreCase(paymentMethod.trim()))
+                ? paymentMethod.trim().toUpperCase() : null;
+        String cleanChannel = (channel != null && !channel.isBlank() && !"ALL".equalsIgnoreCase(channel.trim()))
+                ? channel.trim().toUpperCase() : null;
+
+        Map<String, Long> counts = new LinkedHashMap<>();
+        counts.put("ALL", 0L);
+        counts.put(AppConstants.ORDER_PENDING, 0L);
+        counts.put(AppConstants.ORDER_CONFIRMED, 0L);
+        counts.put(AppConstants.ORDER_SHIPPING, 0L);
+        counts.put(AppConstants.ORDER_COMPLETED, 0L);
+        counts.put(AppConstants.ORDER_CANCELLED, 0L);
+
+        List<Object[]> rows = salesOrderRepository.countOrdersByStatus(
+                trimmedKeyword, altKeyword, cleanPayment, cleanChannel, start, end);
+
+        long total = 0L;
+        for (Object[] row : rows) {
+            if (row == null || row.length < 2 || row[0] == null) continue;
+            String st = row[0].toString().toUpperCase();
+            long cnt = ((Number) row[1]).longValue();
+            total += cnt;
+            counts.put(st, cnt);
+        }
+        counts.put("ALL", total);
+        return counts;
+    }
+
+    private String buildAltOrderCodeKeyword(String trimmedKeyword) {
+        if (trimmedKeyword == null) return null;
+        // Hỗ trợ tìm kiếm thông minh: nếu nhập hd019, hd19, 19, HD19 -> chuẩn hóa sang mã chuẩn HD0019
+        if (trimmedKeyword.matches("(?i)^HD0*(\\d+)$")) {
+            try {
+                long num = Long.parseLong(trimmedKeyword.replaceAll("(?i)^HD0*", ""));
+                return String.format("HD%04d", num);
+            } catch (Exception ignored) {
+            }
+        } else if (trimmedKeyword.matches("^\\d+$")) {
+            try {
+                long num = Long.parseLong(trimmedKeyword);
+                return String.format("HD%04d", num);
+            } catch (Exception ignored) {
+            }
+        }
+        return null;
     }
 
     @Override
@@ -240,6 +318,29 @@ public class OrderServiceImpl implements OrderService {
                 .updatedBy(actor)
                 .build());
 
+        // Bước 4.5: Tự động phát sinh hóa đơn khi đơn bán tại quầy hoàn thành (COMPLETED)
+        if (AppConstants.ORDER_COMPLETED.equals(initialStatus)) {
+            InvoiceService invService = invoiceServiceProvider.getIfAvailable();
+            if (invService != null) {
+                InvoiceIssueRequest invCfg = null;
+                if (request.getInvoiceType() != null || request.getVatCompanyName() != null
+                        || request.getVatTaxCode() != null || request.getVatEmail() != null
+                        || request.getVatTaxRate() != null || Boolean.TRUE.equals(request.getAutoSendInvoiceEmail())) {
+                    invCfg = InvoiceIssueRequest.builder()
+                            .orderId(savedOrder.getId())
+                            .invoiceType(request.getInvoiceType())
+                            .companyName(request.getVatCompanyName())
+                            .taxCode(request.getVatTaxCode())
+                            .customerAddress(request.getVatAddress())
+                            .customerEmail(request.getVatEmail())
+                            .defaultTaxRate(request.getVatTaxRate())
+                            .autoSendEmail(request.getAutoSendInvoiceEmail())
+                            .build();
+                }
+                invService.autoIssueForCompletedOrder(savedOrder.getId(), invCfg);
+            }
+        }
+
         // Bước 5: Output Mapping
         return getById(savedOrder.getId());
     }
@@ -301,7 +402,27 @@ public class OrderServiceImpl implements OrderService {
                 .updatedBy(actor)
                 .build());
 
+        // Bước 4.5: Tự động phát sinh hóa đơn khi đơn hàng (POS / Online) chuyển sang COMPLETED (Idempotent)
+        if (AppConstants.ORDER_COMPLETED.equals(nextStatus)) {
+            InvoiceService invService = invoiceServiceProvider.getIfAvailable();
+            if (invService != null) {
+                invService.autoIssueForCompletedOrder(order.getId(), null);
+            }
+        }
+
         // Bước 5: Output Mapping
+        return getById(id);
+    }
+
+    @Override
+    @Transactional
+    public SalesOrderDto updateNote(Long id, String note) {
+        SalesOrder order = salesOrderRepository.findWithHeaderById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng với ID: " + id));
+        String actor = SecurityUtils.getCurrentUsername();
+        order.setNote(note != null ? note.trim() : "");
+        order.setUpdatedBy(actor);
+        salesOrderRepository.save(order);
         return getById(id);
     }
 

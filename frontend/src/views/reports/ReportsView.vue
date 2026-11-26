@@ -1,222 +1,282 @@
 <template>
-  <div class="page-container" v-loading="loading">
+  <div class="page-container reports-workspace" v-loading="loading">
+    <!-- Header -->
     <div class="page-header">
       <div class="page-title-group">
-        <h2 class="page-title">Báo Cáo &amp; Thống Kê Đa Chiều</h2>
-        <p class="page-subtitle">Phân tích doanh thu (chỉ tính đơn hoàn thành), sản phẩm bán chạy/chậm, nhập hàng, khách hàng và hiệu suất nhân viên</p>
+        <h2 class="page-title">BÁO CÁO THỐNG KÊ ĐA CHIỀU – ADHA SNEAKER</h2>
+        <p class="page-subtitle">
+          5 chuyên đề phân tích chuyên sâu: Doanh thu &amp; Dòng tiền, Kênh bán (POS vs Online), Tỷ lệ Hủy/Bom hàng, Biến thể Size/Màu &amp; Hiệu suất Nhân viên.
+        </p>
       </div>
-      <el-button type="success" :loading="exporting" @click="exportExcel">
-        <el-icon style="margin-right: 6px"><Download /></el-icon> Xuất Báo Cáo Excel (.xlsx)
-      </el-button>
-    </div>
-
-    <!-- Filter Bar -->
-    <div class="filter-card">
-      <el-row :gutter="12">
-        <el-col :xs="12" :sm="5" :md="4">
-          <el-select filterable v-model="filters.groupBy" style="width: 100%" @change="loadReport">
-            <el-option label="Theo Ngày (DAY)" value="DAY" />
-            <el-option label="Theo Tháng (MONTH)" value="MONTH" />
-            <el-option label="Theo Năm (YEAR)" value="YEAR" />
-          </el-select>
-        </el-col>
-        <el-col :xs="12" :sm="5" :md="4">
-          <el-date-picker
-            v-model="filters.fromDate"
-            type="date"
-            value-format="YYYY-MM-DD"
-            placeholder="Từ ngày"
-            style="width: 100%"
-            @change="loadReport"
-          />
-        </el-col>
-        <el-col :xs="12" :sm="5" :md="4">
-          <el-date-picker
-            v-model="filters.toDate"
-            type="date"
-            value-format="YYYY-MM-DD"
-            placeholder="Đến ngày"
-            style="width: 100%"
-            @change="loadReport"
-          />
-        </el-col>
-        <el-col :xs="12" :sm="5" :md="4">
-          <QuickSelect
-            v-model="filters.brandId"
-            :options="brands"
-            value-key="id"
-            label-key="brandName"
-            placeholder="Lọc Thương hiệu"
-            search-placeholder="Tìm nhanh thương hiệu..."
-            clearable
-            @change="loadReport"
-          />
-        </el-col>
-        <el-col :xs="12" :sm="5" :md="4">
-          <QuickSelect
-            v-model="filters.categoryId"
-            :options="categories"
-            value-key="id"
-            label-key="categoryName"
-            placeholder="Lọc Danh mục"
-            search-placeholder="Tìm nhanh danh mục..."
-            clearable
-            @change="loadReport"
-          />
-        </el-col>
-        <el-col :xs="12" :sm="24" :md="4">
-          <el-button type="primary" @click="loadReport">Tổng hợp</el-button>
-          <el-button @click="resetFilters">Xóa lọc</el-button>
-        </el-col>
-      </el-row>
-    </div>
-
-    <!-- Summary KPI Cards -->
-    <div class="report-kpis">
-      <div class="kpi-box">
-        <div class="kpi-label">Doanh thu hoàn thành (Kỳ lọc)</div>
-        <div class="kpi-val price-text">{{ formatCurrency(report.totalRevenue) }}</div>
-      </div>
-      <div class="kpi-box">
-        <div class="kpi-label">Số đơn hàng hoàn thành</div>
-        <div class="kpi-val">{{ report.totalCompletedOrders }} đơn</div>
-      </div>
-      <div class="kpi-box">
-        <div class="kpi-label">Tổng số lượng giày đã bán</div>
-        <div class="kpi-val text-green">{{ report.totalQuantitySold }} đôi</div>
-      </div>
-      <div class="kpi-box">
-        <div class="kpi-label">Tổng giá trị nhập hàng (Xác nhận)</div>
-        <div class="kpi-val">{{ formatCurrency(report.totalPurchaseAmount) }}</div>
+      <div class="header-actions">
+        <el-button class="btn-soft" :loading="loading" @click="loadReport">
+          <el-icon><Refresh /></el-icon>
+          <span>Tổng hợp lại</span>
+        </el-button>
+        <el-button type="success" class="btn-excel" :loading="exporting" @click="exportExcel">
+          <el-icon><Download /></el-icon>
+          <span>Xuất Bảng kê Kế toán Excel (5 Sheets)</span>
+        </el-button>
       </div>
     </div>
 
-    <!-- Multi-tab Detailed Reports -->
-    <div class="table-card">
-      <el-tabs v-model="activeTab">
-        <!-- Tab 1: Revenue by Day / Month / Year -->
-        <el-tab-pane label="1. Doanh thu theo Ngày / Tháng / Năm" name="revenue">
-          <el-table :data="report.revenueSeries || []" stripe border style="width: 100%">
-            <el-table-column prop="period" label="Kỳ báo cáo (Ngày / Tháng / Năm)" width="240">
-              <template #default="{ row }">
-                <span class="code-badge">{{ row.period }}</span>
-              </template>
+    <!-- Shared Multidimensional Filter Bar -->
+    <AnalyticsFilterBar
+      v-model="filters"
+      :brands="brands"
+      :categories="categories"
+      @change="loadReport"
+    />
+
+    <!-- Financial Summary Strip -->
+    <div class="summary-strip">
+      <div class="sum-box primary">
+        <span class="sum-label">Tổng doanh thu thực nhận</span>
+        <strong class="sum-val">{{ formatCurrency(report.totalRevenue) }}</strong>
+        <span class="sum-sub">{{ report.totalCompletedOrders }} đơn hoàn thành &middot; {{ report.totalQuantitySold }} đôi</span>
+      </div>
+      <div class="sum-box">
+        <span class="sum-label">Tiền hàng trước thuế</span>
+        <strong class="sum-val">{{ formatCurrency(report.totalPreTaxRevenue) }}</strong>
+        <span class="sum-sub">Thuế VAT: {{ formatCurrency(report.totalVatAmount) }}</span>
+      </div>
+      <div class="sum-box">
+        <span class="sum-label">Cơ cấu dòng tiền thực thu</span>
+        <strong class="sum-val">{{ formatCurrency(report.totalBankTransferRevenue) }}</strong>
+        <span class="sum-sub">CK SePay &middot; TM: {{ formatCurrency(report.totalCashRevenue) }} &middot; COD: {{ formatCurrency(report.totalCodRevenue) }}</span>
+      </div>
+      <div class="sum-box">
+        <span class="sum-label">Tạm tính / Thất thoát hủy</span>
+        <strong class="sum-val text-red">{{ formatCurrency(report.cancelledValue) }}</strong>
+        <span class="sum-sub">Tỷ lệ hủy: {{ report.cancellationRate }}% &middot; Tạm tính: {{ formatCurrency(report.provisionalRevenue) }}</span>
+      </div>
+    </div>
+
+    <!-- 5 Specialized Report Modules -->
+    <div class="reports-surface">
+      <el-tabs v-model="activeTab" class="report-tabs">
+        <!-- MODULE 1: Doanh thu & Dòng tiền -->
+        <el-tab-pane label="1. Doanh thu & Dòng tiền" name="cashflow">
+          <div class="tab-intro">
+            Bảng kê chi tiết theo chu kỳ đã chọn (đối soát tiền hàng trước thuế, VAT và 3 luồng tiền mặt / chuyển khoản SePay / thu hộ COD).
+          </div>
+          <el-table :data="report.revenueSeries || []" border stripe show-summary :summary-method="cashflowSummary" style="width: 100%">
+            <template #empty><el-empty description="Không có dữ liệu doanh thu trong kỳ lọc" :image-size="70" /></template>
+            <el-table-column prop="period" label="Kỳ báo cáo" width="135" fixed="left">
+              <template #default="{ row }"><span class="mono-tag">{{ row.period }}</span></template>
             </el-table-column>
-            <el-table-column prop="orderCount" label="Số đơn hoàn thành" width="180" align="center" />
-            <el-table-column prop="quantitySold" label="Số lượng sản phẩm đã bán" width="210" align="center">
-              <template #default="{ row }"><strong>{{ row.quantitySold }}</strong> đôi</template>
+            <el-table-column prop="orderCount" label="Số đơn hoàn thành" width="140" align="center" />
+            <el-table-column prop="preTaxRevenue" label="Tiền hàng trước thuế" min-width="155" align="right">
+              <template #default="{ row }">{{ formatCurrency(row.preTaxRevenue) }}</template>
             </el-table-column>
-            <el-table-column label="Doanh thu (Chỉ tính đơn COMPLETED)" min-width="220" align="right">
-              <template #default="{ row }">
-                <span class="price-text">{{ formatCurrency(row.revenue) }}</span>
-              </template>
+            <el-table-column prop="vatAmount" label="Tiền thuế VAT" min-width="135" align="right">
+              <template #default="{ row }"><span class="text-blue">{{ formatCurrency(row.vatAmount) }}</span></template>
+            </el-table-column>
+            <el-table-column prop="cashRevenue" label="Tiền mặt thu được" min-width="150" align="right">
+              <template #default="{ row }">{{ formatCurrency(row.cashRevenue) }}</template>
+            </el-table-column>
+            <el-table-column prop="bankTransferRevenue" label="Tiền chuyển khoản (SePay)" min-width="175" align="right">
+              <template #default="{ row }">{{ formatCurrency(row.bankTransferRevenue) }}</template>
+            </el-table-column>
+            <el-table-column prop="codRevenue" label="Tiền COD thu được" min-width="150" align="right">
+              <template #default="{ row }">{{ formatCurrency(row.codRevenue) }}</template>
+            </el-table-column>
+            <el-table-column prop="revenue" label="Tổng doanh thu thực nhận" min-width="180" align="right" fixed="right">
+              <template #default="{ row }"><strong class="text-red">{{ formatCurrency(row.revenue) }}</strong></template>
             </el-table-column>
           </el-table>
         </el-tab-pane>
 
-        <!-- Tab 2: Top Selling & Slow Selling Products -->
-        <el-tab-pane label="2. Sản phẩm Bán chạy &amp; Bán chậm" name="products">
-          <el-row :gutter="18">
-            <el-col :xs="24" :lg="12">
-              <h4 style="margin-bottom: 10px; color: #16a34a">Top Sản phẩm Bán chạy nhất</h4>
-              <el-table :data="report.topSellingProducts || []" stripe border size="small">
-                <el-table-column prop="productCode" label="Mã SP" width="90" />
-                <el-table-column prop="productName" label="Tên sản phẩm" min-width="160" />
-                <el-table-column prop="brandName" label="Hãng" width="95" />
-                <el-table-column prop="quantitySold" label="Đã bán" width="85" align="center" />
-                <el-table-column label="Doanh thu" width="135" align="right">
-                  <template #default="{ row }">
-                    <strong class="price-text">{{ formatCurrency(row.revenue) }}</strong>
-                  </template>
-                </el-table-column>
-              </el-table>
-            </el-col>
-            <el-col :xs="24" :lg="12">
-              <h4 style="margin-bottom: 10px; color: #ea580c">Danh sách Sản phẩm Bán chậm</h4>
-              <el-table :data="report.slowSellingProducts || []" stripe border size="small">
-                <el-table-column prop="productCode" label="Mã SP" width="90" />
-                <el-table-column prop="productName" label="Tên sản phẩm" min-width="160" />
-                <el-table-column prop="brandName" label="Hãng" width="95" />
-                <el-table-column prop="quantitySold" label="Đã bán" width="85" align="center" />
-                <el-table-column label="Doanh thu" width="135" align="right">
-                  <template #default="{ row }">
-                    <span>{{ formatCurrency(row.revenue) }}</span>
-                  </template>
-                </el-table-column>
-              </el-table>
-            </el-col>
-          </el-row>
-        </el-tab-pane>
+        <!-- MODULE 2: Hiệu quả Kênh bán (POS vs Online) -->
+        <el-tab-pane label="2. Hiệu quả Kênh bán (POS vs Online)" name="channels">
+          <div class="channel-compare-cards">
+            <div
+              v-for="ch in report.channelComparison || []"
+              :key="ch.channel"
+              class="ch-detail-card"
+              :class="ch.channel === 'POS' ? 'is-pos' : 'is-online'"
+            >
+              <div class="ch-card-title">
+                <strong>{{ ch.label }}</strong>
+                <span class="share-pill">{{ ch.revenueSharePercent }}% tổng doanh thu</span>
+              </div>
+              <div class="ch-big-money">{{ formatCurrency(ch.actualRevenue) }}</div>
+              <div class="ch-kv-list">
+                <div><span>Tổng số đơn đặt:</span><strong>{{ ch.totalOrders }} đơn</strong></div>
+                <div><span>Đơn giao thành công / hoàn thành:</span><strong class="text-green">{{ ch.completedOrders }} đơn ({{ ch.successRate }}%)</strong></div>
+                <div><span>Đơn hủy / Bom hàng:</span><strong class="text-red">{{ ch.cancelledOrders }} đơn ({{ ch.cancellationRate }}%)</strong></div>
+                <div><span>Tỷ lệ thanh toán ngay:</span><strong>{{ ch.instantPaymentRate }}%</strong></div>
+                <div><span>Phí giao vận phát sinh:</span><strong>{{ formatCurrency(ch.shippingFee) }}</strong></div>
+                <div><span>Giá trị trung bình đơn (AOV):</span><strong>{{ formatCurrency(ch.aov) }}</strong></div>
+              </div>
+            </div>
+          </div>
 
-        <!-- Tab 3: Revenue by Employee -->
-        <el-tab-pane label="3. Doanh thu theo Nhân viên" name="employees">
-          <el-table :data="report.employeeRevenueStats || []" stripe border style="width: 100%">
-            <el-table-column prop="employeeCode" label="Mã nhân viên" width="140">
-              <template #default="{ row }">
-                <span class="code-badge">{{ row.employeeCode }}</span>
-              </template>
+          <el-table :data="report.channelComparison || []" border stripe style="width: 100%; margin-top: 16px">
+            <el-table-column prop="label" label="Kênh bán hàng" min-width="190" />
+            <el-table-column prop="totalOrders" label="Tổng đơn đặt" width="115" align="center" />
+            <el-table-column prop="completedOrders" label="Thành công" width="110" align="center" />
+            <el-table-column prop="cancelledOrders" label="Hủy / Bom hàng" width="125" align="center" />
+            <el-table-column label="Tỷ lệ thành công" width="130" align="center">
+              <template #default="{ row }"><strong class="text-green">{{ row.successRate }}%</strong></template>
             </el-table-column>
-            <el-table-column prop="employeeName" label="Họ và tên nhân viên" min-width="220" />
-            <el-table-column prop="completedOrderCount" label="Số đơn hoàn thành" width="180" align="center" />
-            <el-table-column label="Tổng doanh thu mang lại" width="220" align="right">
-              <template #default="{ row }">
-                <strong class="price-text">{{ formatCurrency(row.totalRevenue) }}</strong>
-              </template>
+            <el-table-column label="Phí giao vận" width="135" align="right">
+              <template #default="{ row }">{{ formatCurrency(row.shippingFee) }}</template>
+            </el-table-column>
+            <el-table-column label="Giá trị hủy" width="145" align="right">
+              <template #default="{ row }"><span class="text-red">{{ formatCurrency(row.cancelledValue) }}</span></template>
+            </el-table-column>
+            <el-table-column label="Doanh thu thực nhận" width="170" align="right">
+              <template #default="{ row }"><strong>{{ formatCurrency(row.actualRevenue) }}</strong></template>
             </el-table-column>
           </el-table>
         </el-tab-pane>
 
-        <!-- Tab 4: Customer & Order Status Stats -->
-        <el-tab-pane label="4. Thống kê Khách hàng &amp; Trạng thái Đơn" name="customers">
-          <el-row :gutter="18">
-            <el-col :xs="24" :lg="14">
-              <h4 style="margin-bottom: 10px">Thống kê Chi tiêu Khách hàng</h4>
-              <el-table :data="report.customerStats || []" stripe border size="small">
-                <el-table-column prop="customerCode" label="Mã KH" width="95" />
-                <el-table-column prop="customerName" label="Họ tên khách hàng" min-width="160" />
-                <el-table-column prop="phone" label="SĐT" width="120" />
-                <el-table-column prop="completedOrderCount" label="Số đơn mua" width="100" align="center" />
-                <el-table-column label="Tổng chi tiêu" width="145" align="right">
-                  <template #default="{ row }">
-                    <strong class="price-text">{{ formatCurrency(row.totalSpent) }}</strong>
-                  </template>
-                </el-table-column>
-              </el-table>
-            </el-col>
+        <!-- MODULE 3: Đơn hàng & Tỷ lệ Hủy/Hoàn trả -->
+        <el-tab-pane label="3. Đơn hàng & Tỷ lệ Hủy / Hoàn trả" name="cancellations">
+          <el-row :gutter="16">
             <el-col :xs="24" :lg="10">
-              <h4 style="margin-bottom: 10px">Thống kê Đơn hàng theo Trạng thái</h4>
-              <el-table :data="report.orderStatusStats || []" stripe border size="small">
-                <el-table-column label="Trạng thái" width="160">
+              <h4 class="sub-heading">Phân loại lý do hủy đơn / bom hàng</h4>
+              <div class="reason-bars">
+                <div v-for="r in report.cancelReasonStats || []" :key="r.reasonCategory" class="reason-item">
+                  <div class="reason-top">
+                    <span>{{ r.reasonCategory }}</span>
+                    <strong>{{ r.count }} đơn ({{ r.percentage }}%) &middot; {{ formatCurrency(r.lostValue) }}</strong>
+                  </div>
+                  <div class="reason-track">
+                    <div class="reason-fill" :style="{ width: Math.max(r.count > 0 ? 5 : 0, r.percentage) + '%' }" />
+                  </div>
+                </div>
+              </div>
+            </el-col>
+            <el-col :xs="24" :lg="14">
+              <h4 class="sub-heading">Chi tiết danh sách đơn không thành công ({{ (report.cancelledOrders || []).length }} đơn)</h4>
+              <el-table :data="report.cancelledOrders || []" border stripe size="small" style="width: 100%">
+                <template #empty><el-empty description="Không có đơn hàng bị hủy trong kỳ lọc" :image-size="60" /></template>
+                <el-table-column label="Mã đơn" width="110">
                   <template #default="{ row }">
-                    <el-tag :type="ORDER_STATUS_MAP[row.status]?.type || 'info'" size="small">
-                      {{ ORDER_STATUS_MAP[row.status]?.label || row.status }}
-                    </el-tag>
+                    <router-link :to="`/admin/orders/${row.orderId}`" class="ref-link">{{ row.orderCode }}</router-link>
                   </template>
                 </el-table-column>
-                <el-table-column prop="count" label="Số lượng đơn" width="110" align="center" />
-                <el-table-column label="Tổng giá trị" min-width="140" align="right">
-                  <template #default="{ row }">{{ formatCurrency(row.totalAmount) }}</template>
+                <el-table-column label="Kênh" width="85" align="center">
+                  <template #default="{ row }">{{ row.channel === 'ONLINE' ? 'Online' : 'POS' }}</template>
+                </el-table-column>
+                <el-table-column prop="customerName" label="Khách hàng" min-width="130" />
+                <el-table-column label="Giá trị" width="120" align="right">
+                  <template #default="{ row }"><span class="text-red">{{ formatCurrency(row.amount) }}</span></template>
+                </el-table-column>
+                <el-table-column prop="reasonCategory" label="Nhóm lý do" min-width="160" />
+                <el-table-column prop="cancelNote" label="Ghi chú chi tiết" min-width="180" show-overflow-tooltip />
+              </el-table>
+            </el-col>
+          </el-row>
+        </el-tab-pane>
+
+        <!-- MODULE 4: Biến thể Size, Màu sắc & Thương hiệu -->
+        <el-tab-pane label="4. Biến thể Size, Màu sắc & Thương hiệu" name="variants">
+          <!-- Size Group Summary (Women 36-39 vs Men 40-45 + Golden Sizes) -->
+          <div class="size-insight-row">
+            <div class="insight-box">
+              <div class="ins-label">Tỷ trọng Size Nữ (EU 36–39)</div>
+              <div class="ins-val">{{ womenSizeStats.qty }} đôi ({{ womenSizeStats.pct }}%)</div>
+            </div>
+            <div class="insight-box">
+              <div class="ins-label">Tỷ trọng Size Nam (EU 40–45)</div>
+              <div class="ins-val">{{ menSizeStats.qty }} đôi ({{ menSizeStats.pct }}%)</div>
+            </div>
+            <div class="insight-box golden">
+              <div class="ins-label">Nhóm "Size Vàng" (Ưu tiên 60–70% nhập hàng)</div>
+              <div class="ins-val">{{ goldenSizesLabel }}</div>
+            </div>
+          </div>
+
+          <el-row :gutter="16" style="margin-top: 14px">
+            <el-col :xs="24" :lg="12">
+              <h4 class="sub-heading">Độ hấp thụ thị trường theo từng Size giày</h4>
+              <el-table :data="report.sizeStats || []" border stripe size="small" style="width: 100%">
+                <el-table-column label="Size" width="130">
+                  <template #default="{ row }">
+                    <strong>EU {{ row.sizeValue }}</strong>
+                    <span v-if="row.goldenSize" class="gold-badge">SIZE VÀNG</span>
+                  </template>
+                </el-table-column>
+                <el-table-column label="Nhóm" width="110">
+                  <template #default="{ row }">
+                    {{ row.sizeGroup === 'SIZE_NU' ? 'Size Nữ' : row.sizeGroup === 'SIZE_NAM' ? 'Size Nam' : 'Khác' }}
+                  </template>
+                </el-table-column>
+                <el-table-column prop="quantitySold" label="Đã bán" width="80" align="center" />
+                <el-table-column label="Tỷ trọng" width="85" align="center">
+                  <template #default="{ row }"><strong>{{ row.sharePercent }}%</strong></template>
+                </el-table-column>
+                <el-table-column prop="currentStock" label="Tồn kho" width="80" align="center" />
+                <el-table-column label="Doanh thu" min-width="125" align="right">
+                  <template #default="{ row }">{{ formatCurrency(row.revenue) }}</template>
+                </el-table-column>
+              </el-table>
+            </el-col>
+
+            <el-col :xs="24" :lg="12">
+              <h4 class="sub-heading">Doanh thu &amp; Số lượng theo Thương hiệu</h4>
+              <el-table :data="report.brandStats || []" border stripe size="small" style="width: 100%; margin-bottom: 16px">
+                <el-table-column prop="brandName" label="Thương hiệu" min-width="130" />
+                <el-table-column prop="productCount" label="Số mẫu" width="75" align="center" />
+                <el-table-column prop="quantitySold" label="Đã bán" width="80" align="center" />
+                <el-table-column label="Tỷ trọng" width="85" align="center">
+                  <template #default="{ row }">{{ row.sharePercent }}%</template>
+                </el-table-column>
+                <el-table-column label="Doanh thu" width="140" align="right">
+                  <template #default="{ row }"><strong class="text-red">{{ formatCurrency(row.revenue) }}</strong></template>
+                </el-table-column>
+              </el-table>
+
+              <h4 class="sub-heading">Phân tích theo Màu sắc bán chạy</h4>
+              <el-table :data="report.colorStats || []" border stripe size="small" style="width: 100%">
+                <el-table-column label="Màu sắc" min-width="140">
+                  <template #default="{ row }">
+                    <span class="color-swatch" :style="{ background: row.hexCode || '#cbd5e1' }" />
+                    <span>{{ row.colorName }}</span>
+                  </template>
+                </el-table-column>
+                <el-table-column prop="quantitySold" label="Đã bán" width="85" align="center" />
+                <el-table-column label="Tỷ trọng" width="85" align="center">
+                  <template #default="{ row }">{{ row.sharePercent }}%</template>
+                </el-table-column>
+                <el-table-column label="Doanh thu" width="140" align="right">
+                  <template #default="{ row }">{{ formatCurrency(row.revenue) }}</template>
                 </el-table-column>
               </el-table>
             </el-col>
           </el-row>
         </el-tab-pane>
 
-        <!-- Tab 5: Purchase Import Stats -->
-        <el-tab-pane label="5. Thống kê Nhập hàng theo Nhà cung cấp" name="purchases">
-          <el-table :data="report.purchaseStats || []" stripe border style="width: 100%">
-            <el-table-column prop="supplierCode" label="Mã NCC" width="130">
-              <template #default="{ row }">
-                <span class="code-badge">{{ row.supplierCode }}</span>
+        <!-- MODULE 5: Hiệu suất Nhân viên -->
+        <el-tab-pane label="5. Hiệu suất Nhân viên (KPI / Hoa hồng)" name="employees">
+          <div class="tab-intro">
+            Thống kê doanh số bán hàng của từng nhân viên thu ngân / tư vấn tại quầy phục vụ đánh giá KPI &amp; tính hoa hồng định kỳ.
+          </div>
+          <el-table :data="report.employeeRevenueStats || []" border stripe style="width: 100%">
+            <el-table-column type="index" label="#" width="50" align="center" />
+            <el-table-column prop="employeeCode" label="Mã NV" width="120">
+              <template #default="{ row }"><span class="mono-tag">{{ row.employeeCode }}</span></template>
+            </el-table-column>
+            <el-table-column prop="employeeName" label="Tên nhân viên" min-width="200">
+              <template #default="{ row, $index }">
+                <strong>{{ row.employeeName }}</strong>
+                <span v-if="$index === 0 && Number(row.totalRevenue) > 0" class="top-emp-badge">TOP 1</span>
               </template>
             </el-table-column>
-            <el-table-column prop="supplierName" label="Tên Nhà cung cấp" min-width="250" />
-            <el-table-column prop="confirmedCount" label="Số phiếu nhập xác nhận" width="180" align="center" />
-            <el-table-column prop="totalItemsImported" label="Tổng số đôi đã nhập" width="170" align="center" />
-            <el-table-column label="Tổng giá trị nhập hàng" width="210" align="right">
-              <template #default="{ row }">
-                <strong class="price-text">{{ formatCurrency(row.totalAmount) }}</strong>
-              </template>
+            <el-table-column prop="workingShifts" label="Số ca làm việc" width="145" align="center">
+              <template #default="{ row }">{{ row.workingShifts }} ca</template>
+            </el-table-column>
+            <el-table-column prop="completedOrderCount" label="Số đơn tạo thành công" width="175" align="center">
+              <template #default="{ row }"><strong>{{ row.completedOrderCount }}</strong> đơn</template>
+            </el-table-column>
+            <el-table-column label="Tổng doanh thu mang về" width="195" align="right">
+              <template #default="{ row }"><strong class="text-red">{{ formatCurrency(row.totalRevenue) }}</strong></template>
+            </el-table-column>
+            <el-table-column label="Giá trị TB / đơn tư vấn (AOV)" width="205" align="right">
+              <template #default="{ row }">{{ formatCurrency(row.averageOrderValue) }}</template>
             </el-table-column>
           </el-table>
         </el-tab-pane>
@@ -226,44 +286,111 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { Download } from '@element-plus/icons-vue'
+import { Download, Refresh } from '@element-plus/icons-vue'
 import { reportService } from '@/services/reportService'
 import { brandService } from '@/services/brandService'
 import { categoryService } from '@/services/categoryService'
 import { formatCurrency } from '@/utils/formatters'
-import { ORDER_STATUS_MAP } from '@/constants'
+import AnalyticsFilterBar from '@/components/AnalyticsFilterBar.vue'
 
 const loading = ref(false)
 const exporting = ref(false)
-const activeTab = ref('revenue')
+const activeTab = ref('cashflow')
 
 const brands = ref([])
 const categories = ref([])
 
-const filters = reactive({
+const filters = ref({
   groupBy: 'DAY',
   fromDate: null,
   toDate: null,
+  channel: '',
+  orderStatus: '',
+  paymentMethod: '',
   brandId: null,
   categoryId: null
 })
 
 const report = ref({
   totalRevenue: 0,
+  totalPreTaxRevenue: 0,
+  totalVatAmount: 0,
+  totalCashRevenue: 0,
+  totalBankTransferRevenue: 0,
+  totalCodRevenue: 0,
+  provisionalRevenue: 0,
+  cancelledValue: 0,
+  totalOrders: 0,
   totalCompletedOrders: 0,
+  totalCancelledOrders: 0,
   totalQuantitySold: 0,
-  totalPurchaseAmount: 0,
-  totalConfirmedPurchases: 0,
+  aov: 0,
+  deliverySuccessRate: 0,
+  cancellationRate: 0,
   revenueSeries: [],
-  topSellingProducts: [],
-  slowSellingProducts: [],
-  orderStatusStats: [],
-  employeeRevenueStats: [],
-  customerStats: [],
-  purchaseStats: []
+  channelComparison: [],
+  cancelReasonStats: [],
+  cancelledOrders: [],
+  sizeStats: [],
+  colorStats: [],
+  brandStats: [],
+  employeeRevenueStats: []
 })
+
+const totalSizeQty = computed(() =>
+  (report.value.sizeStats || []).reduce((s, x) => s + Number(x.quantitySold || 0), 0)
+)
+
+const womenSizeStats = computed(() => {
+  const qty = (report.value.sizeStats || [])
+    .filter((s) => s.sizeGroup === 'SIZE_NU')
+    .reduce((sum, s) => sum + Number(s.quantitySold || 0), 0)
+  const pct = totalSizeQty.value > 0 ? Math.round((qty / totalSizeQty.value) * 1000) / 10 : 0
+  return { qty, pct }
+})
+
+const menSizeStats = computed(() => {
+  const qty = (report.value.sizeStats || [])
+    .filter((s) => s.sizeGroup === 'SIZE_NAM')
+    .reduce((sum, s) => sum + Number(s.quantitySold || 0), 0)
+  const pct = totalSizeQty.value > 0 ? Math.round((qty / totalSizeQty.value) * 1000) / 10 : 0
+  return { qty, pct }
+})
+
+const goldenSizesLabel = computed(() => {
+  const golds = (report.value.sizeStats || []).filter((s) => s.goldenSize).map((s) => `EU ${s.sizeValue}`)
+  return golds.length ? golds.join(', ') : 'Chưa có dữ liệu bán'
+})
+
+function cashflowSummary({ columns, data }) {
+  const sums = []
+  columns.forEach((col, index) => {
+    if (index === 0) {
+      sums[index] = 'TỔNG CỘNG'
+      return
+    }
+    const vals = data.map((row) => Number(row[col.property] || 0))
+    const total = vals.reduce((a, b) => a + b, 0)
+    sums[index] = index === 1 ? `${total} đơn` : formatCurrency(total)
+  })
+  return sums
+}
+
+function buildParams() {
+  const f = filters.value
+  return {
+    groupBy: f.groupBy || 'DAY',
+    fromDate: f.fromDate || undefined,
+    toDate: f.toDate || undefined,
+    channel: f.channel || undefined,
+    orderStatus: f.orderStatus || undefined,
+    paymentMethod: f.paymentMethod || undefined,
+    brandId: f.brandId || undefined,
+    categoryId: f.categoryId || undefined
+  }
+}
 
 async function loadMeta() {
   const [bRes, cRes] = await Promise.all([
@@ -277,47 +404,30 @@ async function loadMeta() {
 async function loadReport() {
   loading.value = true
   try {
-    const res = await reportService.getSummaryReport({
-      groupBy: filters.groupBy,
-      fromDate: filters.fromDate || undefined,
-      toDate: filters.toDate || undefined,
-      brandId: filters.brandId || undefined,
-      categoryId: filters.categoryId || undefined
-    })
+    const res = await reportService.getSummaryReport(buildParams())
     report.value = res.data || report.value
   } finally {
     loading.value = false
   }
 }
 
-function resetFilters() {
-  filters.groupBy = 'DAY'
-  filters.fromDate = null
-  filters.toDate = null
-  filters.brandId = null
-  filters.categoryId = null
-  loadReport()
-}
-
 async function exportExcel() {
   exporting.value = true
   try {
-    const blobData = await reportService.exportReportExcel({
-      groupBy: filters.groupBy,
-      fromDate: filters.fromDate || undefined,
-      toDate: filters.toDate || undefined,
-      brandId: filters.brandId || undefined,
-      categoryId: filters.categoryId || undefined
+    const res = await reportService.exportReportExcel(buildParams())
+    const blob = new Blob([res.data], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     })
-    const url = window.URL.createObjectURL(new Blob([blobData]))
+    const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
-    link.setAttribute('download', `BaoCao_ADHA_Sneaker_${filters.groupBy}.xlsx`)
+    link.download = `ADHA_BangKeKeToan_${new Date().toISOString().slice(0, 10)}.xlsx`
     document.body.appendChild(link)
     link.click()
-    link.remove()
-    ElMessage.success('Đã xuất file Excel thành công!')
-  } catch (_) {
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+    ElMessage.success('Đã xuất Bảng kê Kế toán Excel (5 Sheets) thành công!')
+  } catch {
     ElMessage.error('Không thể xuất file Excel')
   } finally {
     exporting.value = false
@@ -331,31 +441,273 @@ onMounted(() => {
 </script>
 
 <style scoped lang="scss">
-.report-kpis {
+.reports-workspace {
+  gap: 20px;
+}
+
+.header-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.summary-strip {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 14px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
 
-  .kpi-box {
-    background: #ffffff;
-    border: 1px solid #e5e5e5;
-    border-radius: 5px;
-    padding: 16px 20px;
+.sum-box {
+  background: #ffffff;
+  border: 1px solid #e5e5e5;
+  border-radius: 6px;
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: border-color 0.16s ease;
 
-    .kpi-label {
-      font-size: 12.5px;
-      font-weight: 600;
-      color: #64748b;
-    }
-    .kpi-val {
-      font-size: 22px;
+  &:hover {
+    border-color: #a3a3a3;
+  }
+
+  &.primary {
+    background: #0a0a0a;
+    border-color: #0a0a0a;
+    .sum-label { color: #a3a3a3; }
+    .sum-val { color: #ffffff; }
+    .sum-sub { color: #a3a3a3; }
+  }
+
+  .sum-label { font-size: 11px; font-weight: 800; color: #737373; text-transform: uppercase; letter-spacing: 0.05em; }
+  .sum-val { font-size: 22px; font-weight: 900; color: #000000; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .sum-sub { font-size: 12px; color: #737373; line-height: 1.4; }
+}
+
+.reports-surface {
+  background: #ffffff;
+  border: 1px solid #e5e5e5;
+  border-radius: 6px;
+  padding: 16px 24px 24px;
+}
+
+.report-tabs {
+  :deep(.el-tabs__item) {
+    font-size: 13px;
+    font-weight: 700;
+    color: #525252;
+
+    &.is-active {
+      color: #000000;
       font-weight: 800;
-      color: #0f172a;
-      margin-top: 6px;
-      &.text-green {
-        color: #16a34a;
-      }
     }
+  }
+
+  :deep(.el-tabs__active-bar) {
+    background-color: #000000;
+    height: 2.5px;
+  }
+
+  :deep(.el-tabs__content) {
+    padding-top: 8px;
+  }
+}
+
+.tab-intro {
+  font-size: 12.5px;
+  color: #737373;
+  margin-bottom: 14px;
+}
+
+.sub-heading {
+  margin: 0 0 12px;
+  font-size: 13px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #000000;
+}
+
+.mono-tag {
+  background: #f5f5f5;
+  border: 1px solid #d4d4d4;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 800;
+  color: #000000;
+}
+
+.text-red { color: #dc2626; }
+.text-green { color: #047857; }
+.text-blue { color: #1d4ed8; }
+
+.ref-link {
+  color: #2563eb;
+  font-weight: 700;
+  text-decoration: none;
+  &:hover { text-decoration: underline; }
+}
+
+/* Channels */
+.channel-compare-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.ch-detail-card {
+  border: 1px solid #e5e5e5;
+  border-radius: 6px;
+  padding: 18px 20px;
+  background: #fafafa;
+
+  &.is-pos { border-top: 3px solid #000000; }
+  &.is-online { border-top: 3px solid #ea580c; }
+}
+
+.ch-card-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+  color: #000000;
+}
+
+.share-pill {
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: #e5e5e5;
+  font-size: 11px;
+  font-weight: 800;
+  color: #262626;
+}
+
+.ch-big-money {
+  font-size: 24px;
+  font-weight: 900;
+  color: #000000;
+  margin: 10px 0 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+.ch-kv-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 13px;
+
+  div {
+    display: flex;
+    justify-content: space-between;
+    color: #525252;
+    padding-bottom: 5px;
+    border-bottom: 1px dashed #e5e5e5;
+
+    &:last-child { border-bottom: none; padding-bottom: 0; }
+  }
+}
+
+/* Cancel Reason Bars */
+.reason-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.reason-item {
+  background: #fafafa;
+  border: 1px solid #e5e5e5;
+  border-radius: 6px;
+  padding: 12px 14px;
+}
+
+.reason-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12.5px;
+  margin-bottom: 7px;
+  color: #262626;
+}
+
+.reason-track {
+  height: 8px;
+  background: #e5e5e5;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.reason-fill {
+  height: 100%;
+  background: #dc2626;
+  border-radius: 999px;
+}
+
+/* Size Insights */
+.size-insight-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.insight-box {
+  background: #fafafa;
+  border: 1px solid #e5e5e5;
+  border-radius: 6px;
+  padding: 14px 18px;
+
+  &.golden {
+    background: #fffbeb;
+    border-color: #fcd34d;
+  }
+
+  .ins-label { font-size: 11.5px; font-weight: 800; text-transform: uppercase; color: #737373; letter-spacing: 0.03em; }
+  .ins-val { font-size: 19px; font-weight: 900; color: #000000; margin-top: 6px; }
+}
+
+.gold-badge {
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: #f59e0b;
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.color-swatch {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 1px solid #d4d4d4;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+.top-emp-badge {
+  margin-left: 8px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: #000000;
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+@media (max-width: 1200px) {
+  .summary-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .summary-strip,
+  .channel-compare-cards,
+  .size-insight-row {
+    grid-template-columns: 1fr;
   }
 }
 </style>

@@ -7,11 +7,18 @@ import java.time.LocalDate;
 
 public interface ReportService {
 
-    DashboardResponse getDashboardData();
+    DashboardResponse getDashboardData(
+            String groupBy, LocalDate fromDate, LocalDate toDate,
+            String channel, String orderStatus, String paymentMethod,
+            Long brandId, Long categoryId);
 
     ComprehensiveReportResponse getComprehensiveReport(
-            String groupBy, LocalDate fromDate, LocalDate toDate, Long brandId, Long categoryId);
+            String groupBy, LocalDate fromDate, LocalDate toDate,
+            String channel, String orderStatus, String paymentMethod,
+            Long brandId, Long categoryId);
 
     byte[] exportReportToExcel(
-            String groupBy, LocalDate fromDate, LocalDate toDate, Long brandId, Long categoryId);
+            String groupBy, LocalDate fromDate, LocalDate toDate,
+            String channel, String orderStatus, String paymentMethod,
+            Long brandId, Long categoryId);
 }

@@ -25,6 +25,7 @@ public class SalesOrderDto {
     private String customerAddress;
     private Long employeeId;
     private String employeeName;
+    private String channel;
     private LocalDateTime orderDate;
     private BigDecimal totalAmount;
     private BigDecimal finalAmount;

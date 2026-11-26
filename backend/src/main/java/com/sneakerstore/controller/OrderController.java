@@ -25,13 +25,26 @@ public class OrderController {
     public ApiResponse<PageResponse<SalesOrderDto>> getOrders(
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) String status,
+            @RequestParam(required = false) String paymentMethod,
+            @RequestParam(required = false) String channel,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
         return ApiResponse.ok(orderService.searchOrders(
-                keyword, status, fromDate, toDate,
+                keyword, status, paymentMethod, channel, fromDate, toDate,
                 PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "id"))));
+    }
+
+    @GetMapping("/status-counts")
+    public ApiResponse<Map<String, Long>> getStatusCounts(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String paymentMethod,
+            @RequestParam(required = false) String channel,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate) {
+        return ApiResponse.ok(orderService.getStatusCounts(
+                keyword, paymentMethod, channel, fromDate, toDate));
     }
 
     @GetMapping("/{id}")
@@ -51,6 +64,13 @@ public class OrderController {
         String note = payload.get("note");
         return ApiResponse.ok("Cập nhật trạng thái đơn hàng thành công",
                 orderService.updateStatus(id, status, note));
+    }
+
+    @PatchMapping("/{id}/note")
+    public ApiResponse<SalesOrderDto> updateNote(
+            @PathVariable Long id, @RequestBody Map<String, String> payload) {
+        return ApiResponse.ok("Cập nhật ghi chú đơn hàng thành công",
+                orderService.updateNote(id, payload.get("note")));
     }
 }
 

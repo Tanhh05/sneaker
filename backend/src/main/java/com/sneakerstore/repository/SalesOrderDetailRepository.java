@@ -4,6 +4,7 @@ import com.sneakerstore.entity.SalesOrderDetail;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.Collection;
 import java.util.List;
 
 public interface SalesOrderDetailRepository extends JpaRepository<SalesOrderDetail, Long> {
@@ -15,5 +16,13 @@ public interface SalesOrderDetailRepository extends JpaRepository<SalesOrderDeta
             "productVariant.color"
     })
     List<SalesOrderDetail> findBySalesOrderIdOrderByIdAsc(Long salesOrderId);
+
+    @EntityGraph(attributePaths = {
+            "productVariant",
+            "productVariant.product",
+            "productVariant.size",
+            "productVariant.color"
+    })
+    List<SalesOrderDetail> findBySalesOrderIdInOrderByIdAsc(Collection<Long> salesOrderIds);
 }
 

@@ -1,8 +1,8 @@
 import api from './api'
 
 export const reportService = {
-  getDashboard() {
-    return api.get('/reports/dashboard')
+  getDashboard(params) {
+    return api.get('/reports/dashboard', { params })
   },
   getSummaryReport(params) {
     return api.get('/reports/summary', { params })
@@ -14,4 +14,3 @@ export const reportService = {
     })
   }
 }
-

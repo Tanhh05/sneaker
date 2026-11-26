@@ -15,7 +15,8 @@ export const PURCHASE_STATUS_MAP = {
 
 export const PAYMENT_METHOD_MAP = {
   CASH: 'Tiền mặt tại quầy',
-  BANK_TRANSFER: 'Chuyển khoản ngân hàng'
+  BANK_TRANSFER: 'Chuyển khoản ngân hàng',
+  COD: 'COD (Giao hàng thu tiền)'
 }
 
 export const ROLE_MAP = {

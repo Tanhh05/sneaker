@@ -41,25 +41,72 @@ public interface SalesOrderRepository extends JpaRepository<SalesOrder, Long> {
            "WHERE (:keyword IS NULL OR :keyword = '' " +
            "OR LOWER(so.orderCode) LIKE LOWER(CONCAT('%', CAST(:keyword AS string), '%')) " +
            "OR (:altKeyword IS NOT NULL AND LOWER(so.orderCode) = LOWER(CAST(:altKeyword AS string))) " +
+           "OR LOWER(COALESCE(so.note, '')) LIKE LOWER(CONCAT('%', CAST(:keyword AS string), '%')) " +
            "OR (c IS NOT NULL AND (LOWER(c.fullName) LIKE LOWER(CONCAT('%', CAST(:keyword AS string), '%')) OR LOWER(c.phone) LIKE LOWER(CONCAT('%', CAST(:keyword AS string), '%'))))) " +
-           "AND (:status IS NULL OR :status = '' OR so.status = :status) " +
+           "AND (:status IS NULL OR :status = '' OR so.status = CAST(:status AS string)) " +
+           "AND (:paymentMethod IS NULL OR :paymentMethod = '' " +
+           "   OR (UPPER(CAST(:paymentMethod AS string)) = 'COD' AND (so.paymentMethod = 'COD' OR (so.paymentMethod = 'CASH' AND so.employee IS NULL))) " +
+           "   OR (UPPER(CAST(:paymentMethod AS string)) = 'CASH' AND so.paymentMethod = 'CASH' AND so.employee IS NOT NULL) " +
+           "   OR (UPPER(CAST(:paymentMethod AS string)) = 'BANK_TRANSFER' AND so.paymentMethod = 'BANK_TRANSFER') " +
+           "   OR (UPPER(CAST(:paymentMethod AS string)) NOT IN ('COD', 'CASH', 'BANK_TRANSFER') AND UPPER(so.paymentMethod) = UPPER(CAST(:paymentMethod AS string)))) " +
+           "AND (:channel IS NULL OR :channel = '' " +
+           "   OR (UPPER(CAST(:channel AS string)) = 'ONLINE' AND so.employee IS NULL) " +
+           "   OR (UPPER(CAST(:channel AS string)) = 'POS' AND so.employee IS NOT NULL)) " +
            "AND (CAST(:fromDate AS timestamp) IS NULL OR so.orderDate >= :fromDate) " +
            "AND (CAST(:toDate AS timestamp) IS NULL OR so.orderDate <= :toDate)",
            countQuery = "SELECT COUNT(so) FROM SalesOrder so " +
            "LEFT JOIN so.customer c " +
+           "LEFT JOIN so.employee e " +
            "WHERE (:keyword IS NULL OR :keyword = '' " +
            "OR LOWER(so.orderCode) LIKE LOWER(CONCAT('%', CAST(:keyword AS string), '%')) " +
            "OR (:altKeyword IS NOT NULL AND LOWER(so.orderCode) = LOWER(CAST(:altKeyword AS string))) " +
+           "OR LOWER(COALESCE(so.note, '')) LIKE LOWER(CONCAT('%', CAST(:keyword AS string), '%')) " +
            "OR (c IS NOT NULL AND (LOWER(c.fullName) LIKE LOWER(CONCAT('%', CAST(:keyword AS string), '%')) OR LOWER(c.phone) LIKE LOWER(CONCAT('%', CAST(:keyword AS string), '%'))))) " +
-           "AND (:status IS NULL OR :status = '' OR so.status = :status) " +
+           "AND (:status IS NULL OR :status = '' OR so.status = CAST(:status AS string)) " +
+           "AND (:paymentMethod IS NULL OR :paymentMethod = '' " +
+           "   OR (UPPER(CAST(:paymentMethod AS string)) = 'COD' AND (so.paymentMethod = 'COD' OR (so.paymentMethod = 'CASH' AND so.employee IS NULL))) " +
+           "   OR (UPPER(CAST(:paymentMethod AS string)) = 'CASH' AND so.paymentMethod = 'CASH' AND so.employee IS NOT NULL) " +
+           "   OR (UPPER(CAST(:paymentMethod AS string)) = 'BANK_TRANSFER' AND so.paymentMethod = 'BANK_TRANSFER') " +
+           "   OR (UPPER(CAST(:paymentMethod AS string)) NOT IN ('COD', 'CASH', 'BANK_TRANSFER') AND UPPER(so.paymentMethod) = UPPER(CAST(:paymentMethod AS string)))) " +
+           "AND (:channel IS NULL OR :channel = '' " +
+           "   OR (UPPER(CAST(:channel AS string)) = 'ONLINE' AND so.employee IS NULL) " +
+           "   OR (UPPER(CAST(:channel AS string)) = 'POS' AND so.employee IS NOT NULL)) " +
            "AND (CAST(:fromDate AS timestamp) IS NULL OR so.orderDate >= :fromDate) " +
            "AND (CAST(:toDate AS timestamp) IS NULL OR so.orderDate <= :toDate)")
     Page<SalesOrder> searchOrders(@Param("keyword") String keyword,
                                   @Param("altKeyword") String altKeyword,
                                   @Param("status") String status,
+                                  @Param("paymentMethod") String paymentMethod,
+                                  @Param("channel") String channel,
                                   @Param("fromDate") LocalDateTime fromDate,
                                   @Param("toDate") LocalDateTime toDate,
                                   Pageable pageable);
+
+    @Query("SELECT so.status, COUNT(so) FROM SalesOrder so " +
+           "LEFT JOIN so.customer c " +
+           "LEFT JOIN so.employee e " +
+           "WHERE (:keyword IS NULL OR :keyword = '' " +
+           "OR LOWER(so.orderCode) LIKE LOWER(CONCAT('%', CAST(:keyword AS string), '%')) " +
+           "OR (:altKeyword IS NOT NULL AND LOWER(so.orderCode) = LOWER(CAST(:altKeyword AS string))) " +
+           "OR LOWER(COALESCE(so.note, '')) LIKE LOWER(CONCAT('%', CAST(:keyword AS string), '%')) " +
+           "OR (c IS NOT NULL AND (LOWER(c.fullName) LIKE LOWER(CONCAT('%', CAST(:keyword AS string), '%')) OR LOWER(c.phone) LIKE LOWER(CONCAT('%', CAST(:keyword AS string), '%'))))) " +
+           "AND (:paymentMethod IS NULL OR :paymentMethod = '' " +
+           "   OR (UPPER(CAST(:paymentMethod AS string)) = 'COD' AND (so.paymentMethod = 'COD' OR (so.paymentMethod = 'CASH' AND so.employee IS NULL))) " +
+           "   OR (UPPER(CAST(:paymentMethod AS string)) = 'CASH' AND so.paymentMethod = 'CASH' AND so.employee IS NOT NULL) " +
+           "   OR (UPPER(CAST(:paymentMethod AS string)) = 'BANK_TRANSFER' AND so.paymentMethod = 'BANK_TRANSFER') " +
+           "   OR (UPPER(CAST(:paymentMethod AS string)) NOT IN ('COD', 'CASH', 'BANK_TRANSFER') AND UPPER(so.paymentMethod) = UPPER(CAST(:paymentMethod AS string)))) " +
+           "AND (:channel IS NULL OR :channel = '' " +
+           "   OR (UPPER(CAST(:channel AS string)) = 'ONLINE' AND so.employee IS NULL) " +
+           "   OR (UPPER(CAST(:channel AS string)) = 'POS' AND so.employee IS NOT NULL)) " +
+           "AND (CAST(:fromDate AS timestamp) IS NULL OR so.orderDate >= :fromDate) " +
+           "AND (CAST(:toDate AS timestamp) IS NULL OR so.orderDate <= :toDate) " +
+           "GROUP BY so.status")
+    List<Object[]> countOrdersByStatus(@Param("keyword") String keyword,
+                                       @Param("altKeyword") String altKeyword,
+                                       @Param("paymentMethod") String paymentMethod,
+                                       @Param("channel") String channel,
+                                       @Param("fromDate") LocalDateTime fromDate,
+                                       @Param("toDate") LocalDateTime toDate);
 
     long countByStatusIn(List<String> statuses);
 

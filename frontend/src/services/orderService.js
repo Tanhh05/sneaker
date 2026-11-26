@@ -7,6 +7,9 @@ export const orderService = {
   getOrders(params) {
     return api.get('/orders', { params })
   },
+  getStatusCounts(params) {
+    return api.get('/orders/status-counts', { params })
+  },
   getOrderById(id) {
     return api.get(`/orders/${id}`)
   },
@@ -15,6 +18,8 @@ export const orderService = {
   },
   updateOrderStatus(id, payload) {
     return api.patch(`/orders/${id}/status`, payload)
+  },
+  updateOrderNote(id, payload) {
+    return api.patch(`/orders/${id}/note`, payload)
   }
 }
-

@@ -17,6 +17,15 @@ public class SalesOrderRequest {
     private String note;
     private String paymentReference;
 
+    // Tùy chọn phát hành hóa đơn VAT ngay tại POS
+    private String invoiceType; // RETAIL (mặc định) hoặc VAT
+    private String vatCompanyName;
+    private String vatTaxCode;
+    private String vatAddress;
+    private String vatEmail;
+    private java.math.BigDecimal vatTaxRate;
+    private Boolean autoSendInvoiceEmail;
+
     @NotEmpty(message = "Đơn hàng phải có ít nhất 1 sản phẩm")
     @Valid
     private List<SalesOrderItemRequest> items;

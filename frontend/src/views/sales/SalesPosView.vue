@@ -335,6 +335,31 @@
               <el-form-item label="GHI CHÚ ĐƠN HÀNG">
                 <el-input v-model="checkoutForm.note" placeholder="Ghi chú thêm nếu có..." />
               </el-form-item>
+
+              <!-- Tùy chọn phát hành hóa đơn VAT tại quầy -->
+              <div v-if="checkoutForm.status === 'COMPLETED'" style="margin-top: 6px; padding: 8px 10px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 5px;">
+                <el-checkbox v-model="vatForm.requestVat">
+                  <strong style="font-size: 12px; color: #0f172a">Xuất hóa đơn VAT theo yêu cầu khách hàng</strong>
+                </el-checkbox>
+                <div v-if="vatForm.requestVat" style="margin-top: 8px; display: flex; flex-direction: column; gap: 6px;">
+                  <el-input v-model="vatForm.companyName" size="small" placeholder="Tên công ty / Đơn vị mua hàng *" />
+                  <el-row :gutter="8">
+                    <el-col :span="14">
+                      <el-input v-model="vatForm.taxCode" size="small" placeholder="Mã số thuế (MST) *" />
+                    </el-col>
+                    <el-col :span="10">
+                      <el-select v-model="vatForm.taxRate" size="small" style="width: 100%">
+                        <el-option label="VAT 0%" :value="0" />
+                        <el-option label="VAT 5%" :value="5" />
+                        <el-option label="VAT 8%" :value="8" />
+                        <el-option label="VAT 10%" :value="10" />
+                      </el-select>
+                    </el-col>
+                  </el-row>
+                  <el-input v-model="vatForm.address" size="small" placeholder="Địa chỉ công ty" />
+                  <el-input v-model="vatForm.email" size="small" placeholder="Email nhận hóa đơn PDF (không bắt buộc)" />
+                </div>
+              </div>
             </el-form>
 
             <div class="summary-totals">
@@ -609,8 +634,23 @@ function onQuickCustomerCreated(newCust) {
   checkoutForm.customerId = newCust.id
 }
 
+const vatForm = reactive({
+  requestVat: false,
+  companyName: '',
+  taxCode: '',
+  address: '',
+  email: '',
+  taxRate: 8
+})
+
 async function submitSaleOrder() {
   if (cart.value.length === 0) return
+  if (checkoutForm.status === 'COMPLETED' && vatForm.requestVat) {
+    if (!vatForm.companyName.trim() || !vatForm.taxCode.trim()) {
+      ElMessage.warning('Vui lòng nhập Tên công ty và Mã số thuế (MST) để xuất hóa đơn VAT')
+      return
+    }
+  }
   submitting.value = true
   try {
     const payload = {
@@ -619,6 +659,12 @@ async function submitSaleOrder() {
       status: checkoutForm.status,
       paymentReference: checkoutForm.paymentReference || null,
       note: checkoutForm.note || 'Bán hàng trực tiếp tại quầy POS',
+      invoiceType: checkoutForm.status === 'COMPLETED' && vatForm.requestVat ? 'VAT' : 'RETAIL',
+      vatCompanyName: vatForm.requestVat ? vatForm.companyName.trim() : null,
+      vatTaxCode: vatForm.requestVat ? vatForm.taxCode.trim() : null,
+      vatAddress: vatForm.requestVat ? vatForm.address.trim() : null,
+      vatEmail: vatForm.requestVat ? vatForm.email.trim() : null,
+      vatTaxRate: vatForm.requestVat ? vatForm.taxRate : null,
       items: cart.value.map((i) => ({
         productVariantId: i.variant.id,
         quantity: i.quantity
@@ -626,10 +672,21 @@ async function submitSaleOrder() {
     }
     const res = await orderService.createSaleOrder(payload)
     createdOrder.value = res.data
-    ElMessage.success(`Đã tạo đơn hàng ${createdOrder.value.orderCode} thành công!`)
+    ElMessage.success(
+      `Đã tạo đơn hàng ${createdOrder.value.orderCode}` +
+        (checkoutForm.status === 'COMPLETED'
+          ? ` & tự động phát hành hóa đơn ${vatForm.requestVat ? 'VAT' : 'bán lẻ'}!`
+          : ' thành công!')
+    )
     cart.value = []
     checkoutForm.note = ''
     checkoutForm.paymentReference = ''
+    vatForm.requestVat = false
+    vatForm.companyName = ''
+    vatForm.taxCode = ''
+    vatForm.address = ''
+    vatForm.email = ''
+    vatForm.taxRate = 8
     invoiceVisible.value = true
     await loadCatalog()
   } finally {

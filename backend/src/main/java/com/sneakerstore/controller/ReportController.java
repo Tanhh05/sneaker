@@ -22,8 +22,17 @@ public class ReportController {
     private final ReportService reportService;
 
     @GetMapping("/dashboard")
-    public ApiResponse<DashboardResponse> getDashboard() {
-        return ApiResponse.ok(reportService.getDashboardData());
+    public ApiResponse<DashboardResponse> getDashboard(
+            @RequestParam(defaultValue = "DAY") String groupBy,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate,
+            @RequestParam(required = false) String channel,
+            @RequestParam(required = false) String orderStatus,
+            @RequestParam(required = false) String paymentMethod,
+            @RequestParam(required = false) Long brandId,
+            @RequestParam(required = false) Long categoryId) {
+        return ApiResponse.ok(reportService.getDashboardData(
+                groupBy, fromDate, toDate, channel, orderStatus, paymentMethod, brandId, categoryId));
     }
 
     @GetMapping({"/summary", "/sales"})
@@ -31,9 +40,13 @@ public class ReportController {
             @RequestParam(defaultValue = "DAY") String groupBy,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate,
+            @RequestParam(required = false) String channel,
+            @RequestParam(required = false) String orderStatus,
+            @RequestParam(required = false) String paymentMethod,
             @RequestParam(required = false) Long brandId,
             @RequestParam(required = false) Long categoryId) {
-        return ApiResponse.ok(reportService.getComprehensiveReport(groupBy, fromDate, toDate, brandId, categoryId));
+        return ApiResponse.ok(reportService.getComprehensiveReport(
+                groupBy, fromDate, toDate, channel, orderStatus, paymentMethod, brandId, categoryId));
     }
 
     @GetMapping("/revenue")
@@ -41,10 +54,13 @@ public class ReportController {
             @RequestParam(defaultValue = "DAY") String groupBy,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate,
+            @RequestParam(required = false) String channel,
+            @RequestParam(required = false) String orderStatus,
+            @RequestParam(required = false) String paymentMethod,
             @RequestParam(required = false) Long brandId,
             @RequestParam(required = false) Long categoryId) {
         return ApiResponse.ok(reportService
-                .getComprehensiveReport(groupBy, fromDate, toDate, brandId, categoryId)
+                .getComprehensiveReport(groupBy, fromDate, toDate, channel, orderStatus, paymentMethod, brandId, categoryId)
                 .getRevenueSeries());
     }
 
@@ -52,10 +68,13 @@ public class ReportController {
     public ApiResponse<List<DashboardResponse.ProductSalesStatDto>> getTopProducts(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate,
+            @RequestParam(required = false) String channel,
+            @RequestParam(required = false) String orderStatus,
+            @RequestParam(required = false) String paymentMethod,
             @RequestParam(required = false) Long brandId,
             @RequestParam(required = false) Long categoryId) {
         return ApiResponse.ok(reportService
-                .getComprehensiveReport("DAY", fromDate, toDate, brandId, categoryId)
+                .getComprehensiveReport("DAY", fromDate, toDate, channel, orderStatus, paymentMethod, brandId, categoryId)
                 .getTopSellingProducts());
     }
 
@@ -64,13 +83,17 @@ public class ReportController {
             @RequestParam(defaultValue = "DAY") String groupBy,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate,
+            @RequestParam(required = false) String channel,
+            @RequestParam(required = false) String orderStatus,
+            @RequestParam(required = false) String paymentMethod,
             @RequestParam(required = false) Long brandId,
             @RequestParam(required = false) Long categoryId) {
-        byte[] content = reportService.exportReportToExcel(groupBy, fromDate, toDate, brandId, categoryId);
+        byte[] content = reportService.exportReportToExcel(
+                groupBy, fromDate, toDate, channel, orderStatus, paymentMethod, brandId, categoryId);
+        String filename = "ADHA_BangKeKeToan_" + LocalDate.now() + ".xlsx";
         return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=BaoCao_SneakerStore.xlsx")
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
                 .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
                 .body(content);
     }
 }
-

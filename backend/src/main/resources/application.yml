@@ -28,6 +28,20 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
+  mail:
+    host: ${MAIL_HOST:}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
 
 app:
   jwt:
@@ -36,6 +50,14 @@ app:
   google:
     client-id: ${GOOGLE_CLIENT_ID:your-google-client-id.apps.googleusercontent.com}
     client-secret: ${GOOGLE_CLIENT_SECRET:your-google-client-secret}
+  invoice:
+    auto-email-on-issue: ${INVOICE_AUTO_EMAIL:false}
+    default-tax-rate: ${INVOICE_DEFAULT_TAX_RATE:8}
+    from-email: ${MAIL_FROM:no-reply@adhasneaker.vn}
+    store-name: "ADHA SNEAKER STORE"
+    store-tax-code: "0319886688"
+    store-address: "120 Nguyễn Huệ, Quận 1, TP. Hồ Chí Minh"
+    store-hotline: "0901 000 001"
 
 sepay:
   api-key: ${SEPAY_API_KEY:}

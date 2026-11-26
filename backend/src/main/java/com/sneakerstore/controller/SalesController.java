@@ -27,12 +27,14 @@ public class SalesController {
     public ApiResponse<PageResponse<SalesOrderDto>> getSales(
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) String status,
+            @RequestParam(required = false) String paymentMethod,
+            @RequestParam(required = false) String channel,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
         return ApiResponse.ok(orderService.searchOrders(
-                keyword, status, fromDate, toDate,
+                keyword, status, paymentMethod, channel, fromDate, toDate,
                 PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "id"))));
     }
 

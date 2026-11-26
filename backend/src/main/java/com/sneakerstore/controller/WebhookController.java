@@ -1,6 +1,8 @@
 package com.sneakerstore.controller;
 
 import com.sneakerstore.dto.request.SepayWebhookRequest;
+import com.sneakerstore.dto.request.ShippingWebhookRequest;
+import com.sneakerstore.service.InvoiceService;
 import com.sneakerstore.service.SepayWebhookService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -22,6 +24,7 @@ import java.util.Map;
 public class WebhookController {
 
     private final SepayWebhookService sepayWebhookService;
+    private final InvoiceService invoiceService;
 
     @PostMapping("/sepay")
     @Operation(summary = "Tiếp nhận webhook biến động số dư từ SePay để gạch nợ tự động")
@@ -64,5 +67,14 @@ public class WebhookController {
                 .description("Mô phỏng GD " + orderCode + " qua SePay")
                 .build();
         return ResponseEntity.ok(sepayWebhookService.processSepayWebhook(mockRequest, null));
+    }
+
+    @PostMapping("/shipping")
+    @Operation(summary = "Webhook đơn vị vận chuyển cập nhật trạng thái giao hàng (Idempotent tự động phát sinh hóa đơn khi DELIVERED)")
+    public ResponseEntity<Map<String, Object>> handleShippingWebhook(
+            @RequestBody ShippingWebhookRequest request) {
+        log.info("[WebhookController] Nhận webhook vận chuyển: orderCode={}, status={}",
+                request.getOrderCode(), request.getDeliveryStatus());
+        return ResponseEntity.ok(invoiceService.processShippingWebhook(request));
     }
 }

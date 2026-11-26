@@ -2,6 +2,7 @@ import {
   Odometer,
   ShoppingCart,
   Tickets,
+  Document,
   Goods,
   SetUp,
   CollectionTag,
@@ -20,7 +21,8 @@ export const MENU_GROUPS = [
     items: [
       { path: '/admin/dashboard', title: 'Dashboard Tổng quan', icon: Odometer, roles: ['ADMIN', 'MANAGER', 'STAFF'] },
       { path: '/pos', title: 'Bán hàng tại quầy (POS)', icon: ShoppingCart, badge: 'POS', roles: ['ADMIN', 'MANAGER', 'STAFF'] },
-      { path: '/admin/orders', title: 'Quản lý đơn hàng', icon: Tickets, roles: ['ADMIN', 'MANAGER', 'STAFF'] }
+      { path: '/admin/orders', title: 'Quản lý đơn hàng', icon: Tickets, roles: ['ADMIN', 'MANAGER', 'STAFF'] },
+      { path: '/admin/invoices', title: 'Quản lý hóa đơn', icon: Document, roles: ['ADMIN', 'MANAGER', 'STAFF'] }
     ]
   },
   {
