@@ -2182,4 +2182,83 @@ onUnmounted(() => {
     }
   }
 }
+
+@media (max-width: 1024px) {
+  .pos-page {
+    > .el-row {
+      row-gap: 14px;
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .pos-master-toolbar {
+    .search-scan-row {
+      flex-wrap: wrap;
+      gap: 6px;
+
+      .master-search-input {
+        width: 100%;
+        flex: 1 0 100%;
+      }
+
+      .btn-scan-trigger,
+      .btn-camera-trigger {
+        flex: 1;
+        height: 36px;
+        justify-content: center;
+        padding: 0 10px;
+      }
+    }
+
+    .sub-controls-row {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 8px;
+
+      .filter-dropdowns {
+        width: 100%;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 6px;
+
+        .filter-select {
+          width: 100%;
+        }
+      }
+
+      .quick-step-strip {
+        min-width: 0 !important;
+        width: 100%;
+        flex-wrap: wrap;
+
+        .step-select.prod {
+          min-width: 100%;
+        }
+      }
+    }
+  }
+
+  .pos-cart-card {
+    .cart-item {
+      flex-direction: column;
+      align-items: stretch !important;
+      gap: 8px;
+
+      .item-actions {
+        justify-content: flex-end;
+      }
+    }
+
+    .customer-box .cust-row {
+      flex-direction: column;
+    }
+  }
+
+  .pos-pagination-bar {
+    flex-direction: column;
+    gap: 6px;
+    align-items: center;
+  }
+}
 </style>

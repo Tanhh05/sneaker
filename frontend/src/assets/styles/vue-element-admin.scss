@@ -867,6 +867,146 @@ body.vea-admin-mode {
       }
     }
   }
+
+  /* ============================================================================
+     GLOBAL MOBILE & TABLET RESPONSIVE ENGINE (<= 1024px & <= 768px)
+     Guarantees zero horizontal page blowout, clean stacked headers/filters,
+     touch-scrollable tables, and viewport-safe Dialogs/Drawers/Popovers!
+     ============================================================================ */
+  @media (max-width: 1024px) {
+    .page-container {
+      height: auto !important;
+      min-height: 100%;
+      overflow: visible !important;
+      padding: 12px 12px 24px !important;
+      gap: 12px !important;
+      box-sizing: border-box;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .page-container {
+      padding: 10px 10px 24px !important;
+      gap: 10px !important;
+    }
+
+    .page-header {
+      flex-direction: column !important;
+      align-items: stretch !important;
+      padding: 12px 14px !important;
+      gap: 10px !important;
+
+      .page-title-group {
+        min-width: 0;
+
+        .page-title {
+          font-size: 15.5px !important;
+          line-height: 1.3;
+          word-break: break-word;
+        }
+
+        .page-subtitle {
+          font-size: 11.5px !important;
+          white-space: normal !important;
+          line-height: 1.4;
+        }
+      }
+
+      .header-actions,
+      .header-action-group {
+        width: 100%;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px !important;
+
+        .el-button,
+        button {
+          margin-left: 0 !important;
+        }
+      }
+    }
+
+    .filter-card,
+    .table-card {
+      padding: 10px 12px !important;
+
+      .el-row {
+        row-gap: 8px;
+      }
+    }
+
+    /* Smooth horizontal scroll for wide tables on narrow phones */
+    .el-table {
+      font-size: 12.5px;
+
+      .el-table__body-wrapper,
+      .el-scrollbar__wrap {
+        -webkit-overflow-scrolling: touch;
+      }
+    }
+
+    /* Pagination never overflows 375px screens */
+    .pagination-bar {
+      flex-direction: column !important;
+      align-items: center !important;
+      justify-content: center !important;
+      gap: 8px !important;
+      padding: 10px 8px !important;
+      text-align: center;
+
+      .el-pagination {
+        flex-wrap: wrap;
+        justify-content: center;
+        row-gap: 6px;
+
+        .el-pagination__sizes {
+          display: none;
+        }
+      }
+    }
+
+    /* Viewport-safe Dialogs, Drawers, Popovers & DatePickers */
+    .el-dialog {
+      width: calc(100vw - 20px) !important;
+      max-width: calc(100vw - 20px) !important;
+      margin: 12px auto !important;
+
+      .el-dialog__header {
+        padding: 12px 14px !important;
+      }
+      .el-dialog__body {
+        padding: 14px !important;
+        max-height: 75dvh;
+        overflow-y: auto;
+      }
+      .el-dialog__footer {
+        padding: 10px 14px !important;
+      }
+    }
+
+    .el-drawer {
+      width: 94vw !important;
+      max-width: 94vw !important;
+    }
+
+    .el-popper.el-popover {
+      max-width: calc(100vw - 16px) !important;
+      width: calc(100vw - 16px) !important;
+      box-sizing: border-box;
+    }
+
+    .el-date-editor.el-input__wrapper,
+    .el-range-editor.el-input__wrapper {
+      width: 100% !important;
+      max-width: 100% !important;
+      box-sizing: border-box;
+    }
+
+    .el-tabs__nav-scroll {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+  }
 }
 
 /* ============================================================================

@@ -1707,7 +1707,7 @@ onMounted(() => {
 
 @media (max-width: 1100px) {
   .kpi-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
   .filter-selects {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1715,12 +1715,33 @@ onMounted(() => {
 }
 
 @media (max-width: 640px) {
-  .kpi-grid,
-  .filter-selects {
-    grid-template-columns: 1fr;
+  .kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
   }
+  .kpi-card {
+    padding: 9px 10px;
+    .kpi-value {
+      font-size: 15px;
+    }
+  }
+  .filters-panel {
+    padding: 10px 12px;
+  }
+  .filter-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  .search-input,
+  .date-picker-wrap,
   .date-picker {
     width: 100% !important;
+    min-width: 0 !important;
+  }
+  .filter-selects {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
   }
 }
 </style>

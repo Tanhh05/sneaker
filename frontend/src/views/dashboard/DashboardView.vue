@@ -216,14 +216,14 @@
                   <el-radio-button value="SPLIT">Tiền mặt / CK / COD</el-radio-button>
                 </el-radio-group>
                 <el-tooltip content="Thu gọn về lưới 2×2" placement="top">
-                  <el-button size="small" class="vea-icon-btn vea-icon-more" @click="layoutMode = 'grid'">
+                  <el-button size="small" class="vea-icon-btn vea-icon-more hide-mobile-grid-btn" @click="layoutMode = 'grid'">
                     <el-icon><Grid /></el-icon>
                   </el-button>
                 </el-tooltip>
               </div>
             </div>
 
-            <div class="panel-body-fill">
+            <div class="panel-body-fill panel-chart-host">
               <div v-if="!trendSeries.length" class="empty-fill">
                 <el-empty description="Chưa có dữ liệu doanh thu trong kỳ lọc" :image-size="72" />
               </div>
@@ -244,7 +244,7 @@
               <div class="ph-right">
                 <el-button size="small" @click="$router.push('/admin/orders')">Danh sách đơn →</el-button>
                 <el-tooltip content="Thu gọn về lưới 2×2" placement="top">
-                  <el-button size="small" class="vea-icon-btn vea-icon-more" @click="layoutMode = 'grid'">
+                  <el-button size="small" class="vea-icon-btn vea-icon-more hide-mobile-grid-btn" @click="layoutMode = 'grid'">
                     <el-icon><Grid /></el-icon>
                   </el-button>
                 </el-tooltip>
@@ -296,7 +296,7 @@
               <div class="ph-right">
                 <el-button size="small" @click="$router.push('/admin/reports')">Báo cáo biến thể →</el-button>
                 <el-tooltip content="Thu gọn về lưới 2×2" placement="top">
-                  <el-button size="small" class="vea-icon-btn vea-icon-more" @click="layoutMode = 'grid'">
+                  <el-button size="small" class="vea-icon-btn vea-icon-more hide-mobile-grid-btn" @click="layoutMode = 'grid'">
                     <el-icon><Grid /></el-icon>
                   </el-button>
                 </el-tooltip>
@@ -357,7 +357,7 @@
                   Quản lý tồn kho
                 </el-button>
                 <el-tooltip content="Thu gọn về lưới 2×2" placement="top">
-                  <el-button size="small" class="vea-icon-btn vea-icon-more" @click="layoutMode = 'grid'">
+                  <el-button size="small" class="vea-icon-btn vea-icon-more hide-mobile-grid-btn" @click="layoutMode = 'grid'">
                     <el-icon><Grid /></el-icon>
                   </el-button>
                 </el-tooltip>
@@ -870,14 +870,14 @@ const trendChartOption = computed(() => {
       icon: 'roundRect',
       itemWidth: 12,
       itemHeight: 8,
-      itemGap: 16,
-      textStyle: { color: '#606266', fontSize: 12, fontWeight: 500 }
+      itemGap: 14,
+      textStyle: { color: '#606266', fontSize: 11.5, fontWeight: 500 }
     },
     grid: {
-      top: 42,
-      left: 56,
-      right: 48,
-      bottom: 32,
+      top: 46,
+      left: 46,
+      right: 34,
+      bottom: 28,
       containLabel: false
     },
     xAxis: {
@@ -885,29 +885,27 @@ const trendChartOption = computed(() => {
       data: periods,
       axisLine: { lineStyle: { color: '#e2e8f0' } },
       axisTick: { show: false },
-      axisLabel: { color: '#64748b', fontSize: 11.5, fontWeight: 600, margin: 10 }
+      axisLabel: { color: '#64748b', fontSize: 11, fontWeight: 600, margin: 10 }
     },
     yAxis: [
       {
         type: 'value',
-        name: 'Doanh thu',
-        nameTextStyle: { color: '#94a3b8', fontSize: 11, padding: [0, 0, 0, -18] },
+        splitNumber: 4,
         splitLine: { lineStyle: { color: '#f1f5f9', type: 'dashed' } },
         axisLabel: {
           color: '#64748b',
-          fontSize: 11,
+          fontSize: 10.5,
           formatter: (v) => formatShortMoney(v)
         }
       },
       {
         type: 'value',
-        name: 'Đơn hàng',
         minInterval: 1,
-        nameTextStyle: { color: '#94a3b8', fontSize: 11, padding: [0, -14, 0, 0] },
+        splitNumber: 4,
         splitLine: { show: false },
         axisLabel: {
           color: '#f97316',
-          fontSize: 11,
+          fontSize: 10.5,
           formatter: (v) => `${v}`
         }
       }
@@ -2155,15 +2153,77 @@ onMounted(() => {
 
 @media (max-width: 960px) {
   .exec-dashboard-viewport {
-    height: auto;
-    overflow: visible;
+    height: auto !important;
+    overflow: visible !important;
+  }
+  .dash-topbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    padding: 10px 12px;
+  }
+  .title-line {
+    justify-content: space-between;
+  }
+  .topbar-controls {
+    width: 100%;
+    gap: 6px;
+  }
+  .quick-time-group {
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .layout-switch,
+  .topbar-divider,
+  .hide-mobile-grid-btn {
+    display: none !important;
   }
   .dash-stage.mode-focus {
     flex-direction: column;
     overflow: visible;
   }
   .focus-hero-card {
-    height: 500px;
+    height: auto;
+    min-height: 0;
+    padding: 12px;
+  }
+  .focus-hero-card .panel-head {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  .focus-hero-card .ph-right {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
+  .focus-hero-card .panel-body-fill {
+    height: auto;
+    min-height: 0;
+  }
+  .focus-hero-card .panel-chart-host {
+    height: 280px !important;
+  }
+  .focus-hero-card .table-scroll-host {
+    height: 300px !important;
+  }
+  .ch-donut-pane,
+  .top-chart-pane {
+    min-width: 0 !important;
+    width: 100%;
+    height: 240px !important;
+    flex: none !important;
+  }
+  .ch-rate-chart-wrap {
+    height: 155px !important;
+    flex: none !important;
+  }
+  .top-table-pane {
+    height: 240px !important;
+    flex: none !important;
+  }
+  .channel-cards-grid {
+    grid-template-columns: 1fr;
   }
   .focus-mini-dock {
     width: 100%;
@@ -2175,6 +2235,19 @@ onMounted(() => {
   }
   .kpi-strip-6 {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .kpi-mini {
+    padding: 8px 10px;
+    gap: 8px;
+  }
+  .km-icon {
+    width: 28px;
+    height: 28px;
+    font-size: 14px;
+  }
+  .km-val {
+    font-size: 13.5px;
   }
 }
 </style>

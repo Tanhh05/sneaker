@@ -571,6 +571,7 @@ onUnmounted(() => {
   flex-direction: column;
   min-width: 0;
   height: 100vh;
+  height: 100dvh;
   overflow: hidden;
   background-color: #f0f2f5;
 }
@@ -795,7 +796,8 @@ onUnmounted(() => {
     top: 0;
     left: 0;
     bottom: 0;
-    width: 210px !important;
+    width: 256px !important;
+    z-index: 1002;
     transform: translateX(-100%);
     transition: transform 0.28s ease;
 
@@ -809,14 +811,62 @@ onUnmounted(() => {
   .hide-xs {
     display: none !important;
   }
-  .vea-navbar .right-menu .right-pill-btn .pill-text {
-    display: none;
+
+  .vea-navbar {
+    padding-right: 8px;
+
+    .navbar-left {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+    }
+
+    .hamburger-container {
+      padding: 0 12px;
+      flex-shrink: 0;
+    }
+
+    .app-breadcrumb {
+      margin-left: 2px;
+      font-size: 13px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      min-width: 0;
+    }
+
+    .right-menu {
+      gap: 4px;
+      flex-shrink: 0;
+
+      .right-pill-btn {
+        padding: 0 8px;
+        height: 28px;
+
+        .pill-text {
+          display: none;
+        }
+      }
+
+      .avatar-container {
+        margin-left: 2px;
+
+        .avatar-wrapper {
+          padding: 2px 4px;
+          gap: 4px;
+        }
+      }
+    }
   }
 }
 
 @media (max-width: 600px) {
   .hide-sm {
     display: none !important;
+  }
+
+  .vea-navbar .app-breadcrumb :deep(.el-breadcrumb__item:first-child:not(:last-child)) {
+    display: none;
   }
 }
 </style>

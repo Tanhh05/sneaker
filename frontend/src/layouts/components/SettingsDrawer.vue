@@ -179,4 +179,13 @@ const predefineColors = [
     }
   }
 }
+
+@media (max-width: 768px) {
+  .vea-settings-handle {
+    bottom: 16px;
+    width: 34px;
+    height: 34px;
+    opacity: 0.85;
+  }
+}
 </style>

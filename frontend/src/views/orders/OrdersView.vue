@@ -2618,13 +2618,59 @@ onUnmounted(() => {
     flex-direction: column;
   }
 
-  .date-range-wrap {
-    width: 100%;
+  .status-tabs-wrap {
+    padding: 0 10px;
   }
 
-  .search-box-wrap {
+  .filters-toolbar {
+    padding: 10px 12px;
+    gap: 8px;
+  }
+
+  .filter-row-segments {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .filter-group {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
     width: 100%;
-    min-width: 100%;
+    min-width: 0;
+  }
+
+  .segmented-radio-group {
+    display: flex;
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    flex-wrap: nowrap;
+  }
+
+  .filter-row-inputs {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .date-range-wrap,
+  .search-box-wrap,
+  .btn-reset {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .batch-actions-bar {
+    padding: 10px 12px;
+  }
+
+  .batch-right {
+    width: 100%;
+    .el-button {
+      margin-left: 0 !important;
+    }
   }
 }
 </style>

@@ -1189,10 +1189,27 @@ onMounted(() => {
 }
 
 @media (max-width: 768px) {
-  .summary-strip,
+  .summary-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .sum-box {
+    padding: 10px 12px;
+    .sum-val {
+      font-size: 15px;
+    }
+  }
+  .quick-time-group {
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
   .channel-compare-cards,
   .size-insight-row {
     grid-template-columns: 1fr;
+  }
+  .report-chart-card {
+    padding: 10px;
   }
 }
 </style>
