@@ -54,8 +54,23 @@
     <template v-if="product">
       <!-- 2. COMPACT OVERVIEW GRID (MEDIA + SPECS + KPIs) -->
       <div class="overview-grid">
-        <!-- Left: Gallery Studio -->
+        <!-- Left: Gallery Studio (Strictly this shoe's colors) -->
         <div class="studio-card gallery-card">
+          <div v-if="imageColorTabs.length > 0" class="gallery-color-tabs">
+            <button
+              v-for="tab in imageColorTabs"
+              :key="tab.id"
+              type="button"
+              class="gct-pill"
+              :class="{ active: activeGalleryColorId === tab.id, warn: tab.count === 0 }"
+              @click="selectGalleryColor(tab.id)"
+            >
+              <span class="gct-dot" :style="{ backgroundColor: tab.hexCode || '#111' }"></span>
+              <span>{{ tab.name }}</span>
+              <span class="gct-cnt">{{ tab.count }}</span>
+            </button>
+          </div>
+
           <div class="main-img-stage">
             <img
               v-if="currentImg && !imgError"
@@ -66,7 +81,7 @@
             />
             <div v-else class="img-placeholder">
               <el-icon :size="36"><Picture /></el-icon>
-              <span>CHƯA CÓ HÌNH ẢNH</span>
+              <span>{{ activeGalleryColorId !== null ? 'MÀU NÀY CHƯA CÓ ẢNH' : 'CHƯA CÓ HÌNH ẢNH' }}</span>
             </div>
             <span v-if="galleryImages.length > 0" class="img-count-badge">
               {{ activeImgIndex + 1 }} / {{ galleryImages.length }}
@@ -208,7 +223,11 @@
               </thead>
               <tbody>
                 <tr v-for="c in matrixColors" :key="c.key">
-                  <td class="sticky-color-col">
+                  <td
+                    class="sticky-color-col clickable-color"
+                    title="Bấm để xem ảnh của màu này"
+                    @click="selectGalleryColor(Number(c.colorId || c.key))"
+                  >
                     <div class="matrix-color-cell">
                       <span class="color-swatch" :style="{ backgroundColor: c.hexCode || '#111' }"></span>
                       <div class="color-meta">
@@ -340,6 +359,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { ArrowLeft, Edit, Grid, List, Picture, TopRight } from '@element-plus/icons-vue'
 import { productService } from '@/services/productService'
+import { variantService } from '@/services/variantService'
 import { formatCurrency } from '@/utils/formatters'
 import { usePermission } from '@/composables/usePermission'
 
@@ -349,7 +369,9 @@ const { canManageCatalog } = usePermission()
 
 const loading = ref(false)
 const product = ref(null)
+const catalogColors = ref([])
 const activeImg = ref('')
+const activeGalleryColorId = ref(null)
 const imgError = ref(false)
 const viewMode = ref('matrix')
 const filterColorKey = ref(null)
@@ -357,13 +379,81 @@ const searchSku = ref('')
 
 const variants = computed(() => product.value?.variants || [])
 
-const galleryImages = computed(() => {
+const allGalleryEntries = computed(() => {
   if (!product.value) return []
+  if (Array.isArray(product.value.images) && product.value.images.length) {
+    return product.value.images
+      .filter((img) => !!img?.imageUrl)
+      .map((img) => ({
+        url: img.imageUrl,
+        colorId: img.colorId ? Number(img.colorId) : null,
+        isPrimary: img.isPrimary === 1
+      }))
+  }
   const urls = Array.isArray(product.value.imageUrls) && product.value.imageUrls.length
     ? product.value.imageUrls
     : product.value.thumbnailUrl ? [product.value.thumbnailUrl] : []
-  return urls.filter(Boolean)
+  return urls.filter(Boolean).map((url, idx) => ({ url, colorId: null, isPrimary: idx === 0 }))
 })
+
+// Strictly show ONLY colors that this shoe actually has:
+// - If the product has variants -> ONLY colors present in variants
+// - If the product has no variants yet -> ONLY colors that already have images on this product
+const imageColorTabs = computed(() => {
+  const map = new Map()
+  if (variants.value.length > 0) {
+    for (const v of variants.value) {
+      const cid = Number(v.colorId)
+      if (cid && !map.has(cid)) {
+        map.set(cid, {
+          id: cid,
+          name: v.colorName || `Màu #${cid}`,
+          hexCode: v.hexCode || '#111111',
+          count: 0
+        })
+      }
+    }
+    for (const entry of allGalleryEntries.value) {
+      if (entry.colorId && map.has(entry.colorId)) {
+        map.get(entry.colorId).count += 1
+      }
+    }
+  } else {
+    for (const entry of allGalleryEntries.value) {
+      const cid = entry.colorId
+      if (cid) {
+        if (!map.has(cid)) {
+          const cObj = catalogColors.value.find((c) => c.id === cid)
+          map.set(cid, {
+            id: cid,
+            name: cObj?.colorName || `Màu #${cid}`,
+            hexCode: cObj?.hexCode || '#111111',
+            count: 0
+          })
+        }
+        map.get(cid).count += 1
+      }
+    }
+  }
+  return Array.from(map.values())
+})
+
+const galleryImages = computed(() => {
+  if (activeGalleryColorId.value !== null) {
+    return allGalleryEntries.value
+      .filter((e) => e.colorId === activeGalleryColorId.value)
+      .map((e) => e.url)
+  }
+  return allGalleryEntries.value.map((e) => e.url)
+})
+
+function selectGalleryColor(colorId) {
+  if (!Number.isFinite(colorId)) return
+  if (!imageColorTabs.value.some((t) => t.id === colorId)) return
+  activeGalleryColorId.value = colorId
+  activeImg.value = ''
+  imgError.value = false
+}
 
 const currentImg = computed(() => activeImg.value || galleryImages.value[0] || '')
 const activeImgIndex = computed(() => {
@@ -413,7 +503,7 @@ const matrixColors = computed(() => {
   for (const v of variants.value) {
     const k = colorKey(v)
     if (!map.has(k)) {
-      map.set(k, { key: k, name: v.colorName || k, hexCode: v.hexCode || '#111111' })
+      map.set(k, { key: k, colorId: Number(v.colorId) || null, name: v.colorName || k, hexCode: v.hexCode || '#111111' })
     }
   }
   return Array.from(map.values())
@@ -480,10 +570,16 @@ function editVariant(v) {
 
 function goToVariantStudio() {
   if (!product.value) return
+  const presetIds = Array.from(
+    new Set(allGalleryEntries.value.map((e) => e.colorId).filter(Boolean))
+  )
+  const query = { productId: product.value.id }
+  if (presetIds.length > 0) query.presetColors = presetIds.join(',')
+
   if (variants.value.length > 0 && variants.value[0]?.id) {
-    router.push(`/admin/variants/${variants.value[0].id}/edit`)
+    router.push({ path: `/admin/variants/${variants.value[0].id}/edit`, query })
   } else {
-    router.push({ path: '/admin/variants/create', query: { productId: product.value.id } })
+    router.push({ path: '/admin/variants/create', query })
   }
 }
 
@@ -503,8 +599,18 @@ function handleDiscontinue() {
 async function loadProduct() {
   loading.value = true
   try {
-    const res = await productService.getProductById(route.params.id)
+    const [res, colRes] = await Promise.all([
+      productService.getProductById(route.params.id),
+      variantService.getColors().catch(() => ({ data: [] }))
+    ])
     product.value = res.data
+    catalogColors.value = colRes.data || []
+    const primaryEntry = allGalleryEntries.value.find((e) => e.isPrimary && e.colorId)
+    const defaultColorTab =
+      (primaryEntry && imageColorTabs.value.find((t) => t.id === primaryEntry.colorId)) ||
+      imageColorTabs.value[0] ||
+      null
+    activeGalleryColorId.value = defaultColorTab ? defaultColorTab.id : null
     activeImg.value = galleryImages.value[0] || ''
     imgError.value = false
   } catch (_) {
@@ -702,6 +808,59 @@ onMounted(loadProduct)
   flex-direction: column;
   gap: 8px;
 
+  .gallery-color-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+
+    .gct-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 7px;
+      font-size: 10.5px;
+      font-weight: 700;
+      background: #f5f5f5;
+      border: 1px solid #d4d4d4;
+      border-radius: 3px;
+      color: #404040;
+      cursor: pointer;
+
+      &.active {
+        background: #111111;
+        border-color: #111111;
+        color: #ffffff;
+
+        .gct-cnt {
+          background: rgba(255, 255, 255, 0.22);
+          color: #ffffff;
+        }
+      }
+
+      &.warn:not(.active) {
+        background: #fef2f2;
+        border-color: #fca5a5;
+        color: #b91c1c;
+      }
+
+      .gct-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        border: 1px solid rgba(0, 0, 0, 0.25);
+        flex-shrink: 0;
+      }
+
+      .gct-cnt {
+        font-size: 9.5px;
+        font-weight: 800;
+        padding: 0 4px;
+        background: #e5e5e5;
+        border-radius: 2px;
+      }
+    }
+  }
+
   .main-img-stage {
     position: relative;
     width: 100%;
@@ -716,7 +875,8 @@ onMounted(loadProduct)
     .main-img {
       width: 100%;
       height: 100%;
-      object-fit: cover;
+      object-fit: contain;
+      background: #f3f5f7;
     }
 
     .img-placeholder {

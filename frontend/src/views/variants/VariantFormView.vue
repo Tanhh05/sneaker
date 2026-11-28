@@ -202,28 +202,52 @@
                 </div>
               </div>
 
-              <!-- Compact Color Chips -->
+              <!-- Compact Color Chips (Scalable for 1,000+ colors with instant search) -->
               <div class="gen-col">
                 <div class="gen-col-head">
                   <span class="gen-label">MÀU SẮC <em>({{ selectedColorIds.length }}/{{ colors.length }})</em></span>
                   <div class="gen-quick">
-                    <button type="button" @click="selectAllColors">Tất cả</button>
-                    <span>·</span>
+                    <input
+                      v-model="genColorSearch"
+                      type="text"
+                      class="gen-color-search"
+                      placeholder="Tìm màu..."
+                    />
+                    <button v-if="colors.length <= 30" type="button" @click="selectAllColors">Tất cả</button>
+                    <span v-if="colors.length <= 30">·</span>
                     <button type="button" @click="selectedColorIds = []">Bỏ</button>
                   </div>
                 </div>
                 <div class="chip-wrap">
                   <button
-                    v-for="c in colors"
+                    v-for="c in displayedGeneratorColors"
                     :key="c.id"
                     type="button"
                     class="color-chip"
-                    :class="{ active: selectedColorIds.includes(c.id) }"
+                    :class="{
+                      active: selectedColorIds.includes(c.id),
+                      'has-photos': (productImageColorCounts[c.id] || 0) > 0
+                    }"
                     @click="toggleId(selectedColorIds, c.id)"
                   >
                     <span class="swatch" :style="{ backgroundColor: c.hexCode }"></span>
                     <span>{{ c.colorName }}</span>
                     <small>{{ c.colorCode }}</small>
+                    <span
+                      v-if="(productImageColorCounts[c.id] || 0) > 0"
+                      class="chip-photo-badge"
+                      :title="`Màu này đã có ${productImageColorCounts[c.id]} ảnh sản phẩm`"
+                    >
+                      {{ productImageColorCounts[c.id] }} ảnh
+                    </span>
+                  </button>
+                  <button
+                    v-if="filteredGeneratorColors.length > displayedGeneratorColors.length"
+                    type="button"
+                    class="color-chip more-chip"
+                    @click="showAllGenColors = true"
+                  >
+                    +{{ filteredGeneratorColors.length - displayedGeneratorColors.length }} màu nữa (hoặc gõ tìm)
                   </button>
                 </div>
               </div>
@@ -748,6 +772,44 @@ const colors = ref([])
 const selectedProductId = ref(null)
 const selectedSizeIds = ref([])
 const selectedColorIds = ref([])
+const productImageColorCounts = ref({})
+const genColorSearch = ref('')
+const showAllGenColors = ref(false)
+
+function normalizeVi(str) {
+  return String(str || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/Đ/g, 'D')
+    .toLowerCase()
+    .trim()
+}
+
+const filteredGeneratorColors = computed(() => {
+  const q = normalizeVi(genColorSearch.value)
+  const base = !q
+    ? colors.value
+    : colors.value.filter((c) =>
+        normalizeVi(`${c.colorName} ${c.colorCode || ''} ${c.hexCode || ''}`).includes(q)
+      )
+  // Always prioritize selected colors and colors that already have product photos
+  return [...base].sort((a, b) => {
+    const aSel = selectedColorIds.value.includes(a.id) ? 2 : 0
+    const bSel = selectedColorIds.value.includes(b.id) ? 2 : 0
+    const aImg = (productImageColorCounts.value[a.id] || 0) > 0 ? 1 : 0
+    const bImg = (productImageColorCounts.value[b.id] || 0) > 0 ? 1 : 0
+    return (bSel + bImg) - (aSel + aImg)
+  })
+})
+
+const displayedGeneratorColors = computed(() => {
+  if (showAllGenColors.value || genColorSearch.value.trim()) {
+    return filteredGeneratorColors.value.slice(0, 60)
+  }
+  const limit = Math.max(24, selectedColorIds.value.length + 12)
+  return filteredGeneratorColors.value.slice(0, limit)
+})
 
 const allVariantRows = ref([])
 
@@ -1160,8 +1222,19 @@ function mapExistingToRow(ev) {
   }
 }
 
-async function handleProductChange(productId) {
+function parsePresetColorQuery() {
+  const raw = route.query.presetColors
+  if (!raw) return []
+  const validSet = new Set(colors.value.map((c) => c.id))
+  return String(raw)
+    .split(',')
+    .map((s) => Number(s.trim()))
+    .filter((id) => Number.isFinite(id) && validSet.has(id))
+}
+
+async function handleProductChange(productId, options = {}) {
   allVariantRows.value = []
+  productImageColorCounts.value = {}
   tableFilterColorId.value = null
   tableStatusFilter.value = 'all'
   tableSearchSku.value = ''
@@ -1175,9 +1248,43 @@ async function handleProductChange(productId) {
   }
 
   try {
-    const res = await variantService.getVariantsByProduct(productId)
+    const [res, detailRes] = await Promise.all([
+      variantService.getVariantsByProduct(productId),
+      productService.getProductById(productId).catch(() => ({ data: null }))
+    ])
     const list = res.data || []
     allVariantRows.value = list.map(mapExistingToRow)
+
+    // Count uploaded images per color so generator chips show photo readiness
+    const counts = {}
+    const imgs = detailRes.data?.images || []
+    for (const im of imgs) {
+      const cid = Number(im?.colorId)
+      if (cid) counts[cid] = (counts[cid] || 0) + 1
+    }
+    productImageColorCounts.value = counts
+
+    // Auto-select presetColors (from query or from product's uploaded image colors when 0 variants exist)
+    const presetFromQuery = Array.isArray(options.presetColors) ? options.presetColors : []
+    if (presetFromQuery.length > 0) {
+      selectedColorIds.value = [...new Set(presetFromQuery)]
+      if (allVariantRows.value.length === 0 && selectedSizeIds.value.length === 0) {
+        selectPopularSizes()
+      }
+      showGenerator.value = true
+      ElMessage.info(
+        `Đã chọn sẵn ${selectedColorIds.value.length} màu từ bộ ảnh sản phẩm — hãy chọn Size EU rồi bấm Tạo biến thể!`
+      )
+    } else if (!isEdit.value && allVariantRows.value.length === 0) {
+      const imageColorIds = Object.keys(counts)
+        .map(Number)
+        .filter((id) => colors.value.some((c) => c.id === id))
+      if (imageColorIds.length > 0) {
+        selectedColorIds.value = imageColorIds
+        if (selectedSizeIds.value.length === 0) selectPopularSizes()
+        showGenerator.value = true
+      }
+    }
 
     // Auto-select focused variant in Quick Inspector when editing
     if (focusedVariantId.value) {
@@ -1343,6 +1450,8 @@ onMounted(async () => {
     sizes.value = sRes.data || []
     colors.value = cRes.data || []
 
+    const presetColors = parsePresetColorQuery()
+
     if (isEdit.value) {
       showGenerator.value = false
       focusedVariantId.value = Number(route.params.id)
@@ -1350,14 +1459,14 @@ onMounted(async () => {
       const v = vRes.data
       if (v) {
         selectedProductId.value = v.productId
-        await handleProductChange(v.productId)
+        await handleProductChange(v.productId, { presetColors })
       }
     } else {
       showGenerator.value = true
       const preProductId = route.query.productId ? Number(route.query.productId) : products.value[0]?.id
       if (preProductId) {
         selectedProductId.value = preProductId
-        await handleProductChange(preProductId)
+        await handleProductChange(preProductId, { presetColors })
       }
     }
   } finally {
@@ -1794,6 +1903,21 @@ onUnmounted(() => {
     opacity: 0.65;
   }
 
+  .chip-photo-badge {
+    font-size: 9.5px;
+    font-weight: 800;
+    padding: 1px 5px;
+    border-radius: 2px;
+    background: #dcfce7;
+    color: #166534;
+    line-height: 1.2;
+  }
+
+  &.has-photos:not(.active) {
+    border-color: #86efac;
+    background: #f0fdf4;
+  }
+
   &:hover {
     border-color: var(--vea-theme, #409eff);
   }
@@ -1806,6 +1930,33 @@ onUnmounted(() => {
     small {
       opacity: 0.85;
     }
+
+    .chip-photo-badge {
+      background: rgba(255, 255, 255, 0.24);
+      color: #ffffff;
+    }
+  }
+
+  &.more-chip {
+    border-style: dashed;
+    color: var(--vea-theme, #409eff);
+    background: #f8fafc;
+  }
+}
+
+.gen-color-search {
+  width: 118px;
+  height: 22px;
+  padding: 0 7px;
+  font-size: 11px;
+  border: 1px solid #cbd5e1;
+  border-radius: 3px;
+  background: #ffffff;
+  color: #303133;
+  outline: none;
+
+  &:focus {
+    border-color: var(--vea-theme, #409eff);
   }
 }
 

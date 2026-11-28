@@ -67,12 +67,13 @@
       class="studio-form"
     >
       <div class="studio-grid">
-        <!-- LEFT COLUMN: COMPACT MEDIA STUDIO + LIVE CARD (340px) -->
+        <!-- LEFT COLUMN: SPACIOUS COLOR-TABBED MEDIA STUDIO (50% WIDTH) -->
         <aside class="media-column">
           <div class="studio-card media-card">
             <div class="card-head-row">
-              <span class="badge-black">HÌNH ẢNH &amp; XEM TRƯỚC</span>
+              <span class="badge-black">HÌNH ẢNH THEO MÀU &amp; XEM TRƯỚC</span>
               <div class="media-head-right">
+                <span class="media-summary-pill">{{ selectedColorIds.length }} màu · {{ imageItems.length }} ảnh</span>
                 <span v-if="pendingCount > 0" class="pending-pill">{{ pendingCount }} chờ tải</span>
                 <button
                   v-if="imageItems.length > 0"
@@ -96,29 +97,159 @@
                 @load="imgError = false"
               />
               <div v-else class="preview-empty">
-                <el-icon :size="36"><Picture /></el-icon>
+                <el-icon :size="40"><Picture /></el-icon>
                 <strong>CHƯA CÓ HÌNH ẢNH</strong>
-                <span>Kéo thả hoặc chọn nhiều ảnh bên dưới</span>
+                <span>Chọn hoặc thêm màu bên dưới rồi kéo thả 4 ảnh góc chụp</span>
               </div>
               <span class="preview-status-tag" :class="form.status === 'ACTIVE' ? 'st-active' : 'st-inactive'">
                 {{ form.status }}
               </span>
+              <span v-if="activeColorObj" class="preview-color-pill">
+                <i class="swatch-dot" :style="{ backgroundColor: activeColorObj.hexCode || '#111' }"></i>
+                {{ activeColorObj.colorName }} ({{ visibleImages.length }}/4)
+              </span>
             </div>
 
-            <!-- Compact Live Card Footer -->
+            <!-- Sleek 1-line Live Card Strip -->
             <div class="live-card-strip">
-              <div class="lc-meta">
-                <span>{{ getBrandName(form.brandId) }}</span>
-                <span>•</span>
-                <span>{{ getCategoryName(form.categoryId) }}</span>
-              </div>
-              <div class="lc-bottom">
-                <strong class="lc-price">{{ formatCurrency(form.salePrice || 0) }}</strong>
+              <div class="lc-left">
+                <span class="lc-meta">{{ getBrandName(form.brandId) }} · {{ getCategoryName(form.categoryId) }}</span>
                 <span class="lc-code">{{ form.productCode || '---' }}</span>
               </div>
+              <strong class="lc-price">{{ formatCurrency(form.salePrice || 0) }}</strong>
             </div>
 
-            <!-- Compact Drag & Drop Zone -->
+            <!-- Unified Scalable Color Bar (handles 1,000+ colors with instant search popover) -->
+            <div class="color-studio-box">
+              <div class="cs-head">
+                <span class="cs-title">MÀU ĐANG CHỌN ({{ selectedColorObjects.length }})</span>
+                <div class="cs-head-actions">
+                  <input
+                    v-if="selectedColorObjects.length > 8"
+                    v-model="selectedTabFilter"
+                    type="text"
+                    class="cs-tab-filter"
+                    placeholder="Lọc tab màu..."
+                  />
+                  <el-popover
+                    v-model:visible="colorPickerOpen"
+                    placement="bottom-end"
+                    :width="320"
+                    trigger="click"
+                    popper-class="color-picker-popover"
+                    @show="onColorPickerShow"
+                  >
+                    <template #reference>
+                      <button type="button" class="btn-add-color">
+                        + Thêm màu <span v-if="colors.length > 0" class="btn-color-total">({{ colors.length }})</span>
+                      </button>
+                    </template>
+
+                    <div class="cp-pop">
+                      <div class="cp-search-row">
+                        <input
+                          ref="colorSearchInputRef"
+                          v-model="colorSearchQuery"
+                          type="text"
+                          class="cp-search-input"
+                          :placeholder="`Tìm trong ${colors.length} màu (tên, mã, hex)...`"
+                          @keydown.enter.prevent="pickFirstFilteredColor"
+                        />
+                        <button
+                          v-if="colorSearchQuery"
+                          type="button"
+                          class="cp-clear-btn"
+                          @click="colorSearchQuery = ''"
+                        >
+                          ×
+                        </button>
+                      </div>
+
+                      <div class="cp-list">
+                        <div v-if="displayedPickerColors.length === 0" class="cp-empty">
+                          Không tìm thấy màu phù hợp với "{{ colorSearchQuery }}"
+                        </div>
+                        <button
+                          v-for="c in displayedPickerColors"
+                          :key="c.id"
+                          type="button"
+                          class="cp-item"
+                          :class="{ selected: selectedColorIds.includes(c.id) }"
+                          @click="pickColorFromPopover(c.id)"
+                        >
+                          <span class="swatch-dot lg" :style="{ backgroundColor: c.hexCode || '#111' }"></span>
+                          <span class="cp-name">{{ c.colorName }}</span>
+                          <span class="cp-code">{{ c.colorCode }}</span>
+                          <span v-if="selectedColorIds.includes(c.id)" class="cp-picked">
+                            ✓ {{ countImagesByColor(c.id) }}/4
+                          </span>
+                          <span v-else class="cp-add-tag">+ Chọn</span>
+                        </button>
+                      </div>
+
+                      <div class="cp-foot">
+                        <span v-if="filteredPickerColors.length > displayedPickerColors.length">
+                          Hiển thị {{ displayedPickerColors.length }}/{{ filteredPickerColors.length }} màu — gõ thêm để lọc nhanh
+                        </span>
+                        <span v-else>
+                          {{ filteredPickerColors.length }} màu · Nhấn Enter để chọn nhanh kết quả đầu
+                        </span>
+                      </div>
+                    </div>
+                  </el-popover>
+                </div>
+              </div>
+
+              <!-- Selected Color Tabs ONLY (zero clutter even with 1,000 DB colors) -->
+              <div v-if="filteredSelectedColorObjects.length > 0 || unassignedImagesCount > 0" class="color-tabs-bar">
+                <div
+                  v-for="c in filteredSelectedColorObjects"
+                  :key="c.id"
+                  class="ctab"
+                  :class="{
+                    active: activeColorTab === c.id,
+                    missing: variantColorIdSet.has(c.id) && countImagesByColor(c.id) === 0
+                  }"
+                  @click="switchColorTab(c.id)"
+                >
+                  <span class="swatch-dot" :style="{ backgroundColor: c.hexCode || '#111' }"></span>
+                  <span class="ctab-name">{{ c.colorName }}</span>
+                  <span class="ctab-badge" :class="getColorCountClass(c.id)">
+                    {{ countImagesByColor(c.id) }}/4
+                  </span>
+                  <span
+                    v-if="isEdit && existingVariants.length > 0 && !variantColorIdSet.has(c.id)"
+                    class="ctab-nosku"
+                    title="Màu này có ảnh nhưng chưa tạo biến thể SKU"
+                  >
+                    chưa SKU
+                  </span>
+                  <button
+                    v-if="!variantColorIdSet.has(c.id)"
+                    type="button"
+                    class="ctab-close"
+                    title="Bỏ màu này khỏi bộ ảnh"
+                    @click.stop="removeColorTab(c.id)"
+                  >
+                    ×
+                  </button>
+                </div>
+                <div
+                  v-if="unassignedImagesCount > 0"
+                  class="ctab unassigned"
+                  :class="{ active: activeColorTab === 'unassigned' }"
+                  @click="switchColorTab('unassigned')"
+                >
+                  <span class="ctab-name">Chưa gắn màu</span>
+                  <span class="ctab-badge warn">{{ unassignedImagesCount }}</span>
+                </div>
+              </div>
+              <div v-else class="cs-no-color-hint">
+                Chưa chọn màu nào — bấm <strong>+ Thêm màu</strong> ở góc phải để thêm màu &amp; tải ảnh.
+              </div>
+            </div>
+
+            <!-- Color-Aware Drag & Drop Zone -->
             <div
               class="upload-zone"
               :class="{ dragover: isDragOver, uploading: uploadingImage }"
@@ -138,35 +269,96 @@
               <el-icon v-if="uploadingImage" class="is-loading" :size="20"><Loading /></el-icon>
               <el-icon v-else :size="20"><UploadFilled /></el-icon>
               <div class="uz-text">
-                <strong>{{ uploadingImage ? 'Đang tải ảnh lên MinIO S3...' : 'Chọn / kéo thả nhiều ảnh từ máy' }}</strong>
-                <span>PNG, JPG, WEBP ≤ 20MB · Upload khi bấm Lưu</span>
+                <strong v-if="uploadingImage">Đang tải ảnh lên MinIO S3...</strong>
+                <strong v-else-if="activeColorObj">
+                  Kéo thả / chọn ảnh cho màu
+                  <span class="uz-color-tag">
+                    <i class="swatch-dot" :style="{ backgroundColor: activeColorObj.hexCode || '#111' }"></i>
+                    {{ activeColorObj.colorName }}
+                  </span>
+                </strong>
+                <strong v-else>Bấm "+ Thêm màu" trước hoặc kéo thả ảnh từ máy</strong>
+                <span>Khuyến nghị 4 góc chụp/màu · Tự gắn đúng màu đang mở · Upload khi bấm Lưu</span>
               </div>
             </div>
 
-            <!-- Compact Gallery Thumbnails -->
-            <div v-if="imageItems.length > 0" class="gallery-grid">
+            <!-- Active Color Gallery Grid (4 columns — all 4 angles side-by-side!) -->
+            <div class="gallery-section-bar">
+              <span class="gs-label">
+                <template v-if="activeColorObj">
+                  Bộ ảnh màu <strong>{{ activeColorObj.colorName }}</strong> ({{ visibleImages.length }}/4)
+                </template>
+                <template v-else-if="activeColorTab === 'unassigned'">
+                  Ảnh chưa gắn màu ({{ visibleImages.length }})
+                </template>
+                <template v-else>
+                  Tất cả ảnh ({{ imageItems.length }})
+                </template>
+              </span>
+              <button
+                v-if="visibleImages.length > 0 && activeColorObj"
+                type="button"
+                class="btn-text-danger"
+                @click="clearActiveColorImages"
+              >
+                Xóa ảnh màu này
+              </button>
+            </div>
+
+            <div v-if="visibleImages.length === 0" class="color-empty-box">
+              <span v-if="activeColorObj">
+                Chưa có ảnh cho màu <strong>{{ activeColorObj.colorName }}</strong>. Kéo thả 4 ảnh vào khung trên để gắn tự động.
+              </span>
+              <span v-else>
+                Bấm <strong>+ Thêm màu</strong> để chọn màu bán cho sản phẩm này.
+              </span>
+            </div>
+
+            <div v-else class="gallery-grid">
               <div
-                v-for="(item, idx) in imageItems"
-                :key="item.id || idx"
+                v-for="(item, localIdx) in visibleImages"
+                :key="item.id"
                 class="g-tile-wrap"
               >
                 <div
                   class="g-tile"
-                  :class="{ primary: idx === 0, viewing: currentPreviewUrl === item.previewUrl }"
+                  :class="{
+                    primary: item.id === primaryImageId,
+                    viewing: currentPreviewUrl === item.previewUrl
+                  }"
                   @click="activePreviewImage = item.previewUrl"
                 >
                   <img :src="item.previewUrl" alt="" />
-                  <span v-if="idx === 0" class="g-badge-main">★ CHÍNH</span>
-                  <span v-else class="g-badge-num">#{{ idx + 1 }}</span>
+                  <span v-if="item.id === primaryImageId" class="g-badge-main">★ BÌA SP</span>
+                  <span v-else-if="localIdx === 0 && activeColorObj" class="g-badge-swatch">#1 SWATCH</span>
+                  <span v-else class="g-badge-num">#{{ localIdx + 1 }}</span>
                   <span v-if="item.isNew" class="g-badge-new">MỚI</span>
 
                   <div class="g-actions">
                     <button
-                      v-if="idx !== 0"
+                      v-if="localIdx > 0"
                       type="button"
                       class="g-act-btn"
-                      title="Đặt làm ảnh chính"
-                      @click.stop="setAsPrimary(idx)"
+                      title="Đưa lên trước (ảnh #1 làm ảnh đại diện màu)"
+                      @click.stop="moveImageInActiveColor(item.id, -1)"
+                    >
+                      ←
+                    </button>
+                    <button
+                      v-if="localIdx < visibleImages.length - 1"
+                      type="button"
+                      class="g-act-btn"
+                      title="Đẩy ra sau"
+                      @click.stop="moveImageInActiveColor(item.id, 1)"
+                    >
+                      →
+                    </button>
+                    <button
+                      v-if="item.id !== primaryImageId"
+                      type="button"
+                      class="g-act-btn"
+                      title="Đặt làm ảnh bìa chính của sản phẩm"
+                      @click.stop="setAsPrimaryById(item.id)"
                     >
                       ★
                     </button>
@@ -174,19 +366,20 @@
                       type="button"
                       class="g-act-btn del"
                       title="Xóa ảnh này"
-                      @click.stop="removeImage(idx)"
+                      @click.stop="removeImageById(item.id)"
                     >
                       ×
                     </button>
                   </div>
                 </div>
                 <select
-                  v-model="item.colorId"
+                  :value="item.colorId || ''"
                   class="g-color-select"
-                  title="Gắn màu sắc cho ảnh này (khách chọn màu sẽ tự đổi sang ảnh này)"
+                  title="Chuyển ảnh này sang màu khác đang chọn"
+                  @change="reassignImageColor(item, $event.target.value)"
                 >
-                  <option :value="null">Mọi màu</option>
-                  <option v-for="c in colors" :key="c.id" :value="c.id">
+                  <option value="">Chưa gắn màu</option>
+                  <option v-for="c in selectedColorObjects" :key="c.id" :value="c.id">
                     {{ c.colorName }}
                   </option>
                 </select>
@@ -338,7 +531,7 @@
               <el-input
                 v-model="form.description"
                 type="textarea"
-                :rows="3"
+                :rows="2"
                 placeholder="Mô tả phom dáng, công nghệ đệm, nguồn gốc thiết kế và gợi ý chọn size..."
               />
             </el-form-item>
@@ -399,9 +592,9 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
+import { ref, reactive, computed, nextTick, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   ArrowLeft,
   Check,
@@ -431,11 +624,23 @@ const uploadingImage = ref(false)
 const isDragOver = ref(false)
 const activePreviewImage = ref('')
 const imageItems = ref([])
+const selectedColorIds = ref([])
+const activeColorTab = ref(null) // number (colorId) | 'unassigned' | null
+const primaryImageId = ref(null)
+const colorPickerOpen = ref(false)
+const colorSearchQuery = ref('')
+const colorSearchInputRef = ref(null)
+const selectedTabFilter = ref('')
 
-const pendingCount = computed(() => imageItems.value.filter((i) => i.isNew).length)
-const currentPreviewUrl = computed(
-  () => activePreviewImage.value || imageItems.value[0]?.previewUrl || ''
-)
+function normalizeViText(str) {
+  return String(str || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/Đ/g, 'D')
+    .toLowerCase()
+    .trim()
+}
 
 const isEdit = computed(() => !!route.params.id)
 const productId = computed(() => route.params.id)
@@ -444,6 +649,85 @@ const brands = ref([])
 const categories = ref([])
 const colors = ref([])
 const existingVariants = ref([])
+
+const variantColorIdSet = computed(
+  () => new Set(existingVariants.value.map((v) => Number(v.colorId)).filter(Boolean))
+)
+
+const selectedColorObjects = computed(() =>
+  selectedColorIds.value
+    .map((id) => colors.value.find((c) => c.id === id))
+    .filter(Boolean)
+)
+
+const filteredSelectedColorObjects = computed(() => {
+  const q = normalizeViText(selectedTabFilter.value)
+  if (!q) return selectedColorObjects.value
+  return selectedColorObjects.value.filter((c) =>
+    normalizeViText(`${c.colorName} ${c.colorCode || ''}`).includes(q)
+  )
+})
+
+const filteredPickerColors = computed(() => {
+  const q = normalizeViText(colorSearchQuery.value)
+  const list = !q
+    ? colors.value
+    : colors.value.filter((c) =>
+        normalizeViText(`${c.colorName} ${c.colorCode || ''} ${c.hexCode || ''}`).includes(q)
+      )
+  // Put unselected matches cleanly after selected ones or keep fast natural order
+  return list
+})
+
+const MAX_PICKER_RENDER = 40
+const displayedPickerColors = computed(() =>
+  filteredPickerColors.value.slice(0, MAX_PICKER_RENDER)
+)
+
+function onColorPickerShow() {
+  colorSearchQuery.value = ''
+  nextTick(() => {
+    colorSearchInputRef.value?.focus()
+  })
+}
+
+function pickColorFromPopover(colorId) {
+  selectOrActivateColor(colorId)
+  colorPickerOpen.value = false
+  colorSearchQuery.value = ''
+}
+
+function pickFirstFilteredColor() {
+  const first = displayedPickerColors.value[0]
+  if (first) pickColorFromPopover(first.id)
+}
+
+const activeColorObj = computed(() => {
+  if (!activeColorTab.value || activeColorTab.value === 'unassigned') return null
+  return colors.value.find((c) => c.id === activeColorTab.value) || null
+})
+
+const unassignedImagesCount = computed(
+  () => imageItems.value.filter((i) => !i.colorId).length
+)
+
+const visibleImages = computed(() => {
+  if (activeColorTab.value === 'unassigned') {
+    return imageItems.value.filter((i) => !i.colorId)
+  }
+  if (typeof activeColorTab.value === 'number') {
+    return imageItems.value.filter((i) => Number(i.colorId) === activeColorTab.value)
+  }
+  return imageItems.value
+})
+
+const pendingCount = computed(() => imageItems.value.filter((i) => i.isNew).length)
+const currentPreviewUrl = computed(() => {
+  if (activePreviewImage.value && imageItems.value.some((i) => i.previewUrl === activePreviewImage.value)) {
+    return activePreviewImage.value
+  }
+  return visibleImages.value[0]?.previewUrl || imageItems.value[0]?.previewUrl || ''
+})
 
 const form = reactive({
   productCode: '',
@@ -546,6 +830,65 @@ function applyMarginPreset(markupPct) {
   form.salePrice = Math.round(raw / 10000) * 10000
 }
 
+function countImagesByColor(colorId) {
+  return imageItems.value.filter((i) => Number(i.colorId) === Number(colorId)).length
+}
+
+function getColorCountClass(colorId) {
+  const n = countImagesByColor(colorId)
+  if (n >= 4) return 'ok'
+  if (n > 0) return 'warn'
+  return 'zero'
+}
+
+function selectOrActivateColor(colorId) {
+  if (!selectedColorIds.value.includes(colorId)) {
+    selectedColorIds.value.push(colorId)
+  }
+  switchColorTab(colorId)
+}
+
+function switchColorTab(tabKey) {
+  activeColorTab.value = tabKey
+  const list = tabKey === 'unassigned'
+    ? imageItems.value.filter((i) => !i.colorId)
+    : imageItems.value.filter((i) => Number(i.colorId) === Number(tabKey))
+  activePreviewImage.value = list[0]?.previewUrl || ''
+  imgError.value = false
+}
+
+async function removeColorTab(colorId) {
+  if (variantColorIdSet.value.has(colorId)) return
+  const colorImgs = imageItems.value.filter((i) => Number(i.colorId) === Number(colorId))
+  if (colorImgs.length > 0) {
+    const cObj = colors.value.find((c) => c.id === colorId)
+    try {
+      await ElMessageBox.confirm(
+        `Màu "${cObj?.colorName || colorId}" đang có ${colorImgs.length} ảnh. Bỏ màu này sẽ xóa luôn ${colorImgs.length} ảnh đó, bạn chắc chắn chứ?`,
+        'Xác nhận bỏ màu',
+        { type: 'warning', confirmButtonText: 'Bỏ màu & xóa ảnh', cancelButtonText: 'Giữ lại' }
+      )
+    } catch (_) {
+      return
+    }
+    colorImgs.forEach((item) => {
+      if (item.isNew && item.previewUrl.startsWith('blob:')) URL.revokeObjectURL(item.previewUrl)
+    })
+    imageItems.value = imageItems.value.filter((i) => Number(i.colorId) !== Number(colorId))
+    ensureValidPrimaryImage()
+  }
+  selectedColorIds.value = selectedColorIds.value.filter((id) => id !== colorId)
+  if (activeColorTab.value === colorId) {
+    const nextTab = selectedColorIds.value[0] ?? (unassignedImagesCount.value > 0 ? 'unassigned' : null)
+    switchColorTab(nextTab)
+  }
+}
+
+function ensureValidPrimaryImage() {
+  if (primaryImageId.value && imageItems.value.some((i) => i.id === primaryImageId.value)) return
+  primaryImageId.value = imageItems.value[0]?.id || null
+}
+
 function triggerFileInput() {
   fileInputRef.value?.click()
 }
@@ -575,36 +918,97 @@ function queueSelectedFiles(files) {
     }
   }
 
+  // Auto-attach active color tab (fallback to first selected color if none active)
+  let targetColorId = null
+  if (typeof activeColorTab.value === 'number') {
+    targetColorId = activeColorTab.value
+  } else if (activeColorTab.value === null && selectedColorIds.value.length > 0) {
+    targetColorId = selectedColorIds.value[0]
+    activeColorTab.value = targetColorId
+  }
+
   const newItems = validFiles.map((f) => ({
     id: `pending-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
     file: f,
     previewUrl: URL.createObjectURL(f),
-    colorId: null,
+    colorId: targetColorId,
     isNew: true
   }))
 
   imageItems.value.push(...newItems)
-  activePreviewImage.value = newItems[newItems.length - 1].previewUrl
+  ensureValidPrimaryImage()
+  activePreviewImage.value = newItems[0].previewUrl
   imgError.value = false
-  ElMessage.success(`Đã thêm ${newItems.length} ảnh xem trước (upload MinIO khi ấn Lưu)`)
+
+  const colorName = targetColorId ? colors.value.find((c) => c.id === targetColorId)?.colorName : null
+  ElMessage.success(
+    colorName
+      ? `Đã thêm ${newItems.length} ảnh vào màu "${colorName}" (upload MinIO khi ấn Lưu)`
+      : `Đã thêm ${newItems.length} ảnh xem trước (upload MinIO khi ấn Lưu)`
+  )
 }
 
-function setAsPrimary(index) {
-  if (index <= 0 || index >= imageItems.value.length) return
-  const item = imageItems.value.splice(index, 1)[0]
-  imageItems.value.unshift(item)
-  activePreviewImage.value = item.previewUrl
+function setAsPrimaryById(id) {
+  const target = imageItems.value.find((i) => i.id === id)
+  if (!target) return
+  primaryImageId.value = id
+  activePreviewImage.value = target.previewUrl
+  ElMessage.success('Đã đặt làm ảnh bìa chính của sản phẩm')
 }
 
-function removeImage(index) {
-  if (index < 0 || index >= imageItems.value.length) return
-  const removed = imageItems.value.splice(index, 1)[0]
+function moveImageInActiveColor(id, delta) {
+  const list = visibleImages.value
+  const localIdx = list.findIndex((i) => i.id === id)
+  const swapIdx = localIdx + delta
+  if (localIdx < 0 || swapIdx < 0 || swapIdx >= list.length) return
+  const globalA = imageItems.value.findIndex((i) => i.id === list[localIdx].id)
+  const globalB = imageItems.value.findIndex((i) => i.id === list[swapIdx].id)
+  if (globalA < 0 || globalB < 0) return
+  const arr = [...imageItems.value]
+  const tmp = arr[globalA]
+  arr[globalA] = arr[globalB]
+  arr[globalB] = tmp
+  imageItems.value = arr
+}
+
+function reassignImageColor(item, rawVal) {
+  const newColorId = rawVal ? Number(rawVal) : null
+  item.colorId = newColorId
+  if (newColorId && !selectedColorIds.value.includes(newColorId)) {
+    selectedColorIds.value.push(newColorId)
+  }
+  if (activeColorTab.value === 'unassigned' && unassignedImagesCount.value === 0 && selectedColorIds.value.length > 0) {
+    switchColorTab(newColorId || selectedColorIds.value[0])
+  }
+}
+
+function removeImageById(id) {
+  const idx = imageItems.value.findIndex((i) => i.id === id)
+  if (idx < 0) return
+  const removed = imageItems.value.splice(idx, 1)[0]
   if (removed.isNew && removed.previewUrl.startsWith('blob:')) {
     URL.revokeObjectURL(removed.previewUrl)
   }
+  ensureValidPrimaryImage()
   if (activePreviewImage.value === removed.previewUrl) {
-    activePreviewImage.value = imageItems.value[0]?.previewUrl || ''
+    activePreviewImage.value = visibleImages.value[0]?.previewUrl || imageItems.value[0]?.previewUrl || ''
   }
+  if (activeColorTab.value === 'unassigned' && unassignedImagesCount.value === 0 && selectedColorIds.value.length > 0) {
+    switchColorTab(selectedColorIds.value[0])
+  }
+}
+
+function clearActiveColorImages() {
+  if (!activeColorObj.value) return
+  const cid = activeColorObj.value.id
+  imageItems.value.forEach((item) => {
+    if (Number(item.colorId) === cid && item.isNew && item.previewUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(item.previewUrl)
+    }
+  })
+  imageItems.value = imageItems.value.filter((i) => Number(i.colorId) !== cid)
+  ensureValidPrimaryImage()
+  activePreviewImage.value = ''
 }
 
 function clearAllImages() {
@@ -614,6 +1018,7 @@ function clearAllImages() {
     }
   })
   imageItems.value = []
+  primaryImageId.value = null
   activePreviewImage.value = ''
   imgError.value = false
 }
@@ -632,11 +1037,23 @@ function handleCancel() {
   router.push('/admin/products')
 }
 
+function getPresetColorIdsForVariants() {
+  const fromImages = []
+  for (const cid of selectedColorIds.value) {
+    if (countImagesByColor(cid) > 0 && !fromImages.includes(cid)) fromImages.push(cid)
+  }
+  return fromImages.length > 0 ? fromImages : [...selectedColorIds.value]
+}
+
 function goToVariantStudio() {
+  const preset = getPresetColorIdsForVariants()
+  const query = { productId: productId.value }
+  if (preset.length > 0) query.presetColors = preset.join(',')
+
   if (existingVariants.value.length > 0 && existingVariants.value[0]?.id) {
-    router.push(`/admin/variants/${existingVariants.value[0].id}/edit`)
+    router.push({ path: `/admin/variants/${existingVariants.value[0].id}/edit`, query })
   } else {
-    router.push({ path: '/admin/variants/create', query: { productId: productId.value } })
+    router.push({ path: '/admin/variants/create', query })
   }
 }
 
@@ -667,7 +1084,8 @@ async function loadInitialData() {
           id: `existing-${img.id || i}-${Date.now()}`,
           file: null,
           previewUrl: img.imageUrl,
-          colorId: img.colorId ?? null,
+          colorId: img.colorId ? Number(img.colorId) : null,
+          isPrimary: img.isPrimary === 1,
           isNew: false
         }))
       } else {
@@ -677,19 +1095,50 @@ async function loadInitialData() {
           file: null,
           previewUrl: url,
           colorId: null,
+          isPrimary: i === 0,
           isNew: false
         }))
       }
-      activePreviewImage.value = imageItems.value[0]?.previewUrl || ''
 
       form.importPrice = Number(p.importPrice) || 0
       form.salePrice = Number(p.salePrice) || 0
       form.status = p.status || 'ACTIVE'
       existingVariants.value = p.variants || []
+
+      // Build selectedColorIds from existing variants + existing tagged images
+      const colorSet = []
+      for (const v of existingVariants.value) {
+        const cid = Number(v.colorId)
+        if (cid && !colorSet.includes(cid)) colorSet.push(cid)
+      }
+      for (const img of imageItems.value) {
+        const cid = Number(img.colorId)
+        if (cid && !colorSet.includes(cid)) colorSet.push(cid)
+      }
+      selectedColorIds.value = colorSet
+
+      const primaryItem = imageItems.value.find((i) => i.isPrimary) || imageItems.value[0] || null
+      primaryImageId.value = primaryItem?.id || null
+
+      if (primaryItem?.colorId && colorSet.includes(primaryItem.colorId)) {
+        switchColorTab(primaryItem.colorId)
+      } else if (colorSet.length > 0) {
+        switchColorTab(colorSet[0])
+      } else if (imageItems.value.some((i) => !i.colorId)) {
+        switchColorTab('unassigned')
+      } else if (colors.value.length > 0) {
+        selectedColorIds.value = [colors.value[0].id]
+        switchColorTab(colors.value[0].id)
+      }
     } else {
       autoGenerateCode()
       if (brands.value.length) form.brandId = brands.value[0].id
       if (categories.value.length) form.categoryId = categories.value[0].id
+      // Pre-select first color so admin can drop images right away with a valid colorId
+      if (colors.value.length > 0) {
+        selectedColorIds.value = [colors.value[0].id]
+        activeColorTab.value = colors.value[0].id
+      }
     }
   } catch (_) {
     ElMessage.error('Không thể tải thông tin sản phẩm hoặc danh mục')
@@ -729,15 +1178,46 @@ async function submitForm() {
         uploadingImage.value = false
       }
 
-      const finalImageUrls = imageItems.value.map((i) => i.previewUrl).filter(Boolean)
-      const structuredImages = imageItems.value
-        .filter((i) => !!i.previewUrl)
-        .map((i, idx) => ({
-          imageUrl: i.previewUrl,
-          colorId: i.colorId || null,
-          isPrimary: idx === 0 ? 1 : 0,
-          displayOrder: idx + 1
-        }))
+      // Order images cleanly: primary cover FIRST, then grouped by selectedColorIds preserving per-color order
+      const validItems = imageItems.value.filter((i) => !!i.previewUrl)
+      const orderedItems = []
+      const pushedIds = new Set()
+      const primaryItem = validItems.find((i) => i.id === primaryImageId.value) || validItems[0] || null
+      if (primaryItem) {
+        orderedItems.push(primaryItem)
+        pushedIds.add(primaryItem.id)
+        // Keep the rest of the primary color together right after primaryItem
+        if (primaryItem.colorId) {
+          for (const it of validItems) {
+            if (!pushedIds.has(it.id) && Number(it.colorId) === Number(primaryItem.colorId)) {
+              orderedItems.push(it)
+              pushedIds.add(it.id)
+            }
+          }
+        }
+      }
+      for (const cid of selectedColorIds.value) {
+        for (const it of validItems) {
+          if (!pushedIds.has(it.id) && Number(it.colorId) === Number(cid)) {
+            orderedItems.push(it)
+            pushedIds.add(it.id)
+          }
+        }
+      }
+      for (const it of validItems) {
+        if (!pushedIds.has(it.id)) {
+          orderedItems.push(it)
+          pushedIds.add(it.id)
+        }
+      }
+
+      const finalImageUrls = orderedItems.map((i) => i.previewUrl)
+      const structuredImages = orderedItems.map((i, idx) => ({
+        imageUrl: i.previewUrl,
+        colorId: i.colorId || null,
+        isPrimary: idx === 0 ? 1 : 0,
+        displayOrder: idx + 1
+      }))
       const payload = {
         ...form,
         thumbnailUrl: finalImageUrls[0] || '',
@@ -751,8 +1231,31 @@ async function submitForm() {
         router.push(`/admin/products/${productId.value}`)
       } else {
         const res = await productService.createProduct(payload)
-        ElMessage.success('Khởi tạo sản phẩm Sneaker mới thành công!')
         const createdId = res.data?.id
+        const presetColors = getPresetColorIdsForVariants()
+        ElMessage.success('Khởi tạo sản phẩm Sneaker mới thành công!')
+
+        if (createdId && presetColors.length > 0) {
+          try {
+            await ElMessageBox.confirm(
+              `Đã lưu sản phẩm cùng ${presetColors.length} màu đã chọn. Chuyển sang Ma trận SKU ngay để sinh Size cho đúng ${presetColors.length} màu này?`,
+              'Tạo biến thể Size × Màu ngay',
+              {
+                type: 'success',
+                confirmButtonText: `Tạo SKU cho ${presetColors.length} màu →`,
+                cancelButtonText: 'Xem chi tiết SP'
+              }
+            )
+            router.push({
+              path: '/admin/variants/create',
+              query: { productId: createdId, presetColors: presetColors.join(',') }
+            })
+            return
+          } catch (_) {
+            router.push(`/admin/products/${createdId}`)
+            return
+          }
+        }
         router.push(createdId ? `/admin/products/${createdId}` : '/admin/products')
       }
     } catch (err) {
@@ -941,10 +1444,10 @@ onUnmounted(() => {
   letter-spacing: 0.04em;
 }
 
-/* 2. STUDIO GRID */
+/* 2. STUDIO GRID — 50/50 SPACIOUS PHOTO STUDIO + COMPACT FORM */
 .studio-grid {
   display: grid;
-  grid-template-columns: 330px 1fr;
+  grid-template-columns: minmax(480px, 50%) 1fr;
   gap: 12px;
   align-items: start;
 }
@@ -994,6 +1497,17 @@ onUnmounted(() => {
     gap: 8px;
   }
 
+  .media-summary-pill {
+    font-size: 10.5px;
+    font-weight: 800;
+    background: #f1f5f9;
+    border: 1px solid #cbd5e1;
+    color: #334155;
+    padding: 2px 7px;
+    border-radius: 2px;
+    font-variant-numeric: tabular-nums;
+  }
+
   .pending-pill {
     font-size: 10px;
     font-weight: 800;
@@ -1021,8 +1535,8 @@ onUnmounted(() => {
 .preview-stage {
   position: relative;
   width: 100%;
-  height: 220px;
-  background: #fafafa;
+  height: 270px;
+  background: #f3f5f7;
   border: 1px solid #e5e5e5;
   display: flex;
   align-items: center;
@@ -1032,7 +1546,8 @@ onUnmounted(() => {
   .preview-img {
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    object-fit: contain;
+    background: #f3f5f7;
   }
 
   .preview-empty {
@@ -1072,40 +1587,381 @@ onUnmounted(() => {
       border: 1px solid #d4d4d4;
     }
   }
+
+  .preview-color-pill {
+    position: absolute;
+    left: 8px;
+    bottom: 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(17, 17, 17, 0.84);
+    color: #ffffff;
+    font-size: 10.5px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 2px;
+  }
+}
+
+.swatch-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.22);
+  flex-shrink: 0;
+
+  &.lg {
+    width: 13px;
+    height: 13px;
+  }
+}
+
+.color-studio-box {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  .cs-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    flex-wrap: wrap;
+
+    .cs-title {
+      font-size: 10px;
+      font-weight: 900;
+      letter-spacing: 0.05em;
+      color: #303133;
+    }
+
+    .cs-head-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .cs-tab-filter {
+      width: 120px;
+      height: 25px;
+      padding: 0 7px;
+      font-size: 11px;
+      border: 1px solid #cbd5e1;
+      border-radius: 3px;
+      background: #ffffff;
+      outline: none;
+
+      &:focus {
+        border-color: var(--vea-theme, #409eff);
+      }
+    }
+
+    .btn-add-color {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      height: 26px;
+      padding: 0 10px;
+      font-size: 11px;
+      font-weight: 800;
+      color: #ffffff;
+      background: var(--vea-theme, #409eff);
+      border: 1px solid var(--vea-theme, #409eff);
+      border-radius: 3px;
+      cursor: pointer;
+
+      .btn-color-total {
+        font-weight: 600;
+        opacity: 0.85;
+      }
+
+      &:hover {
+        filter: brightness(0.94);
+      }
+    }
+  }
+
+  .cs-no-color-hint {
+    font-size: 11px;
+    color: #64748b;
+    padding: 4px 2px;
+  }
+}
+
+.cp-pop {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  .cp-search-row {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  .cp-search-input {
+    width: 100%;
+    height: 32px;
+    padding: 0 26px 0 9px;
+    font-size: 12px;
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    outline: none;
+
+    &:focus {
+      border-color: var(--vea-theme, #409eff);
+    }
+  }
+
+  .cp-clear-btn {
+    position: absolute;
+    right: 6px;
+    background: none;
+    border: none;
+    font-size: 15px;
+    color: #94a3b8;
+    cursor: pointer;
+
+    &:hover { color: #334155; }
+  }
+
+  .cp-list {
+    max-height: 240px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .cp-empty {
+    padding: 16px 8px;
+    text-align: center;
+    font-size: 12px;
+    color: #94a3b8;
+  }
+
+  .cp-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 6px 8px;
+    background: #ffffff;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    text-align: left;
+    cursor: pointer;
+    font-size: 12px;
+    color: #1e293b;
+
+    &:hover {
+      background: #f1f5f9;
+    }
+
+    &.selected {
+      background: #eff6ff;
+      border-color: #bfdbfe;
+    }
+
+    .cp-name {
+      flex: 1;
+      font-weight: 700;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .cp-code {
+      font-size: 10.5px;
+      font-family: var(--font-mono);
+      color: #64748b;
+    }
+
+    .cp-picked {
+      font-size: 10.5px;
+      font-weight: 800;
+      color: #059669;
+    }
+
+    .cp-add-tag {
+      font-size: 10.5px;
+      font-weight: 700;
+      color: var(--vea-theme, #409eff);
+    }
+  }
+
+  .cp-foot {
+    border-top: 1px solid #e2e8f0;
+    padding-top: 6px;
+    font-size: 10.5px;
+    color: #64748b;
+  }
+}
+
+.color-tabs-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  max-height: 92px;
+  overflow-y: auto;
+
+  .ctab {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 8px;
+    font-size: 11px;
+    font-weight: 700;
+    color: #334155;
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 3px;
+    cursor: pointer;
+
+    &.missing:not(.active) {
+      border-color: #f59e0b;
+      background: #fffbeb;
+    }
+
+    &.active {
+      background: #111111;
+      border-color: #111111;
+      color: #ffffff;
+
+      .ctab-close { color: #e2e8f0; }
+      .ctab-nosku { background: rgba(255, 255, 255, 0.16); color: #e2e8f0; }
+    }
+
+    &.unassigned {
+      border-style: dashed;
+    }
+
+    .ctab-badge {
+      font-size: 9.5px;
+      font-weight: 900;
+      padding: 0 4px;
+      border-radius: 2px;
+
+      &.ok { background: #10b981; color: #ffffff; }
+      &.warn { background: #f59e0b; color: #ffffff; }
+      &.zero { background: #ef4444; color: #ffffff; }
+    }
+
+    .ctab-nosku {
+      font-size: 9px;
+      font-weight: 700;
+      padding: 0 4px;
+      border-radius: 2px;
+      background: #e2e8f0;
+      color: #475569;
+    }
+
+    .ctab-close {
+      background: none;
+      border: none;
+      color: #64748b;
+      font-size: 13px;
+      font-weight: 800;
+      line-height: 1;
+      padding: 0 1px;
+      cursor: pointer;
+
+      &:hover { color: #dc2626; }
+    }
+  }
+}
+
+.uz-color-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 6px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #1d4ed8;
+  border-radius: 2px;
+  margin-left: 2px;
+}
+
+.gallery-section-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  color: #525252;
+
+  strong { color: #111111; }
+}
+
+.color-empty-box {
+  background: #fafafa;
+  border: 1px dashed #d4d4d4;
+  padding: 12px 10px;
+  text-align: center;
+  font-size: 11px;
+  color: #737373;
+  line-height: 1.45;
+}
+
+.g-badge-swatch {
+  position: absolute;
+  left: 2px;
+  top: 2px;
+  font-size: 8px;
+  font-weight: 900;
+  padding: 1px 4px;
+  background: #1d4ed8;
+  color: #ffffff;
 }
 
 .live-card-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
   background: #fafafa;
   border: 1px solid #e5e5e5;
-  padding: 8px 10px;
+  padding: 6px 10px;
 
-  .lc-meta {
+  .lc-left {
     display: flex;
     align-items: center;
-    gap: 5px;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .lc-meta {
     font-size: 10.5px;
     font-weight: 700;
     text-transform: uppercase;
     color: #737373;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
-  .lc-bottom {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    margin-top: 3px;
+  .lc-code {
+    font-size: 10.5px;
+    font-family: var(--font-mono);
+    font-weight: 700;
+    color: #525252;
+    background: #efefef;
+    padding: 1px 5px;
+    border-radius: 2px;
+  }
 
-    .lc-price {
-      font-size: 15px;
-      font-weight: 900;
-      color: #303133;
-      font-variant-numeric: tabular-nums;
-    }
-    .lc-code {
-      font-size: 11px;
-      font-family: var(--font-mono);
-      color: #525252;
-    }
+  .lc-price {
+    font-size: 14px;
+    font-weight: 900;
+    color: #303133;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
   }
 }
 
@@ -1147,7 +2003,7 @@ onUnmounted(() => {
 
 .gallery-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 8px;
 }
 
@@ -1254,27 +2110,31 @@ onUnmounted(() => {
   }
 }
 
-/* RIGHT FORM CARDS */
+/* RIGHT FORM CARDS — COMPACT TO GIVE PHOTO STUDIO MORE ROOM */
 .fields-column {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 
 .form-card {
-  padding: 14px 16px;
+  padding: 11px 13px;
+
+  .card-head-row {
+    margin-bottom: 9px;
+  }
 
   :deep(.el-form-item) {
-    margin-bottom: 12px;
+    margin-bottom: 9px;
   }
 
   :deep(.el-form-item__label) {
-    font-size: 11px;
+    font-size: 10.5px;
     font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 0.04em;
     color: #404040;
-    padding-bottom: 4px;
+    padding-bottom: 3px;
     line-height: 1.2;
   }
 }
@@ -1357,8 +2217,8 @@ onUnmounted(() => {
 
 .pricing-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 12px;
+  grid-template-columns: 1fr 1fr 0.92fr;
+  gap: 8px;
   align-items: start;
 
   :deep(.el-form-item) {
@@ -1368,11 +2228,11 @@ onUnmounted(() => {
 
 .profit-box {
   border: 1px solid #d4d4d4;
-  padding: 8px 12px;
+  padding: 6px 10px;
   display: flex;
   flex-direction: column;
   gap: 1px;
-  min-height: 60px;
+  min-height: 52px;
   justify-content: center;
 
   &.ok {
@@ -1554,7 +2414,7 @@ onUnmounted(() => {
   }
 }
 
-@media (max-width: 1024px) {
+@media (max-width: 1120px) {
   .studio-grid {
     grid-template-columns: 1fr;
   }
@@ -1564,6 +2424,9 @@ onUnmounted(() => {
 }
 
 @media (max-width: 768px) {
+  .gallery-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
   .studio-topbar {
     position: static;
   }
