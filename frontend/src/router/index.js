@@ -1,65 +1,110 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { useAuthStore } from '@/stores/auth'
+import { getSavedStoreLocale, setStoreLocale } from '@/composables/useStoreI18n'
 import StoreLayout from '@/layouts/StoreLayout.vue'
 import AdminLayout from '@/layouts/AdminLayout.vue'
 
 const routes = [
   // ==========================================
-  // CUSTOMER STOREFRONT ROUTES (PUBLIC)
+  // CUSTOMER STOREFRONT ROUTES (LOCALE-PREFIXED: /vi & /en)
   // ==========================================
   {
     path: '/',
+    redirect: (to) => ({ path: `/${getSavedStoreLocale()}`, query: to.query })
+  },
+  {
+    path: '/:locale(vi|en)',
     component: StoreLayout,
     children: [
       {
         path: '',
         name: 'StoreHome',
         component: () => import('@/views/store/StoreHomeView.vue'),
-        meta: { title: 'Trang chủ Sneaker & Streetwear', public: true }
+        meta: { title: 'Trang chủ Sneaker & Streetwear', titleEn: 'Official Sneaker & Streetwear Store', public: true }
       },
       {
         path: 'shop',
         name: 'StoreCatalog',
         component: () => import('@/views/store/StoreCatalogView.vue'),
-        meta: { title: 'Bộ sưu tập Sneaker chính hãng', public: true }
+        meta: { title: 'Bộ sưu tập Sneaker chính hãng', titleEn: 'Authentic Sneaker Collection', public: true }
       },
       {
         path: 'product/:id',
         name: 'StoreProductDetail',
         component: () => import('@/views/store/StoreProductDetailView.vue'),
-        meta: { title: 'Chi tiết sản phẩm', public: true }
+        meta: { title: 'Chi tiết sản phẩm', titleEn: 'Product Details', public: true }
       },
       {
         path: 'cart',
         name: 'StoreCart',
         component: () => import('@/views/store/StoreCartView.vue'),
-        meta: { title: 'Giỏ hàng & Đặt hàng', public: true }
+        meta: { title: 'Giỏ hàng & Đặt hàng', titleEn: 'Shopping Bag & Checkout', public: true }
       },
       {
         path: 'order-success/:orderCode',
         name: 'StoreOrderSuccess',
         component: () => import('@/views/store/StoreOrderSuccessView.vue'),
-        meta: { title: 'Đặt hàng thành công', public: true }
+        meta: { title: 'Đặt hàng thành công', titleEn: 'Order Confirmed', public: true }
       },
       {
         path: 'tracking',
         name: 'StoreTrackOrder',
         component: () => import('@/views/store/StoreTrackOrderView.vue'),
-        meta: { title: 'Tra cứu đơn hàng', public: true }
+        meta: { title: 'Tra cứu đơn hàng', titleEn: 'Order Tracker', public: true }
       },
       {
         path: 'my-orders',
         name: 'StoreMyOrders',
         component: () => import('@/views/store/StoreMyOrdersView.vue'),
-        meta: { title: 'Quản lý đơn hàng của tôi', public: true }
+        meta: { title: 'Đơn hàng', titleEn: 'Order History', public: true }
+      },
+      {
+        path: 'order-history',
+        name: 'StoreOrderHistory',
+        component: () => import('@/views/store/StoreMyOrdersView.vue'),
+        meta: { title: 'Đơn hàng', titleEn: 'Order History', public: true }
+      },
+      {
+        path: 'my-account',
+        redirect: (to) => `/${to.params.locale || getSavedStoreLocale()}/my-account/profile`
+      },
+      {
+        path: 'my-account/profile',
+        name: 'StoreAccountProfile',
+        component: () => import('@/views/store/StoreAccountView.vue'),
+        meta: { title: 'Thông Tin Cá Nhân', titleEn: 'Personal Information', public: true }
+      },
+      {
+        path: 'my-account/address-book',
+        name: 'StoreAccountAddressBook',
+        component: () => import('@/views/store/StoreAccountView.vue'),
+        meta: { title: 'Sổ Địa Chỉ', titleEn: 'Address Book', public: true }
+      },
+      {
+        path: 'my-account/preferences',
+        name: 'StoreAccountPreferences',
+        component: () => import('@/views/store/StoreAccountView.vue'),
+        meta: { title: 'Tuỳ Chọn Tài Khoản', titleEn: 'Account Preferences', public: true }
       }
     ]
   },
+  // Backward-compatible bare storefront paths -> auto-prefix with active locale (/vi or /en)
+  { path: '/shop', redirect: (to) => ({ path: `/${getSavedStoreLocale()}/shop`, query: to.query }) },
+  { path: '/product/:id', redirect: (to) => ({ path: `/${getSavedStoreLocale()}/product/${to.params.id}`, query: to.query }) },
+  { path: '/cart', redirect: (to) => ({ path: `/${getSavedStoreLocale()}/cart`, query: to.query }) },
+  { path: '/order-success/:orderCode', redirect: (to) => ({ path: `/${getSavedStoreLocale()}/order-success/${to.params.orderCode}`, query: to.query }) },
+  { path: '/tracking', redirect: (to) => ({ path: `/${getSavedStoreLocale()}/tracking`, query: to.query }) },
+  { path: '/my-orders', redirect: (to) => ({ path: `/${getSavedStoreLocale()}/order-history`, query: to.query }) },
+  { path: '/order-history', redirect: (to) => ({ path: `/${getSavedStoreLocale()}/order-history`, query: to.query }) },
+  { path: '/my-account', redirect: () => `/${getSavedStoreLocale()}/my-account/profile` },
+  { path: '/my-account/profile', redirect: () => `/${getSavedStoreLocale()}/my-account/profile` },
+  { path: '/my-account/address-book', redirect: () => `/${getSavedStoreLocale()}/my-account/address-book` },
+  { path: '/my-account/preferences', redirect: () => `/${getSavedStoreLocale()}/my-account/preferences` },
   // Storefront Aliases
-  { path: '/catalog', redirect: '/shop' },
-  { path: '/order-tracking', redirect: '/tracking' },
-  { path: '/account/orders', redirect: '/my-orders' },
+  { path: '/catalog', redirect: (to) => ({ path: `/${getSavedStoreLocale()}/shop`, query: to.query }) },
+  { path: '/order-tracking', redirect: (to) => ({ path: `/${getSavedStoreLocale()}/tracking`, query: to.query }) },
+  { path: '/account/orders', redirect: (to) => ({ path: `/${getSavedStoreLocale()}/my-orders`, query: to.query }) },
 
   // ==========================================
   // AUTHENTICATION (SEPARATED PORTALS — MODEL 1)
@@ -71,8 +116,8 @@ const routes = [
     meta: { title: 'Đăng nhập Quản trị & POS', public: true, adminGuestOnly: true }
   },
   // Customer-friendly shortcuts open Storefront Auth Modal
-  { path: '/login', redirect: { path: '/', query: { auth: 'login' } } },
-  { path: '/register', redirect: { path: '/', query: { auth: 'register' } } },
+  { path: '/login', redirect: () => ({ path: `/${getSavedStoreLocale()}`, query: { auth: 'login' } }) },
+  { path: '/register', redirect: () => ({ path: `/${getSavedStoreLocale()}`, query: { auth: 'register' } }) },
 
   // ==========================================
   // MODEL 1: POINT OF SALE (POS COUNTER)
@@ -292,7 +337,12 @@ const router = createRouter({
 })
 
 router.beforeEach((to, _from, next) => {
-  document.title = `${to.meta?.title || 'Trang chủ'} | ADHA Sneaker`
+  if (to.params?.locale === 'vi' || to.params?.locale === 'en') {
+    setStoreLocale(to.params.locale)
+  }
+  const activeLocale = to.params?.locale || getSavedStoreLocale()
+  const pageTitle = activeLocale === 'en' && to.meta?.titleEn ? to.meta.titleEn : (to.meta?.title || 'Trang chủ')
+  document.title = `${pageTitle} | ADHA Sneaker`
   const authStore = useAuthStore()
 
   // 1. Admin guest-only route (/admin/login)

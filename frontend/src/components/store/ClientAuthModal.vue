@@ -163,21 +163,31 @@
       <!-- NOT LOGGED IN: TABS LOGIN / REGISTER -->
       <div v-else class="auth-guest">
         <div class="auth-modal-header">
-          <span class="auth-brand-kicker">ADHA SNEAKER CLUB ARCHIVE</span>
+          <div class="auth-club-wordmark">adhaclub</div>
+          <h2 class="auth-modal-headline">
+            {{ isEn ? 'YOUR ADHA CLUB BENEFITS AWAIT' : 'ĐẶC QUYỀN HỘI VIÊN ADHA CLUB' }}
+          </h2>
+          <p class="auth-club-perks">
+            {{
+              isEn
+                ? '✓ Free shipping · ✓ 10% welcome voucher · ✓ Early access to limited drops'
+                : '✓ Miễn phí giao hàng · ✓ Voucher 10% chào mừng · ✓ Ưu tiên phát hành giới hạn'
+            }}
+          </p>
           <div class="auth-tabs">
             <button
               class="auth-tab"
               :class="{ active: activeTab === 'login' }"
               @click="activeTab = 'login'"
             >
-              ĐĂNG NHẬP
+              {{ isEn ? 'SIGN IN' : 'ĐĂNG NHẬP' }}
             </button>
             <button
               class="auth-tab"
               :class="{ active: activeTab === 'register' }"
               @click="activeTab = 'register'"
             >
-              ĐĂNG KÝ
+              {{ isEn ? 'REGISTER' : 'ĐĂNG KÝ' }}
             </button>
           </div>
         </div>
@@ -293,6 +303,7 @@ import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { useClientAuthStore } from '@/stores/clientAuth'
 import { vnAddressService } from '@/services/vnAddressService'
+import { useStoreI18n } from '@/composables/useStoreI18n'
 
 const props = defineProps({
   modelValue: {
@@ -309,6 +320,7 @@ const emit = defineEmits(['update:modelValue', 'authenticated'])
 
 const router = useRouter()
 const authStore = useClientAuthStore()
+const { isEn } = useStoreI18n()
 
 const activeTab = ref(props.initialTab)
 const loading = ref(false)
@@ -692,33 +704,54 @@ async function handleUpdateProfile() {
 }
 
 .auth-modal-header {
-  text-align: center;
-  margin-bottom: 20px;
+  text-align: left;
+  margin-bottom: 18px;
 
-  .auth-brand-kicker {
-    display: inline-block;
-    font-size: 10px;
+  .auth-club-wordmark {
+    font-family: 'Barlow Condensed', 'Plus Jakarta Sans', sans-serif;
+    font-size: 26px;
     font-weight: 900;
-    letter-spacing: 0.15em;
-    color: #71717a;
-    margin-bottom: 12px;
+    font-style: italic;
+    letter-spacing: -0.02em;
+    color: #000000;
+    margin-bottom: 6px;
+  }
+
+  .auth-modal-headline {
+    font-family: 'Barlow Condensed', 'Plus Jakarta Sans', sans-serif;
+    font-size: 28px;
+    font-style: normal;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #000000;
+    margin: 0 0 6px;
+    line-height: 1.08;
+  }
+
+  .auth-club-perks {
+    font-size: 12.5px;
+    color: #555555;
+    margin: 0 0 16px;
+    line-height: 1.45;
   }
 
   .auth-tabs {
     display: flex;
-    border-bottom: 2px solid #e4e4e7;
+    border-bottom: 1px solid #d9dbdd;
     margin-bottom: 18px;
 
     .auth-tab {
       flex: 1;
-      padding: 10px 0;
+      padding: 11px 0;
       background: none;
       border: none;
+      border-radius: 0;
       font-size: 13px;
       font-weight: 800;
       letter-spacing: 0.08em;
       text-transform: uppercase;
-      color: #71717a;
+      color: #767677;
       cursor: pointer;
       position: relative;
       transition: all 0.15s ease;
@@ -729,10 +762,10 @@ async function handleUpdateProfile() {
         &::after {
           content: '';
           position: absolute;
-          bottom: -2px;
+          bottom: -1px;
           left: 0;
           right: 0;
-          height: 2px;
+          height: 2.5px;
           background: #000000;
         }
       }
@@ -745,21 +778,21 @@ async function handleUpdateProfile() {
 
   .google-btn {
     width: 100%;
-    height: 44px;
+    height: 46px;
     background: #ffffff;
-    border: 1.5px solid #18181b;
-    border-radius: 5px;
+    border: 1px solid #000000;
+    border-radius: 0;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 12px;
     cursor: pointer;
     font-family: var(--font-sans);
-    font-size: 12px;
+    font-size: 12.5px;
     font-weight: 800;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: #18181b;
+    color: #000000;
     transition: all 0.15s ease;
 
     .google-svg {
@@ -768,7 +801,7 @@ async function handleUpdateProfile() {
     }
 
     &:hover:not(:disabled) {
-      background: #f4f4f5;
+      background: #eceff1;
       border-color: #000000;
     }
 
@@ -782,9 +815,9 @@ async function handleUpdateProfile() {
     display: flex;
     align-items: center;
     margin: 18px 0 12px;
-    color: #a1a1aa;
-    font-size: 10px;
-    font-weight: 800;
+    color: #767677;
+    font-size: 10.5px;
+    font-weight: 700;
     letter-spacing: 0.1em;
     text-transform: uppercase;
 
@@ -793,7 +826,7 @@ async function handleUpdateProfile() {
       content: '';
       flex: 1;
       height: 1px;
-      background: #e4e4e7;
+      background: #d9dbdd;
     }
 
     span {
@@ -804,50 +837,61 @@ async function handleUpdateProfile() {
 
 .tab-pane {
   :deep(.el-form-item) {
-    margin-bottom: 16px;
+    margin-bottom: 14px;
 
     .el-form-item__label {
       font-size: 11px;
       font-weight: 800;
       letter-spacing: 0.05em;
       text-transform: uppercase;
-      color: #18181b;
+      color: #000000;
       padding-bottom: 4px;
     }
 
     .el-input__wrapper {
-      border-radius: 5px;
-      box-shadow: 0 0 0 1px #d4d4d8 inset;
+      border-radius: 0 !important;
+      box-shadow: 0 0 0 1px #767677 inset !important;
       padding: 8px 12px;
 
       &.is-focus {
-        box-shadow: 0 0 0 2px #000000 inset;
+        box-shadow: 0 0 0 1.5px #000000 inset !important;
       }
     }
   }
 
   .auth-submit-btn {
+    position: relative;
     width: 100%;
-    height: 44px;
+    height: 48px;
     background: #000000;
     color: #ffffff;
-    border: none;
-    border-radius: 5px;
+    border: 1px solid #000000;
+    border-radius: 0;
     font-family: var(--font-sans);
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 800;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.1em;
     text-transform: uppercase;
     cursor: pointer;
     margin-top: 8px;
-    transition: background 0.15s ease;
+    transition: color 0.15s ease;
+
+    &::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      transform: translate(3px, 3px);
+      border: 1px solid #000000;
+      pointer-events: none;
+    }
 
     &:hover:not(:disabled) {
-      background: #27272a;
+      color: #cccccc;
     }
 
     &:disabled {
       background: #a1a1aa;
+      border-color: #a1a1aa;
       cursor: not-allowed;
     }
   }
@@ -885,8 +929,8 @@ async function handleUpdateProfile() {
     margin-bottom: 16px;
 
     .user-avatar-circle {
-      width: 56px;
-      height: 56px;
+      width: 54px;
+      height: 54px;
       background: #000000;
       color: #ffffff;
       font-weight: 900;
@@ -894,7 +938,7 @@ async function handleUpdateProfile() {
       display: flex;
       align-items: center;
       justify-content: center;
-      border-radius: 5px;
+      border-radius: 0;
       flex-shrink: 0;
     }
 
@@ -991,14 +1035,14 @@ async function handleUpdateProfile() {
 
         .el-input__wrapper,
         .el-textarea__inner {
-          border-radius: 5px;
-          box-shadow: 0 0 0 1px #cbd5e1 inset;
-          font-size: 12px;
+          border-radius: 0 !important;
+          box-shadow: 0 0 0 1px #767677 inset !important;
+          font-size: 12.5px;
           padding: 6px 10px;
 
           &.is-focus,
           &:focus {
-            box-shadow: 0 0 0 2px #000000 inset !important;
+            box-shadow: 0 0 0 1.5px #000000 inset !important;
           }
         }
       }
@@ -1084,24 +1128,33 @@ async function handleUpdateProfile() {
       }
 
       .save-profile-btn {
-        margin-top: 4px;
+        position: relative;
+        margin-top: 6px;
         width: 100%;
-        height: 38px;
+        height: 44px;
         background: #000000;
         color: #ffffff;
         border: 1px solid #000000;
-        border-radius: 5px;
+        border-radius: 0;
         font-family: var(--font-sans);
-        font-size: 11px;
+        font-size: 12px;
         font-weight: 800;
-        letter-spacing: 0.08em;
+        letter-spacing: 0.1em;
         text-transform: uppercase;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        gap: 6px;
+        gap: 8px;
         cursor: pointer;
-        transition: all 0.15s ease;
+
+        &::after {
+          content: '';
+          position: absolute;
+          inset: 0;
+          transform: translate(3px, 3px);
+          border: 1px solid #000000;
+          pointer-events: none;
+        }
 
         .btn-check-svg {
           width: 14px;

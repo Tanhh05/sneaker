@@ -1,456 +1,596 @@
 <template>
   <div class="store-detail">
-    <div class="layout-container">
-      <!-- Breadcrumb -->
-      <div class="detail-breadcrumb">
-        <router-link to="/">Trang chủ</router-link>
-        <span class="sep">/</span>
-        <router-link to="/shop">Bộ sưu tập</router-link>
-        <span class="sep">/</span>
-        <span class="current">{{ product ? product.productName : 'Chi tiết giày' }}</span>
-      </div>
+    <!-- Loading State -->
+    <div v-if="loading" class="pdp-loading-wrap">
+      <el-skeleton :rows="12" animated />
+    </div>
 
-      <!-- Loading State -->
-      <div v-if="loading" class="detail-loading-box">
-        <el-skeleton :rows="10" animated />
-      </div>
+    <!-- Main Full-Bleed 2-Column Adidas PDP Layout (Left 67% / Right 480px Sticky Buy Box) -->
+    <div v-else-if="product" class="pdp-fullbleed-grid">
+      <!-- ============================================================== -->
+      <!-- LEFT COLUMN (67%): 2x2 Photo Grid + Accordions + Related Grid  -->
+      <!-- ============================================================== -->
+      <div class="pdp-left-col">
+        <!-- 1. Edge-to-Edge 2x2 Studio Photo Grid with Floating Breadcrumb -->
+        <div class="pdp-gallery-section">
+          <!-- Floating Breadcrumb Overlaid Top-Left (Exact live adidas.com.vn/vi) -->
+          <nav class="pdp-floating-breadcrumb" aria-label="Breadcrumb">
+            <button type="button" class="bc-back-btn" @click="router.back()">
+              <span class="bc-back-icon">↩</span>
+              <span class="bc-back-text">{{ t('pdp.back') }}</span>
+            </button>
+            <router-link :to="lp('')" class="bc-link">{{ t('pdp.home') }}</router-link>
+            <span class="bc-sep">/</span>
+            <router-link
+              :to="product.brandId ? { path: lp('shop'), query: { brand: product.brandId } } : lp('shop')"
+              class="bc-link"
+            >
+              {{ product.brandName || 'Sneaker' }}
+            </router-link>
+            <span class="bc-sep">/</span>
+            <router-link
+              :to="product.categoryId ? { path: lp('shop'), query: { category: product.categoryId } } : lp('shop')"
+              class="bc-link"
+            >
+              {{ product.categoryName || t('footer.shoes') }}
+            </router-link>
+          </nav>
 
-      <!-- Main Product Grid -->
-      <div v-else-if="product" class="product-layout-grid">
-        <!-- Left: Product Gallery -->
-        <div class="product-gallery">
-          <div class="main-image-viewport">
-            <img
-              :src="activeImage"
-              :alt="product.productName"
-              class="active-sneaker-img"
-            />
-            <div class="gallery-badge">
-              <span>AUTHENTIC PAIR</span>
+          <!-- 2x2 Photo Grid (2px crisp white seam) -->
+          <div class="pdp-photo-grid" :class="{ 'single-photo': visibleGalleryGrid.length === 1 }">
+            <div
+              v-for="(item, idx) in visibleGalleryGrid"
+              :key="idx"
+              class="pdp-photo-tile"
+              @click="openLightbox({ url: item.url, customerName: product.productName, comment: item.colorName ? `${t('pdp.specColor')}: ${item.colorName}` : product.brandName })"
+            >
+              <img :src="item.url" :alt="`${product.productName} - ${idx + 1}`" />
             </div>
           </div>
 
-          <!-- Thumbnails Strip -->
-          <div class="thumbnails-strip" v-if="galleryItems.length > 1">
+          <!-- Centered Straddling "Hiện thêm ⌄" Button when > 4 images -->
+          <div v-if="displayGalleryPool.length > 4" class="gallery-expand-wrap">
             <button
-              v-for="(item, idx) in galleryItems"
-              :key="idx"
-              class="thumb-btn"
-              :class="{ active: activeImage === item.url }"
-              :title="item.colorName ? `Màu ${item.colorName}` : `Ảnh ${idx + 1}`"
-              @click="selectGalleryImage(item)"
+              type="button"
+              class="btn-gallery-expand"
+              @click="galleryExpanded = !galleryExpanded"
             >
-              <img :src="item.url" :alt="item.colorName || `Thumbnail ${idx + 1}`" />
-              <span
-                v-if="item.hexCode"
-                class="thumb-color-dot"
-                :style="{ backgroundColor: item.hexCode }"
-              ></span>
+              <span>{{ galleryExpanded ? t('pdp.showLess') : t('pdp.showMore') }}</span>
+              <span class="chevron" :class="{ open: galleryExpanded }">⌄</span>
             </button>
           </div>
         </div>
 
-        <!-- Right: Sticky Buy Box -->
-        <div class="product-buybox">
-          <div class="buybox-header">
-            <div class="brand-eyebrow">
-              <span class="brand-name">{{ product.brandName }}</span>
-              <span class="dot-sep">•</span>
-              <span class="category-name">{{ product.categoryName }}</span>
-            </div>
-            <h1 class="product-headline">{{ product.productName }}</h1>
-            <div class="sku-row">
-              <span class="sku-tag">MÃ SKU: {{ selectedVariant ? selectedVariant.sku : product.productCode }}</span>
-              <span class="stock-indicator" :class="{ 'in-stock': currentStock > 0, 'out-stock': currentStock === 0 }">
-                <span class="stock-dot"></span>
-                <span>{{ currentStock > 0 ? `Còn ${currentStock} đôi sẵn kho` : 'Tạm hết size này' }}</span>
+        <!-- 2. Crisp Horizontal-Divider Collapsible Accordions (Inside Left Column!) -->
+        <div class="pdp-accordions-wrap">
+          <!-- Accordion 1: Đánh giá (Reviews & Fit Meter) -->
+          <div class="adi-accordion-item" id="customer-reviews">
+            <button
+              type="button"
+              class="adi-accordion-header"
+              @click="accordions.reviews = !accordions.reviews"
+            >
+              <span class="acc-title">
+                {{ t('pdp.reviews') }} ({{ reviewsSummary?.totalReviews || 0 }})
               </span>
-            </div>
-          </div>
+              <div class="acc-right">
+                <span class="acc-stars" :aria-label="t('pdp.reviews')">★★★★★</span>
+                <svg
+                  class="acc-chevron"
+                  :class="{ open: accordions.reviews }"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                >
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+              </div>
+            </button>
 
-          <!-- Pricing Section -->
-          <div class="pricing-card">
-            <div class="price-main">
-              <span class="price-val">{{ formatCurrency(selectedVariant?.salePrice || product.salePrice) }}</span>
-              <span class="price-tax">Đã bao gồm VAT & Hộp chính hãng</span>
-            </div>
-            <div class="perk-pill">
-              <span class="perk-highlight">Freeship</span> toàn quốc cho đơn hàng này
-            </div>
-          </div>
+            <div v-if="accordions.reviews" class="adi-accordion-body">
+              <!-- Overall Rating Hero -->
+              <div class="rev-summary-top">
+                <span class="rev-big-num">{{ averageRatingDisplay }}</span>
+                <span class="rev-big-stars">★★★★★</span>
+              </div>
 
-          <!-- Color Options -->
-          <div class="option-group" v-if="uniqueColors.length">
-            <div class="group-title-row">
-              <span class="group-title">MÀU SẮC</span>
-              <span class="selected-text">{{ selectedColor ? selectedColor.colorName : '' }}</span>
-            </div>
-            <div class="color-swatches">
-              <button
-                v-for="c in uniqueColors"
-                :key="c.id"
-                class="swatch-btn"
-                :class="{ active: selectedColor && selectedColor.id === c.id }"
-                @click="selectColor(c)"
-              >
-                <span
-                  class="color-dot"
-                  :style="{ backgroundColor: c.hexCode || '#000000' }"
-                ></span>
-                <span class="color-title">{{ c.colorName }}</span>
-              </button>
-            </div>
-          </div>
+              <!-- 2x2 Segmented Adidas-Style Fit/Comfort/Quality/Width Bars -->
+              <div class="rev-segmented-grid">
+                <div class="seg-metric">
+                  <div class="seg-label">{{ t('pdp.comfort') }}</div>
+                  <div class="seg-track">
+                    <span></span><span></span><span></span><span class="active"></span>
+                  </div>
+                  <div class="seg-scale">
+                    <span>{{ t('pdp.uncomfortable') }}</span>
+                    <span>{{ t('pdp.comfortable') }}</span>
+                  </div>
+                </div>
 
-          <!-- Size Selector Matrix -->
-          <div class="option-group">
-            <div class="group-title-row">
-              <span class="group-title">CHỌN KÍCH CỠ (SIZE EU / VN)</span>
-              <div class="size-action-links">
-                <button type="button" class="btn-smart-finder" @click="showSmartSizeFinder = true">
-                  Gợi ý size ↗
-                </button>
-                <button type="button" class="size-chart-link" @click="showSizeGuide = true">
-                  Bảng size ↗
-                </button>
+                <div class="seg-metric">
+                  <div class="seg-label">{{ t('pdp.quality') }}</div>
+                  <div class="seg-track">
+                    <span></span><span></span><span></span><span class="active"></span>
+                  </div>
+                  <div class="seg-scale">
+                    <span>{{ t('pdp.poor') }}</span>
+                    <span>{{ t('pdp.perfect') }}</span>
+                  </div>
+                </div>
+
+                <div class="seg-metric">
+                  <div class="seg-label">{{ t('pdp.size') }}</div>
+                  <div class="seg-track">
+                    <span :class="{ active: dominantFit === 'HALF_SIZE_UP' }"></span>
+                    <span :class="{ active: dominantFit === 'TRUE_TO_SIZE' }"></span>
+                    <span :class="{ active: dominantFit === 'HALF_SIZE_DOWN' }"></span>
+                  </div>
+                  <div class="seg-scale">
+                    <span>{{ t('pdp.tooSmall') }}</span>
+                    <span>{{ t('pdp.trueToSize') }}</span>
+                    <span>{{ t('pdp.tooLarge') }}</span>
+                  </div>
+                </div>
+
+                <div class="seg-metric">
+                  <div class="seg-label">{{ t('pdp.width') }}</div>
+                  <div class="seg-track">
+                    <span></span><span class="active"></span><span></span>
+                  </div>
+                  <div class="seg-scale">
+                    <span>{{ t('pdp.tooNarrow') }}</span>
+                    <span>{{ t('pdp.fitJustRight') }}</span>
+                    <span>{{ t('pdp.tooWide') }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- On-Feet Strip -->
+              <div v-if="allOnFeetPhotos.length > 0" class="onfeet-strip-block">
+                <div class="onfeet-header">{{ t('pdp.onFeetTitle') }} ({{ allOnFeetPhotos.length }})</div>
+                <div class="onfeet-thumbs">
+                  <div
+                    v-for="(photo, idx) in allOnFeetPhotos"
+                    :key="idx"
+                    class="onfeet-thumb-item"
+                    @click="openLightbox(photo)"
+                  >
+                    <img :src="photo.url" :alt="`On-feet ${idx}`" />
+                  </div>
+                </div>
+              </div>
+
+              <!-- Compact #eceff1 Star Filter Chips -->
+              <div class="rev-filter-row">
+                <div class="rev-filter-label">{{ t('pdp.filterByStar') }}</div>
+                <div class="rev-filter-chips">
+                  <button
+                    v-for="f in reviewFilterOptions"
+                    :key="f.value"
+                    type="button"
+                    class="rev-chip"
+                    :class="{ active: currentReviewFilter === f.value }"
+                    @click="currentReviewFilter = f.value"
+                  >
+                    {{ f.label }} ({{ f.count }})
+                  </button>
+                </div>
+              </div>
+
+              <!-- Reviews Feed -->
+              <div v-if="filteredReviewList.length > 0" class="reviews-feed">
+                <div v-for="review in filteredReviewList" :key="review.id" class="review-row-item">
+                  <div class="row-header">
+                    <div class="user-block">
+                      <strong class="user-name">{{ review.customerName || (isEn ? 'Customer' : 'Khách hàng') }}</strong>
+                      <span v-if="review.verifiedBuyer" class="verified-tag">{{ t('pdp.verifiedBuyer') }}</span>
+                      <span class="date-line">{{ formatReviewDate(review.createdAt) }}</span>
+                    </div>
+                    <div class="rating-block">
+                      <span class="review-stars-inline">{{ '★'.repeat(review.rating || 5) }}{{ '☆'.repeat(5 - (review.rating || 5)) }}</span>
+                      <span v-if="review.fitFeedback" class="fit-tag">{{ getFitFeedbackLabel(review.fitFeedback) }}</span>
+                    </div>
+                  </div>
+
+                  <p class="review-text">{{ review.comment }}</p>
+
+                  <div v-if="review.photoUrls && review.photoUrls.length > 0" class="review-photos-row">
+                    <div
+                      v-for="(pUrl, pIdx) in review.photoUrls"
+                      :key="pIdx"
+                      class="photo-thumb"
+                      @click="openLightbox({ url: pUrl, customerName: review.customerName, comment: review.comment })"
+                    >
+                      <img :src="pUrl" :alt="`Photo ${pIdx}`" />
+                    </div>
+                  </div>
+
+                  <div class="row-actions">
+                    <button
+                      type="button"
+                      class="btn-helpful-simple"
+                      :class="{ active: helpfulMap[review.id] }"
+                      @click="toggleHelpful(review)"
+                    >
+                      {{ t('pdp.helpful') }} ({{ (review.helpfulCount || 0) + (helpfulMap[review.id] ? 1 : 0) }})
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Empty Reviews -->
+              <div v-else class="reviews-empty-clean">
+                <p>{{ t('pdp.emptyReviews') }}</p>
+                <router-link :to="lp('my-orders')" class="btn-orders-link">
+                  {{ t('pdp.writeReviewLink') }}
+                </router-link>
               </div>
             </div>
-
-            <div class="size-matrix">
-              <button
-                v-for="size in availableSizesForColor"
-                :key="size.id"
-                class="size-tile"
-                :class="{
-                  active: selectedSize && selectedSize.id === size.id,
-                  disabled: size.stock <= 0
-                }"
-                :disabled="size.stock <= 0"
-                @click="selectSize(size)"
-              >
-                <span class="size-val">{{ size.sizeValue }}</span>
-                <span class="size-sub">{{ size.stock > 0 ? `Kho: ${size.stock}` : 'Hết' }}</span>
-              </button>
-            </div>
-            <p v-if="!selectedSize" class="size-hint">
-              Vui lòng chọn size phù hợp với bạn để tiếp tục đặt hàng.
-            </p>
           </div>
 
-          <!-- Quantity Stepper -->
-          <div class="quantity-row" v-if="selectedVariant && currentStock > 0">
-            <span class="qty-label">SỐ LƯỢNG:</span>
-            <div class="qty-stepper">
-              <button
-                class="step-btn"
-                :disabled="quantity <= 1"
-                @click="quantity > 1 && quantity--"
-              >
-                −
-              </button>
-              <span class="qty-val">{{ quantity }}</span>
-              <button
-                class="step-btn"
-                :disabled="quantity >= currentStock"
-                @click="quantity < currentStock && quantity++"
-              >
-                +
-              </button>
-            </div>
-          </div>
-
-          <!-- Purchase Action Buttons -->
-          <div class="cta-actions">
+          <!-- Accordion 2: Mô tả (Exact 2-Column Split: Left Copy + Right Square Studio Photo) -->
+          <div class="adi-accordion-item">
             <button
-              class="btn-add-cart"
-              :disabled="!isReadyToBuy"
+              type="button"
+              class="adi-accordion-header"
+              @click="accordions.description = !accordions.description"
+            >
+              <span class="acc-title">{{ t('pdp.description') }}</span>
+              <svg
+                class="acc-chevron"
+                :class="{ open: accordions.description }"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+              >
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </button>
+
+            <div v-if="accordions.description" class="adi-accordion-body">
+              <div class="desc-split-grid">
+                <div class="desc-copy-col">
+                  <h3 class="desc-subtitle">{{ product.productName }}</h3>
+                  <p class="desc-text">
+                    {{
+                      product.description ||
+                        (isEn
+                          ? `${product.productName} by ${product.brandName} combines a timeless silhouette with responsive all-day cushioning and crisp everyday versatility.`
+                          : `${product.productName} đến từ ${product.brandName} mang thiết kế kinh điển dễ phối đồ hằng ngày, thân giày hoàn thiện tỉ mỉ cùng bộ đế êm ái bền bỉ.`)
+                    }}
+                  </p>
+                  <p class="desc-text" v-if="product.material">
+                    {{
+                      isEn
+                        ? `Crafted with ${product.material}. Every pair at ADHA Sneaker is 100% Legit Check verified and Double-Boxed to preserve the original sneaker box.`
+                        : `Chất liệu cao cấp: ${product.material}. Mọi sản phẩm tại ADHA Sneaker đều được kiểm định chính hãng 100% và đóng gói Double-Box bảo vệ hộp nguyên bản.`
+                    }}
+                  </p>
+                </div>
+                <div class="desc-photo-col">
+                  <img :src="activeImage" :alt="product.productName" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Accordion 3: Thông tin chi tiết (Exact 2-Column Bulleted Specs) -->
+          <div class="adi-accordion-item">
+            <button
+              type="button"
+              class="adi-accordion-header"
+              @click="accordions.details = !accordions.details"
+            >
+              <span class="acc-title">{{ t('pdp.details') }}</span>
+              <svg
+                class="acc-chevron"
+                :class="{ open: accordions.details }"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+              >
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </button>
+
+            <div v-if="accordions.details" class="adi-accordion-body">
+              <ul class="specs-bullet-grid">
+                <li>{{ t('pdp.specFit') }}</li>
+                <li>{{ t('pdp.specLace') }}</li>
+                <li v-if="product.material">{{ t('pdp.specMaterial') }}: {{ product.material }}</li>
+                <li>{{ t('pdp.specBrand') }}: {{ product.brandName }}</li>
+                <li>{{ t('pdp.specCategory') }}: {{ product.categoryName || 'Originals' }}</li>
+                <li>{{ t('pdp.specColor') }}: {{ selectedColor ? selectedColor.colorName : (isEn ? 'Standard colorway' : 'Phối màu tiêu chuẩn') }}</li>
+                <li>{{ t('pdp.specSku') }}: {{ selectedVariant ? selectedVariant.sku : product.productCode }}</li>
+                <li>{{ t('pdp.specStock') }}: {{ currentStock > 0 ? `${currentStock} ${t('pdp.inStockText')}` : t('pdp.outOfStock') }}</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. "HOÀN THIỆN PHONG CÁCH" / Related Sneakers 4-Column 2026 Adidas Grid -->
+        <section v-if="relatedProducts.length" class="pdp-related-section">
+          <h2 class="related-heading">{{ t('pdp.completeLook') }}</h2>
+          <div class="related-grid">
+            <article
+              v-for="item in relatedProducts"
+              :key="item.id"
+              class="adi-2026-card"
+              @click="router.push(lp(`product/${item.id}`))"
+            >
+              <div class="card-img-stage">
+                <img
+                  :src="item.thumbnailUrl || (item.imageUrls && item.imageUrls[0]) || FALLBACK_IMG"
+                  :alt="item.productName"
+                  loading="lazy"
+                />
+                <button
+                  type="button"
+                  class="card-heart-btn"
+                  @click.stop="toggleRelatedWishlist(item)"
+                  :aria-label="t('account.wishlist')"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    :fill="wishlistStore.isFavorite(item.id) ? '#000000' : 'none'"
+                    stroke="#000000"
+                    stroke-width="1.6"
+                  >
+                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                  </svg>
+                </button>
+              </div>
+              <div class="card-info">
+                <div class="price-regular">{{ formatCurrency(item.salePrice) }}</div>
+                <h4 class="card-title">{{ item.productName }}</h4>
+                <p class="card-cat">{{ item.brandName || 'Originals' }}</p>
+              </div>
+            </article>
+          </div>
+        </section>
+      </div>
+
+      <!-- ============================================================== -->
+      <!-- RIGHT COLUMN (480px STICKY BUY BOX — Exact adidas.com.vn/vi)   -->
+      <!-- ============================================================== -->
+      <aside class="pdp-right-buybox">
+        <!-- Row 1: Category Left + Compact Star Rating Right -->
+        <div class="buybox-meta-top">
+          <span class="buybox-cat">{{ product.categoryName || 'Originals' }}</span>
+          <button type="button" class="buybox-rating-btn" @click="scrollToReviews">
+            <span class="rating-num">{{ averageRatingDisplay }}</span>
+            <span class="rating-stars">★★★★★</span>
+            <span class="rating-cnt">({{ reviewsSummary?.totalReviews || 0 }})</span>
+          </button>
+        </div>
+
+        <!-- Subtle Archive Pill -->
+        <div class="buybox-subtle-tag">
+          {{ t('pdp.legitTag') }}
+        </div>
+
+        <!-- Upright Condensed Bold H1 (26px, normal style, 2px tracking) -->
+        <h1 class="buybox-title">{{ product.productName }}</h1>
+
+        <!-- Clean 17px Bold Price -->
+        <div class="buybox-price">
+          {{ formatCurrency(selectedVariant?.salePrice || product.salePrice) }}
+        </div>
+
+        <!-- Color Swatches: 5-Col Square Photo Thumbnails + Active Color Name Below -->
+        <div class="buybox-block" v-if="uniqueColors.length">
+          <div class="block-label">{{ t('pdp.colors') }}</div>
+          <div class="color-thumb-grid">
+            <button
+              v-for="c in uniqueColors"
+              :key="c.id"
+              type="button"
+              class="color-thumb-tile"
+              :class="{ active: selectedColor && selectedColor.id === c.id }"
+              :title="c.colorName"
+              @click="selectColor(c)"
+            >
+              <img :src="getColorThumbnail(c)" :alt="c.colorName" />
+              <span
+                class="color-mini-dot"
+                :style="{ backgroundColor: c.hexCode || '#000000' }"
+              ></span>
+            </button>
+          </div>
+          <div class="selected-color-caption">
+            {{ selectedColor ? selectedColor.colorName : '' }}
+          </div>
+        </div>
+
+        <!-- Size Selector: 5-Col 40px #eceff1 Flat Tiles -->
+        <div class="buybox-block" :class="{ 'size-error-shake': sizeValidationError }">
+          <div class="size-head-row">
+            <span class="block-label">{{ t('pdp.sizes') }}</span>
+            <div class="size-head-links">
+              <button type="button" class="underline-action" @click="showSmartSizeFinder = true">
+                {{ t('pdp.smartSizeFinder') }}
+              </button>
+              <button type="button" class="underline-action" @click="showSizeGuide = true">
+                {{ t('pdp.sizeGuide') }}
+              </button>
+            </div>
+          </div>
+
+          <div class="size-grid-5">
+            <button
+              v-for="size in availableSizesForColor"
+              :key="size.id"
+              type="button"
+              class="size-cell"
+              :class="{
+                active: selectedSize && selectedSize.id === size.id,
+                disabled: size.stock <= 0
+              }"
+              :disabled="size.stock <= 0"
+              @click="selectSize(size)"
+            >
+              {{ size.sizeValue }}
+            </button>
+          </div>
+
+          <p v-if="sizeValidationError" class="size-err-msg">
+            {{ t('pdp.selectSizeErr') }}
+          </p>
+          <p v-else-if="selectedSize && currentStock > 0" class="size-stock-note">
+            Size EU {{ selectedSize.sizeValue }} — {{ currentStock }} {{ t('pdp.inStockText') }}
+          </p>
+
+          <!-- Exact Adidas 1px solid #000 Fit Advice Box -->
+          <div class="fit-advice-box">
+            <span class="fit-info-icon">i</span>
+            <span>
+              <strong>{{ t('pdp.fitAdviceStrong') }}</strong> {{ t('pdp.fitAdviceBody') }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Quantity Row (only shown cleanly once size picked) -->
+        <div class="buybox-qty-row" v-if="selectedVariant && currentStock > 0">
+          <span class="qty-label">{{ t('pdp.quantity') }}</span>
+          <div class="qty-stepper">
+            <button type="button" class="step-btn" :disabled="quantity <= 1" @click="quantity > 1 && quantity--">−</button>
+            <span class="qty-val">{{ quantity }}</span>
+            <button type="button" class="step-btn" :disabled="quantity >= currentStock" @click="quantity < currentStock && quantity++">+</button>
+          </div>
+        </div>
+
+        <!-- Primary CTA Row: Always-Active 58px Black Offset Button + 56px Square Heart -->
+        <div class="buybox-cta-group">
+          <div class="cta-main-row">
+            <button
+              type="button"
+              class="btn-adi-add-bag"
               @click="handleAddToCart"
             >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="cart-icon-svg">
+              <span>{{ t('pdp.addToBag') }}</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="bag-plus-svg">
                 <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
                 <line x1="3" y1="6" x2="21" y2="6"></line>
                 <path d="M16 10a4 4 0 0 1-8 0"></path>
               </svg>
-              <span>{{ isReadyToBuy ? 'THÊM VÀO GIỎ HÀNG' : 'CHỌN SIZE ĐỂ MUA' }}</span>
             </button>
 
             <button
-              class="btn-buy-express"
-              :disabled="!isReadyToBuy"
-              @click="handleBuyNow"
-            >
-              MUA NGAY (GIAO TẬN NƠI)
-            </button>
-
-            <button
-              class="btn-wishlist-toggle"
+              type="button"
+              class="btn-adi-heart"
               :class="{ active: wishlistStore.isFavorite(product?.id) }"
               @click="handleToggleWishlist"
-              :title="wishlistStore.isFavorite(product?.id) ? 'Bỏ khỏi yêu thích' : 'Lưu vào danh sách yêu thích'"
+              :title="wishlistStore.isFavorite(product?.id) ? (isEn ? 'Remove from wishlist' : 'Bỏ khỏi yêu thích') : (isEn ? 'Save to wishlist' : 'Lưu vào yêu thích')"
+              :aria-label="t('account.wishlist')"
             >
-              <svg viewBox="0 0 24 24" :fill="wishlistStore.isFavorite(product?.id) ? '#ef4444' : 'none'" :stroke="wishlistStore.isFavorite(product?.id) ? '#ef4444' : '#18181b'" stroke-width="2" class="heart-svg">
+              <svg
+                viewBox="0 0 24 24"
+                :fill="wishlistStore.isFavorite(product?.id) ? '#000000' : 'none'"
+                stroke="#000000"
+                stroke-width="1.7"
+              >
                 <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
               </svg>
-              <span>{{ wishlistStore.isFavorite(product?.id) ? 'ĐÃ LƯU VÀO YÊU THÍCH' : 'THÊM VÀO YÊU THÍCH' }}</span>
             </button>
           </div>
 
-          <!-- Assurance Perks -->
-          <div class="assurance-list">
-            <div class="assurance-item">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="perk-svg">
-                <rect x="1" y="3" width="15" height="13"></rect>
-                <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
-                <circle cx="5.5" cy="18.5" r="2.5"></circle>
-                <circle cx="18.5" cy="18.5" r="2.5"></circle>
-              </svg>
-              <div>
-                <strong>Miễn phí vận chuyển toàn quốc</strong>
-                <p>Đơn hàng từ 1.000.000₫ được hỗ trợ freeship tận nhà.</p>
-              </div>
-            </div>
-
-            <div class="assurance-item">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="perk-svg">
-                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-              </svg>
-              <div>
-                <strong>Cam kết chính hãng trọn đời</strong>
-                <p>Phát hiện hàng giả/nhái đền tiền gấp đôi ngay lập tức.</p>
-              </div>
-            </div>
-
-            <div class="assurance-item">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="perk-svg">
-                <polyline points="23 4 23 10 17 10"></polyline>
-                <polyline points="1 20 1 14 7 14"></polyline>
-                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
-              </svg>
-              <div>
-                <strong>Đổi size linh hoạt trong 7 ngày</strong>
-                <p>Hỗ trợ đổi sang size vừa vặn nếu sản phẩm còn nguyên tem mác.</p>
-              </div>
-            </div>
-          </div>
-
-          <!-- Product Specifications & Story -->
-          <div class="specs-accordion" v-if="product.description || product.material">
-            <h3 class="specs-title">THÔNG TIN SẢN PHẨM & CHẤT LIỆU</h3>
-            <p class="specs-desc" v-if="product.description">{{ product.description }}</p>
-            <div class="spec-row" v-if="product.material">
-              <span class="spec-label">Chất liệu:</span>
-              <span class="spec-val">{{ product.material }}</span>
-            </div>
-            <div class="spec-row">
-              <span class="spec-label">Thương hiệu:</span>
-              <span class="spec-val">{{ product.brandName }}</span>
-            </div>
-            <div class="spec-row">
-              <span class="spec-label">Phân loại:</span>
-              <span class="spec-val">{{ product.categoryName }}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- ================= CUSTOMER REVIEWS & ON-FEET SECTION ================= -->
-      <section class="reviews-section" id="customer-reviews">
-        <div class="reviews-head-row">
-          <div>
-            <h2 class="reviews-title">ĐÁNH GIÁ SẢN PHẨM</h2>
-            <span class="reviews-sub">
-              {{ reviewsSummary?.totalReviews ? `${reviewsSummary.totalReviews} nhận xét thực tế từ người mua` : 'Chưa có đánh giá nào cho sản phẩm này' }}
-            </span>
-          </div>
-
-          <div class="overall-rating-box" v-if="reviewsSummary?.averageRating">
-            <span class="rating-val">{{ averageRatingDisplay }}</span>
-            <div class="rating-sub">
-              <el-rate :model-value="Number(averageRatingDisplay)" disabled text-color="#0f172a" />
-              <span class="scale-text">/ 5.0</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Minimalist Analytics Card -->
-        <div class="reviews-analytics-card">
-          <!-- Phân bổ sao -->
-          <div class="analytics-col">
-            <div class="col-heading">TỶ LỆ ĐÁNH GIÁ SAO</div>
-            <div class="star-bars-simple">
-              <div v-for="star in [5, 4, 3, 2, 1]" :key="star" class="star-row">
-                <span class="star-num">{{ star }} ★</span>
-                <div class="bar-track">
-                  <div class="bar-fill" :style="{ width: getStarPercent(star) + '%' }"></div>
-                </div>
-                <span class="star-pct">{{ getStarPercent(star) }}%</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Thước đo độ vừa vặn -->
-          <div class="analytics-col">
-            <div class="col-heading">ĐỘ VỪA VẶN (FIT METER)</div>
-            <div class="fit-bars-simple">
-              <div class="fit-row">
-                <span class="fit-label">Chuẩn size (True to size)</span>
-                <div class="bar-track">
-                  <div class="bar-fill" :style="{ width: getFitPercent('TRUE_TO_SIZE') + '%' }"></div>
-                </div>
-                <span class="fit-pct">{{ getFitPercent('TRUE_TO_SIZE') }}%</span>
-              </div>
-
-              <div class="fit-row">
-                <span class="fit-label">Hơi chật (Tăng 0.5 size)</span>
-                <div class="bar-track">
-                  <div class="bar-fill muted" :style="{ width: getFitPercent('HALF_SIZE_UP') + '%' }"></div>
-                </div>
-                <span class="fit-pct">{{ getFitPercent('HALF_SIZE_UP') }}%</span>
-              </div>
-
-              <div class="fit-row">
-                <span class="fit-label">Hơi rộng (Lùi 0.5 size)</span>
-                <div class="bar-track">
-                  <div class="bar-fill muted" :style="{ width: getFitPercent('HALF_SIZE_DOWN') + '%' }"></div>
-                </div>
-                <span class="fit-pct">{{ getFitPercent('HALF_SIZE_DOWN') }}%</span>
-              </div>
-            </div>
-            <p class="fit-note">{{ fitAdviceText }}</p>
-          </div>
-        </div>
-
-        <!-- On-feet Strip -->
-        <div v-if="allOnFeetPhotos.length > 0" class="onfeet-strip-block">
-          <div class="onfeet-header">
-            <span>ẢNH ON-FEET THỰC TẾ ({{ allOnFeetPhotos.length }})</span>
-          </div>
-          <div class="onfeet-thumbs">
-            <div
-              v-for="(photo, idx) in allOnFeetPhotos"
-              :key="idx"
-              class="onfeet-thumb-item"
-              @click="openLightbox(photo)"
-            >
-              <img :src="photo.url" :alt="`On-feet ${idx}`" />
-            </div>
-          </div>
-        </div>
-
-        <!-- Minimal Filter Tabs -->
-        <div class="filter-tabs-row">
-          <button
-            v-for="f in reviewFilterOptions"
-            :key="f.value"
-            class="filter-pill"
-            :class="{ active: currentReviewFilter === f.value }"
-            @click="currentReviewFilter = f.value"
-          >
-            {{ f.label }} ({{ f.count }})
+          <button type="button" class="btn-adi-secondary" @click="handleBuyNow">
+            <span>{{ t('pdp.buyNow') }}</span>
+            <span class="sec-arrow">→</span>
           </button>
         </div>
 
-        <!-- Reviews Feed -->
-        <div v-if="filteredReviewList.length > 0" class="reviews-feed">
-          <div v-for="review in filteredReviewList" :key="review.id" class="review-row-item">
-            <div class="row-header">
-              <div class="user-block">
-                <div class="user-avatar">
-                  {{ review.customerName ? review.customerName.charAt(0).toUpperCase() : 'U' }}
-                </div>
-                <div class="user-details">
-                  <div class="name-line">
-                    <strong class="user-name">{{ review.customerName || 'Khách hàng' }}</strong>
-                    <span v-if="review.verifiedBuyer" class="verified-tag">✓ Đã mua hàng</span>
-                  </div>
-                  <span class="date-line">{{ formatReviewDate(review.createdAt) }}</span>
-                </div>
-              </div>
-
-              <div class="rating-block">
-                <el-rate :model-value="review.rating" disabled text-color="#0f172a" />
-                <span v-if="review.fitFeedback" class="fit-tag">
-                  {{ getFitFeedbackLabel(review.fitFeedback) }}
-                </span>
-              </div>
-            </div>
-
-            <p class="review-text">{{ review.comment }}</p>
-
-            <!-- Photos -->
-            <div v-if="review.photoUrls && review.photoUrls.length > 0" class="review-photos-row">
-              <div
-                v-for="(pUrl, pIdx) in review.photoUrls"
-                :key="pIdx"
-                class="photo-thumb"
-                @click="openLightbox({ url: pUrl, customerName: review.customerName, comment: review.comment })"
-              >
-                <img :src="pUrl" :alt="`Photo ${pIdx}`" />
-              </div>
-            </div>
-
-            <div class="row-actions">
-              <button
-                type="button"
-                class="btn-helpful-simple"
-                :class="{ active: helpfulMap[review.id] }"
-                @click="toggleHelpful(review)"
-              >
-                👍 Hữu ích ({{ (review.helpfulCount || 0) + (helpfulMap[review.id] ? 1 : 0) }})
-              </button>
-            </div>
+        <!-- ADHA Club Points Strip (Exact mirror of adiClub points row) -->
+        <div class="buybox-club-strip">
+          <div class="club-strip-top">
+            <span class="club-strip-title">{{ t('pdp.memberEarn') }}</span>
+            <span class="club-wordmark">adhaclub</span>
+          </div>
+          <div class="club-points-line">
+            <span class="points-star">✪</span>
+            <span>{{ estimatedPoints }} {{ t('pdp.pointsLabel') }}</span>
           </div>
         </div>
 
-        <!-- Empty state -->
-        <div v-else class="reviews-empty-clean">
-          <p>Chưa có đánh giá nào phù hợp với bộ lọc.</p>
-          <router-link to="/my-orders" class="btn-orders-link">
-            Vào Đơn hàng của tôi để đánh giá &rarr;
+        <!-- 3 Crisp 1-Line Icon + Chevron USP Rows -->
+        <div class="buybox-usp-list">
+          <router-link :to="{ path: lp('shop'), query: { sort: 'price_asc' } }" class="usp-row">
+            <span class="usp-left">
+              <span class="usp-icon">✓</span>
+              <span>{{ t('pdp.usp1') }}</span>
+            </span>
+            <span class="usp-chevron">›</span>
+          </router-link>
+
+          <button type="button" class="usp-row" @click="showSizeGuide = true">
+            <span class="usp-left">
+              <span class="usp-icon">↺</span>
+              <span>{{ t('pdp.usp2') }}</span>
+            </span>
+            <span class="usp-chevron">›</span>
+          </button>
+
+          <router-link :to="lp('tracking')" class="usp-row">
+            <span class="usp-left">
+              <span class="usp-icon">🚚</span>
+              <span>{{ t('pdp.usp3') }}</span>
+            </span>
+            <span class="usp-chevron">›</span>
           </router-link>
         </div>
-      </section>
 
-      <!-- Lightbox Modal for Full Image View -->
-      <el-dialog
-        v-model="lightboxVisible"
-        width="650px"
-        class="lightbox-dialog"
-        :show-close="true"
-        align-center
-      >
-        <div v-if="activeLightboxPhoto" class="lightbox-content">
-          <img :src="activeLightboxPhoto.url" alt="On-feet full size" class="lightbox-img" />
-          <div class="lightbox-caption">
-            <strong>{{ activeLightboxPhoto.customerName }}</strong>
-            <p v-if="activeLightboxPhoto.comment">{{ activeLightboxPhoto.comment }}</p>
-          </div>
-        </div>
-      </el-dialog>
-
-      <!-- Smart Size Finder Modal -->
-      <SmartSizeFinderModal
-        v-model="showSmartSizeFinder"
-        :product-name="product ? product.productName : ''"
-        :brand-name="product ? product.brandName : ''"
-        @select-size="handleSmartSizeSelect"
-      />
+        <!-- Bottom Quick Shop Category Button -->
+        <router-link
+          :to="product.brandId ? { path: lp('shop'), query: { brand: product.brandId } } : lp('shop')"
+          class="buybox-shop-more-btn"
+        >
+          <span>{{ t('pdp.shopMorePrefix') }} {{ product.brandName || 'Sneaker' }}</span>
+        </router-link>
+      </aside>
     </div>
 
+    <!-- Lightbox Modal for Full Image Zoom -->
+    <el-dialog
+      v-model="lightboxVisible"
+      width="720px"
+      class="lightbox-dialog"
+      :show-close="true"
+      align-center
+    >
+      <div v-if="activeLightboxPhoto" class="lightbox-content">
+        <img :src="activeLightboxPhoto.url" alt="Zoom full size" class="lightbox-img" />
+        <div class="lightbox-caption">
+          <strong>{{ activeLightboxPhoto.customerName }}</strong>
+          <p v-if="activeLightboxPhoto.comment">{{ activeLightboxPhoto.comment }}</p>
+        </div>
+      </div>
+    </el-dialog>
+
+    <!-- Smart Size Finder Modal -->
+    <SmartSizeFinderModal
+      v-model="showSmartSizeFinder"
+      :product-name="product ? product.productName : ''"
+      :brand-name="product ? product.brandName : ''"
+      @select-size="handleSmartSizeSelect"
+    />
+
     <!-- Size Guide Dialog -->
-    <el-dialog v-model="showSizeGuide" title="BẢNG QUY ĐỔI KÍCH THƯỚC GIÀY (SIZE GUIDE)" width="600px">
+    <el-dialog v-model="showSizeGuide" :title="t('footer.sizeDialogTitle')" width="600px">
       <el-table :data="sizeGuideData" border stripe>
         <el-table-column prop="eu" label="EU (VN)" align="center" width="100" />
         <el-table-column prop="us" label="US Men" align="center" width="100" />
         <el-table-column prop="uk" label="UK" align="center" width="100" />
-        <el-table-column prop="cm" label="Chiều dài bàn chân" align="center" />
+        <el-table-column prop="cm" :label="t('footer.footLength')" align="center" />
       </el-table>
     </el-dialog>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import storeService from '@/services/storeService'
@@ -458,23 +598,37 @@ import SmartSizeFinderModal from '@/components/store/SmartSizeFinderModal.vue'
 import { useCartStore } from '@/stores/cart'
 import { useWishlistStore } from '@/stores/wishlist'
 import { formatCurrency } from '@/utils/formatters'
+import { useStoreI18n } from '@/composables/useStoreI18n'
 
 const route = useRoute()
 const router = useRouter()
 const cartStore = useCartStore()
 const wishlistStore = useWishlistStore()
+const { t, lp, isEn } = useStoreI18n()
+
+const FALLBACK_IMG =
+  'https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?auto=format&fit=crop&w=800&q=80'
 
 const loading = ref(false)
 const product = ref(null)
 const activeImage = ref('')
 const quantity = ref(1)
+const galleryExpanded = ref(false)
+const sizeValidationError = ref(false)
+const relatedProducts = ref([])
+
+const accordions = reactive({
+  reviews: false,
+  description: true,
+  details: false
+})
 
 // SMART SIZE FINDER STATE
 const showSmartSizeFinder = ref(false)
 
 const handleSmartSizeSelect = (recSize) => {
   if (!availableSizesForColor.value || availableSizesForColor.value.length === 0) return
-  const found = availableSizesForColor.value.find(s => String(s.sizeValue) === String(recSize))
+  const found = availableSizesForColor.value.find((s) => String(s.sizeValue) === String(recSize))
   if (found) {
     selectSize(found)
   } else {
@@ -499,56 +653,35 @@ const loadReviews = async () => {
   }
 }
 
+const loadRelatedProducts = async () => {
+  try {
+    const res = await storeService.getProducts({ page: 0, size: 8 })
+    const list = res?.data?.content || []
+    const currentId = Number(route.params.id)
+    relatedProducts.value = list.filter((p) => Number(p.id) !== currentId).slice(0, 4)
+  } catch (err) {
+    console.warn('Lỗi nạp sản phẩm gợi ý:', err)
+  }
+}
+
 const averageRatingDisplay = computed(() => {
   if (!reviewsSummary.value || !reviewsSummary.value.averageRating) return '5.0'
   return reviewsSummary.value.averageRating.toFixed(1)
 })
 
-const getStarCount = (star) => {
-  if (!reviewsSummary.value) return 0
-  const map = {
-    5: reviewsSummary.value.fiveStarCount || 0,
-    4: reviewsSummary.value.fourStarCount || 0,
-    3: reviewsSummary.value.threeStarCount || 0,
-    2: reviewsSummary.value.twoStarCount || 0,
-    1: reviewsSummary.value.oneStarCount || 0
-  }
-  return map[star] || 0
-}
+const dominantFit = computed(() => {
+  if (!reviewsSummary.value?.totalReviews) return 'TRUE_TO_SIZE'
+  const t = reviewsSummary.value.trueToSizeCount || 0
+  const u = reviewsSummary.value.halfSizeUpCount || 0
+  const d = reviewsSummary.value.halfSizeDownCount || 0
+  if (u > t && u >= d) return 'HALF_SIZE_UP'
+  if (d > t && d > u) return 'HALF_SIZE_DOWN'
+  return 'TRUE_TO_SIZE'
+})
 
-const getStarPercent = (star) => {
-  const total = reviewsSummary.value?.totalReviews || 0
-  if (total === 0) return star === 5 ? 100 : 0
-  return Math.round((getStarCount(star) / total) * 100)
-}
-
-const getFitPercent = (fitType) => {
-  const total = reviewsSummary.value?.totalReviews || 0
-  if (total === 0) {
-    return fitType === 'TRUE_TO_SIZE' ? 100 : 0
-  }
-  const count =
-    fitType === 'TRUE_TO_SIZE'
-      ? reviewsSummary.value.trueToSizeCount || 0
-      : fitType === 'HALF_SIZE_UP'
-      ? reviewsSummary.value.halfSizeUpCount || 0
-      : reviewsSummary.value.halfSizeDownCount || 0
-  return Math.round((count / total) * 100)
-}
-
-const fitAdviceText = computed(() => {
-  const truePct = getFitPercent('TRUE_TO_SIZE')
-  const upPct = getFitPercent('HALF_SIZE_UP')
-  const downPct = getFitPercent('HALF_SIZE_DOWN')
-
-  if (truePct >= 70) {
-    return 'Đa số khách hàng nhận xét giày đi chuẩn size (True to size). Bạn có thể tự tin chọn đúng size thường đi.'
-  } else if (upPct > downPct && upPct >= 40) {
-    return 'Form giày có phần ôm khít. Đa số khách hàng khuyên nên tăng 0.5 size để đi thoải mái hơn.'
-  } else if (downPct >= 40) {
-    return 'Form giày khá rộng/dài. Bạn nên cân nhắc lùi 0.5 size so với size thông thường.'
-  }
-  return 'Phần lớn khách hàng đánh giá giày mang vừa vặn chuẩn size.'
+const estimatedPoints = computed(() => {
+  const price = Number(selectedVariant.value?.salePrice || product.value?.salePrice || 0)
+  return Math.max(50, Math.round(price / 3000))
 })
 
 const allOnFeetPhotos = computed(() => {
@@ -575,14 +708,17 @@ const reviewFilterOptions = computed(() => {
   ).length
   const fiveStar = reviewsSummary.value?.fiveStarCount || 0
   const fourStar = reviewsSummary.value?.fourStarCount || 0
-  const threeStar = (reviewsSummary.value?.threeStarCount || 0) + (reviewsSummary.value?.twoStarCount || 0) + (reviewsSummary.value?.oneStarCount || 0)
+  const threeStar =
+    (reviewsSummary.value?.threeStarCount || 0) +
+    (reviewsSummary.value?.twoStarCount || 0) +
+    (reviewsSummary.value?.oneStarCount || 0)
 
   return [
-    { label: 'Tất cả', value: 'ALL', count: total },
-    { label: '📸 Có ảnh On-feet', value: 'HAS_PHOTO', count: photoCount },
-    { label: '5 sao', value: '5', count: fiveStar },
-    { label: '4 sao', value: '4', count: fourStar },
-    { label: '3 sao trở xuống', value: '3_DOWN', count: threeStar }
+    { label: t('pdp.filterAll'), value: 'ALL', count: total },
+    { label: '★ 5', value: '5', count: fiveStar },
+    { label: '★ 4', value: '4', count: fourStar },
+    { label: '★ ≤3', value: '3_DOWN', count: threeStar },
+    { label: t('pdp.filterHasPhoto'), value: 'HAS_PHOTO', count: photoCount }
   ]
 })
 
@@ -608,19 +744,25 @@ const formatReviewDate = (isoStr) => {
   if (!isoStr) return ''
   try {
     const d = new Date(isoStr)
-    return d.toLocaleDateString('vi-VN', { year: 'numeric', month: '2-digit', day: '2-digit' })
+    return d.toLocaleDateString(isEn.value ? 'en-US' : 'vi-VN', { year: 'numeric', month: '2-digit', day: '2-digit' })
   } catch {
     return isoStr
   }
 }
 
 const getFitFeedbackLabel = (fit) => {
-  const map = {
-    TRUE_TO_SIZE: '✨ Vừa vặn chuẩn size',
-    HALF_SIZE_UP: '👟 Hơi chật (Tăng 0.5 size)',
-    HALF_SIZE_DOWN: '👟 Hơi rộng (Lùi 0.5 size)'
-  }
-  return map[fit] || 'Chuẩn size'
+  const map = isEn.value
+    ? {
+        TRUE_TO_SIZE: 'True to size',
+        HALF_SIZE_UP: 'Runs small (+0.5)',
+        HALF_SIZE_DOWN: 'Runs large (-0.5)'
+      }
+    : {
+        TRUE_TO_SIZE: 'Chuẩn size',
+        HALF_SIZE_UP: 'Hơi chật (Tăng 0.5)',
+        HALF_SIZE_DOWN: 'Hơi rộng (Lùi 0.5)'
+      }
+  return map[fit] || (isEn.value ? 'True to size' : 'Chuẩn size')
 }
 
 const toggleHelpful = (review) => {
@@ -632,6 +774,13 @@ const openLightbox = (photo) => {
   lightboxVisible.value = true
 }
 
+const scrollToReviews = () => {
+  accordions.reviews = true
+  setTimeout(() => {
+    document.getElementById('customer-reviews')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }, 60)
+}
+
 const handleToggleWishlist = () => {
   if (!product.value) return
   const isAdded = wishlistStore.toggleFavorite(product.value)
@@ -639,6 +788,15 @@ const handleToggleWishlist = () => {
     ElMessage.success(`Đã thêm "${product.value.productName}" vào danh sách yêu thích`)
   } else {
     ElMessage.info(`Đã bỏ "${product.value.productName}" khỏi danh sách yêu thích`)
+  }
+}
+
+const toggleRelatedWishlist = (item) => {
+  const isAdded = wishlistStore.toggleFavorite(item)
+  if (isAdded) {
+    ElMessage.success(`Đã thêm "${item.productName}" vào danh sách yêu thích`)
+  } else {
+    ElMessage.info(`Đã bỏ "${item.productName}" khỏi danh sách yêu thích`)
   }
 }
 
@@ -663,12 +821,12 @@ const allImages = computed(() => {
   if (!product.value) return []
   const list = []
   if (product.value.images && product.value.images.length) {
-    product.value.images.forEach(img => {
+    product.value.images.forEach((img) => {
       if (img?.imageUrl && !list.includes(img.imageUrl)) list.push(img.imageUrl)
     })
   }
   if (product.value.imageUrls && product.value.imageUrls.length) {
-    product.value.imageUrls.forEach(img => {
+    product.value.imageUrls.forEach((img) => {
       if (img && !list.includes(img)) list.push(img)
     })
   }
@@ -676,7 +834,7 @@ const allImages = computed(() => {
     list.unshift(product.value.thumbnailUrl)
   }
   if (list.length === 0) {
-    list.push('https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?auto=format&fit=crop&w=800&q=80')
+    list.push(FALLBACK_IMG)
   }
   return list
 })
@@ -684,7 +842,7 @@ const allImages = computed(() => {
 const uniqueColors = computed(() => {
   if (!product.value || !product.value.variants) return []
   const map = new Map()
-  product.value.variants.forEach(v => {
+  product.value.variants.forEach((v) => {
     const c = v.color || { id: v.colorId, colorName: v.colorName, hexCode: v.hexCode }
     if (c && c.id && !map.has(c.id)) {
       map.set(c.id, c)
@@ -696,18 +854,21 @@ const uniqueColors = computed(() => {
 const galleryItems = computed(() => {
   if (!product.value) return []
   const colorMap = new Map()
-  uniqueColors.value.forEach(c => colorMap.set(c.id, c))
+  uniqueColors.value.forEach((c) => colorMap.set(Number(c.id), c))
 
   if (product.value.images && product.value.images.length) {
     const seen = new Set()
     const items = []
-    product.value.images.forEach(img => {
-      if (img?.imageUrl && !seen.has(img.imageUrl)) {
-        seen.add(img.imageUrl)
-        const c = img.colorId ? colorMap.get(img.colorId) : null
+    const sorted = [...product.value.images].sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0))
+    sorted.forEach((img) => {
+      const key = `${img?.colorId ?? 'all'}::${img?.imageUrl || ''}`
+      if (img?.imageUrl && !seen.has(key)) {
+        seen.add(key)
+        const cid = img.colorId != null ? Number(img.colorId) : null
+        const c = cid != null ? colorMap.get(cid) : null
         items.push({
           url: img.imageUrl,
-          colorId: img.colorId || null,
+          colorId: cid,
           colorName: c?.colorName || '',
           hexCode: c?.hexCode || null
         })
@@ -715,28 +876,61 @@ const galleryItems = computed(() => {
     })
     if (items.length > 0) return items
   }
-  return allImages.value.map(url => ({ url, colorId: null, colorName: '', hexCode: null }))
+  return allImages.value.map((url) => ({ url, colorId: null, colorName: '', hexCode: null }))
 })
+
+/* Filter gallery strictly to the selected color's images (never mix other colors!) */
+const displayGalleryPool = computed(() => {
+  const all = galleryItems.value
+  if (!all.length) return []
+  if (selectedColor.value) {
+    const targetColorId = Number(selectedColor.value.id)
+    const colorSpecific = all.filter((item) => item.colorId != null && item.colorId === targetColorId)
+    if (colorSpecific.length > 0) {
+      return colorSpecific
+    }
+    const uncolored = all.filter((item) => item.colorId == null)
+    if (uncolored.length > 0) {
+      return uncolored
+    }
+  }
+  return all
+})
+
+const visibleGalleryGrid = computed(() => {
+  if (galleryExpanded.value) return displayGalleryPool.value
+  return displayGalleryPool.value.slice(0, 4)
+})
+
+const getColorThumbnail = (color) => {
+  const matched = galleryItems.value.find((item) => item.colorId === Number(color.id))
+  return matched?.url || allImages.value[0] || FALLBACK_IMG
+}
 
 const availableSizesForColor = computed(() => {
   if (!product.value || !product.value.variants) return []
   return product.value.variants
-    .filter(v => {
+    .filter((v) => {
       if (!selectedColor.value) return true
       const cId = v.color ? v.color.id : v.colorId
       return cId === selectedColor.value.id
     })
-    .map(v => ({
+    .map((v) => ({
       id: v.size ? v.size.id : v.sizeId,
       sizeValue: v.size ? v.size.sizeValue : v.sizeValue,
-      stock: v.availableQuantity !== undefined ? v.availableQuantity : (v.quantityInStock !== undefined ? v.quantityInStock : 10),
+      stock:
+        v.availableQuantity !== undefined
+          ? v.availableQuantity
+          : v.quantityInStock !== undefined
+          ? v.quantityInStock
+          : 10,
       variant: v
     }))
 })
 
 const selectedVariant = computed(() => {
   if (!product.value || !product.value.variants || !selectedSize.value) return null
-  return product.value.variants.find(v => {
+  return product.value.variants.find((v) => {
     const sId = v.size ? v.size.id : v.sizeId
     const cId = v.color ? v.color.id : v.colorId
     const matchSize = sId === selectedSize.value.id
@@ -755,41 +949,36 @@ const currentStock = computed(() => {
   return selectedVariant.value.availableQuantity ?? selectedVariant.value.quantityInStock ?? 10
 })
 
-const isReadyToBuy = computed(() => {
-  return selectedVariant.value && currentStock.value > 0
-})
-
 const syncImageToColor = (color) => {
   if (!color || !galleryItems.value.length) return
-  const matched = galleryItems.value.find(item => item.colorId === color.id)
+  const matched = galleryItems.value.find((item) => item.colorId === Number(color.id))
   if (matched) {
     activeImage.value = matched.url
+  } else if (allImages.value.length) {
+    activeImage.value = allImages.value[0]
   }
 }
 
 const selectColor = (color) => {
   selectedColor.value = color
   selectedSize.value = null
+  sizeValidationError.value = false
+  galleryExpanded.value = false
   syncImageToColor(color)
-}
-
-const selectGalleryImage = (item) => {
-  activeImage.value = item.url
-  if (item.colorId) {
-    const matchedColor = uniqueColors.value.find(c => c.id === item.colorId)
-    if (matchedColor && (!selectedColor.value || selectedColor.value.id !== matchedColor.id)) {
-      selectedColor.value = matchedColor
-      selectedSize.value = null
-    }
-  }
 }
 
 const selectSize = (size) => {
   selectedSize.value = size
+  sizeValidationError.value = false
 }
 
 const loadProduct = async () => {
   loading.value = true
+  selectedSize.value = null
+  selectedColor.value = null
+  sizeValidationError.value = false
+  galleryExpanded.value = false
+  quantity.value = 1
   try {
     const id = route.params.id
     const res = await storeService.getProductDetail(id)
@@ -811,899 +1000,475 @@ const loadProduct = async () => {
 
 const handleAddToCart = () => {
   if (!selectedVariant.value) {
-    ElMessage.warning('Vui lòng chọn Size giày trước khi thêm vào giỏ!')
+    sizeValidationError.value = true
+    ElMessage.warning(t('pdp.selectSizeErr'))
     return
   }
   cartStore.addToCart(product.value, selectedVariant.value, quantity.value)
-  ElMessage.success(`Đã thêm "${product.value.productName}" (Size ${selectedSize.value.sizeValue}) vào giỏ hàng!`)
+  ElMessage.success(
+    isEn.value
+      ? `Added "${product.value.productName}" (Size ${selectedSize.value.sizeValue}) to bag!`
+      : `Đã thêm "${product.value.productName}" (Size ${selectedSize.value.sizeValue}) vào giỏ hàng!`
+  )
 }
 
 const handleBuyNow = () => {
-  handleAddToCart()
-  router.push('/cart')
+  if (!selectedVariant.value) {
+    sizeValidationError.value = true
+    ElMessage.warning(t('pdp.selectSizeErr'))
+    return
+  }
+  cartStore.addToCart(product.value, selectedVariant.value, quantity.value)
+  router.push(lp('cart'))
 }
+
+watch(
+  () => route.params.id,
+  (newId, oldId) => {
+    if (newId && newId !== oldId) {
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+      loadProduct()
+      loadReviews()
+      loadRelatedProducts()
+    }
+  }
+)
 
 onMounted(() => {
   loadProduct()
   loadReviews()
+  loadRelatedProducts()
 })
 </script>
 
 <style scoped lang="scss">
 .store-detail {
-  padding-bottom: 90px;
   background: #ffffff;
+  color: #000000;
+  width: 100%;
 }
 
-.layout-container {
-  max-width: 1360px;
+.pdp-loading-wrap {
+  max-width: 1280px;
   margin: 0 auto;
-  padding: 0 28px;
+  padding: 48px 24px;
 }
 
-.detail-breadcrumb {
-  display: flex;
+/* ============ FULL-BLEED 2-COL ADIDAS PDP GRID (67% LEFT / 480px STICKY RIGHT) ============ */
+.pdp-fullbleed-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 480px;
+  align-items: start;
+  width: 100%;
+
+  @media (max-width: 1180px) {
+    grid-template-columns: minmax(0, 1fr) 420px;
+  }
+
+  @media (max-width: 960px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ============ LEFT COLUMN: 2x2 GALLERY + ACCORDIONS + RELATED ============ */
+.pdp-left-col {
+  min-width: 0;
+  border-right: 1px solid #eceff1;
+
+  @media (max-width: 960px) {
+    border-right: none;
+  }
+}
+
+.pdp-gallery-section {
+  position: relative;
+  width: 100%;
+}
+
+/* Floating Breadcrumb Overlaid Top-Left of Photo #1 (Exact live adidas.com.vn/vi) */
+.pdp-floating-breadcrumb {
+  position: absolute;
+  top: 22px;
+  left: 24px;
+  z-index: 6;
+  display: inline-flex;
   align-items: center;
   gap: 8px;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  color: #737373;
-  padding: 24px 0 32px;
+  background: rgba(255, 255, 255, 0.86);
+  backdrop-filter: blur(4px);
+  padding: 6px 12px;
+  font-size: 13.5px;
+  flex-wrap: wrap;
 
-  a {
-    color: #737373;
-    text-decoration: none;
-    transition: color 0.15s ease;
+  @media (max-width: 640px) {
+    top: 12px;
+    left: 12px;
+    font-size: 12px;
+    padding: 5px 9px;
+  }
+
+  .bc-back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: none;
+    border: none;
+    padding: 0 8px 0 0;
+    font-family: inherit;
+    font-size: 13.5px;
+    font-weight: 700;
+    color: #000000;
+    cursor: pointer;
+
+    .bc-back-text {
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+
+    &:hover .bc-back-text {
+      background: #000000;
+      color: #ffffff;
+      text-decoration: none;
+    }
+  }
+
+  .bc-link {
+    color: #000000;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+
     &:hover {
+      background: #000000;
+      color: #ffffff;
+      text-decoration: none;
+    }
+  }
+
+  .bc-sep {
+    color: #555555;
+  }
+}
+
+/* 2x2 Edge-to-Edge Studio Photo Grid */
+.pdp-photo-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px;
+  background: #ffffff;
+
+  &.single-photo {
+    grid-template-columns: 1fr;
+  }
+
+  @media (max-width: 640px) {
+    grid-template-columns: 1fr;
+  }
+
+  .pdp-photo-tile {
+    aspect-ratio: 1 / 1;
+    background: #eceff1;
+    overflow: hidden;
+    cursor: zoom-in;
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: transform 0.35s ease;
+    }
+
+    &:hover img {
+      transform: scale(1.03);
+    }
+  }
+}
+
+.gallery-expand-wrap {
+  display: flex;
+  justify-content: center;
+  margin-top: -22px;
+  margin-bottom: 18px;
+  position: relative;
+  z-index: 4;
+
+  .btn-gallery-expand {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: #ffffff;
+    color: #000000;
+    border: 1px solid #000000;
+    padding: 10px 22px;
+    font-family: inherit;
+    font-size: 13.5px;
+    font-weight: 700;
+    cursor: pointer;
+
+    .chevron {
+      font-size: 16px;
+      line-height: 1;
+      transition: transform 0.2s ease;
+
+      &.open {
+        transform: rotate(180deg);
+      }
+    }
+
+    &:hover {
+      background: #000000;
+      color: #ffffff;
+    }
+  }
+}
+
+/* ============ ACCORDIONS INSIDE LEFT COLUMN (Exact live adidas.com.vn/vi) ============ */
+.pdp-accordions-wrap {
+  padding: 36px 48px 24px;
+
+  @media (max-width: 1024px) {
+    padding: 28px 24px 20px;
+  }
+
+  @media (max-width: 640px) {
+    padding: 20px 16px;
+  }
+}
+
+.adi-accordion-item {
+  border-top: 1px solid #d9dbdd;
+
+  &:last-child {
+    border-bottom: 1px solid #d9dbdd;
+  }
+}
+
+.adi-accordion-header {
+  width: 100%;
+  height: 76px;
+  background: transparent;
+  border: none;
+  padding: 0 4px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: inherit;
+  cursor: pointer;
+
+  .acc-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #000000;
+  }
+
+  .acc-right {
+    display: inline-flex;
+    align-items: center;
+    gap: 18px;
+
+    .acc-stars {
+      font-size: 15px;
+      letter-spacing: 2px;
       color: #000000;
     }
   }
 
-  .sep {
-    color: #d4d4d4;
+  .acc-chevron {
+    width: 20px;
+    height: 20px;
+    color: #000000;
+    transition: transform 0.2s ease;
+
+    &.open {
+      transform: rotate(180deg);
+    }
+  }
+}
+
+.adi-accordion-body {
+  padding: 4px 4px 36px;
+}
+
+/* Accordion 2: Mô tả (2-Col Copy + Product Photo Split) */
+.desc-split-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 36px;
+  align-items: center;
+
+  @media (max-width: 720px) {
+    grid-template-columns: 1fr;
+    gap: 20px;
   }
 
-  .current {
+  .desc-subtitle {
+    font-family: 'Barlow Condensed', 'Inter', sans-serif;
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin: 0 0 12px;
+  }
+
+  .desc-text {
+    font-size: 14.5px;
+    line-height: 1.65;
+    color: #111111;
+    margin: 0 0 12px;
+  }
+
+  .desc-photo-col {
+    aspect-ratio: 1 / 1;
+    background: #eceff1;
+    overflow: hidden;
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+  }
+}
+
+/* Accordion 3: Thông tin chi tiết (2-Col Bulleted List) */
+.specs-bullet-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px 32px;
+  margin: 0;
+  padding-left: 18px;
+  font-size: 14.5px;
+  line-height: 1.55;
+  color: #000000;
+
+  @media (max-width: 640px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Accordion 1: Đánh giá (Exact Live Adidas Segmented Bars + Star Chips) */
+.rev-summary-top {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 28px;
+
+  .rev-big-num {
+    font-size: 40px;
+    font-weight: 800;
+    line-height: 1;
+    color: #000000;
+  }
+
+  .rev-big-stars {
+    font-size: 18px;
+    letter-spacing: 3px;
     color: #000000;
   }
 }
 
-.product-layout-grid {
+.rev-segmented-grid {
   display: grid;
-  grid-template-columns: 1.15fr 1fr;
-  gap: 60px;
-  align-items: flex-start;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px 40px;
+  margin-bottom: 30px;
 
-  @media (max-width: 992px) {
+  @media (max-width: 640px) {
     grid-template-columns: 1fr;
-    gap: 40px;
+  }
+
+  .seg-metric {
+    .seg-label {
+      font-size: 14px;
+      font-weight: 700;
+      color: #000000;
+      margin-bottom: 10px;
+    }
+
+    .seg-track {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 8px;
+
+      span {
+        flex: 1;
+        height: 4px;
+        background: #eceff1;
+
+        &.active {
+          background: #000000;
+        }
+      }
+    }
+
+    .seg-scale {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12.5px;
+      color: #555555;
+    }
   }
 }
 
-/* Gallery */
-.product-gallery {
-  position: sticky;
-  top: 96px;
+.onfeet-strip-block {
+  margin-bottom: 24px;
 
-  .main-image-viewport {
-    position: relative;
-    background: #f5f5f7;
-    aspect-ratio: 1 / 1;
-    overflow: hidden;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    .active-sneaker-img {
-      width: 85%;
-      height: 85%;
-      object-fit: contain;
-      transition: transform 0.3s ease;
-    }
-
-    .gallery-badge {
-      position: absolute;
-      top: 18px;
-      left: 18px;
-      background: #000000;
-      color: #ffffff;
-      font-size: 9px;
-      font-weight: 800;
-      letter-spacing: 0.1em;
-      padding: 4px 8px;
-    }
+  .onfeet-header {
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 10px;
   }
 
-  .thumbnails-strip {
+  .onfeet-thumbs {
     display: flex;
-    gap: 12px;
-    margin-top: 16px;
+    gap: 8px;
+    overflow-x: auto;
 
-    .thumb-btn {
-      width: 80px;
-      height: 80px;
-      background: #f5f5f7;
-      border: 1px solid #e5e5e5;
-      padding: 6px;
+    .onfeet-thumb-item {
+      width: 86px;
+      height: 86px;
+      flex-shrink: 0;
+      background: #eceff1;
       cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.15s ease;
+      overflow: hidden;
 
       img {
         width: 100%;
         height: 100%;
-        object-fit: contain;
-      }
-
-      &:hover,
-      &.active {
-        border-color: #000000;
-        background: #ffffff;
+        object-fit: cover;
       }
     }
   }
 }
 
-/* Buy Box */
-.product-buybox {
-  display: flex;
-  flex-direction: column;
+.rev-filter-row {
+  margin-bottom: 22px;
 
-  .brand-eyebrow {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 11px;
-    font-weight: 800;
-    letter-spacing: 0.12em;
-    color: #737373;
-    text-transform: uppercase;
-    margin-bottom: 8px;
-
-    .dot-sep {
-      color: #d4d4d4;
-    }
+  .rev-filter-label {
+    font-size: 14px;
+    font-weight: 700;
+    margin-bottom: 10px;
   }
 
-  .product-headline {
-    font-size: 34px;
-    font-weight: 900;
-    letter-spacing: -0.02em;
-    color: #000000;
-    line-height: 1.15;
-    margin: 0 0 12px;
-
-    @media (max-width: 600px) {
-      font-size: 26px;
-    }
-  }
-
-  .sku-row {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    margin-bottom: 24px;
-
-    .sku-tag {
-      font-size: 11px;
-      font-weight: 700;
-      color: #737373;
-      font-family: monospace;
-      letter-spacing: 0.06em;
-    }
-
-    .stock-indicator {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 11px;
-      font-weight: 700;
-
-      .stock-dot {
-        width: 6px;
-        height: 6px;
-        border-radius: 50%;
-      }
-
-      &.in-stock {
-        color: #15803d;
-        .stock-dot {
-          background: #10b981;
-        }
-      }
-
-      &.out-stock {
-        color: #b91c1c;
-        .stock-dot {
-          background: #ef4444;
-        }
-      }
-    }
-  }
-
-  .pricing-card {
-    background: #fafafa;
-    border: 1px solid #ebebeb;
-    padding: 20px 24px;
-    margin-bottom: 30px;
-
-    .price-main {
-      display: flex;
-      align-items: baseline;
-      gap: 12px;
-      margin-bottom: 6px;
-
-      .price-val {
-        font-size: 28px;
-        font-weight: 900;
-        letter-spacing: -0.03em;
-        color: #000000;
-        font-variant-numeric: tabular-nums;
-      }
-
-      .price-tax {
-        font-size: 12px;
-        color: #737373;
-      }
-    }
-
-    .perk-pill {
-      font-size: 12px;
-      color: #525252;
-      .perk-highlight {
-        font-weight: 800;
-        color: #000000;
-      }
-    }
-  }
-
-  .option-group {
-    margin-bottom: 28px;
-
-    .group-title-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 12px;
-
-      .group-title {
-        font-size: 11px;
-        font-weight: 800;
-        letter-spacing: 0.1em;
-        color: #000000;
-        text-transform: uppercase;
-      }
-
-      .selected-text {
-        font-size: 12px;
-        font-weight: 700;
-        color: #525252;
-      }
-
-      .size-action-links {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-
-        .btn-smart-finder {
-          background: #ffffff;
-          color: #000000;
-          border: 1px solid #000000;
-          padding: 3px 8px;
-          border-radius: 4px;
-          font-family: inherit;
-          font-size: 11px;
-          font-weight: 700;
-          letter-spacing: 0.02em;
-          cursor: pointer;
-          display: inline-flex;
-          align-items: center;
-          gap: 4px;
-          transition: all 0.15s ease;
-
-          &:hover {
-            background: #000000;
-            color: #ffffff;
-          }
-        }
-
-        .size-chart-link {
-          background: none;
-          border: none;
-          font-family: inherit;
-          font-size: 11px;
-          font-weight: 700;
-          letter-spacing: 0.04em;
-          color: #737373;
-          text-decoration: underline;
-          cursor: pointer;
-          padding: 0;
-
-          &:hover {
-            color: #000000;
-          }
-        }
-      }
-    }
-
-    .color-swatches {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-
-      .swatch-btn {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        padding: 8px 14px;
-        background: #ffffff;
-        border: 1px solid #e5e5e5;
-        font-family: inherit;
-        font-size: 12px;
-        font-weight: 700;
-        cursor: pointer;
-        transition: all 0.15s ease;
-
-        .color-dot {
-          width: 12px;
-          height: 12px;
-          border-radius: 50%;
-          border: 1px solid rgba(0, 0, 0, 0.1);
-        }
-
-        &:hover {
-          border-color: #000000;
-        }
-
-        &.active {
-          border-color: #000000;
-          background: #000000;
-          color: #ffffff;
-        }
-      }
-    }
-
-    .size-matrix {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 10px;
-
-      @media (max-width: 500px) {
-        grid-template-columns: repeat(3, 1fr);
-      }
-
-      .size-tile {
-        height: 52px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        background: #ffffff;
-        border: 1px solid #e5e5e5;
-        font-family: inherit;
-        cursor: pointer;
-        transition: all 0.15s ease;
-
-        .size-val {
-          font-size: 14px;
-          font-weight: 800;
-          color: #000000;
-        }
-
-        .size-sub {
-          font-size: 10px;
-          color: #737373;
-          margin-top: 2px;
-        }
-
-        &:hover:not(.disabled) {
-          border-color: #000000;
-        }
-
-        &.active {
-          background: #000000;
-          border-color: #000000;
-          .size-val {
-            color: #ffffff;
-          }
-          .size-sub {
-            color: #a3a3a3;
-          }
-        }
-
-        &.disabled {
-          background: #fafafa;
-          border-color: #f0f0f0;
-          opacity: 0.4;
-          cursor: not-allowed;
-          position: relative;
-        }
-      }
-    }
-
-    .size-hint {
-      font-size: 12px;
-      color: #e11d48;
-      margin: 8px 0 0;
-      font-weight: 600;
-    }
-  }
-
-  .quantity-row {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    margin-bottom: 28px;
-
-    .qty-label {
-      font-size: 11px;
-      font-weight: 800;
-      letter-spacing: 0.1em;
-      color: #000000;
-    }
-
-    .qty-stepper {
-      display: flex;
-      align-items: center;
-      border: 1px solid #e5e5e5;
-
-      .step-btn {
-        width: 36px;
-        height: 36px;
-        background: none;
-        border: none;
-        font-size: 16px;
-        cursor: pointer;
-        color: #000000;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-
-        &:disabled {
-          opacity: 0.3;
-          cursor: not-allowed;
-        }
-
-        &:hover:not(:disabled) {
-          background: #f5f5f5;
-        }
-      }
-
-      .qty-val {
-        width: 36px;
-        text-align: center;
-        font-size: 13px;
-        font-weight: 800;
-        font-variant-numeric: tabular-nums;
-      }
-    }
-  }
-
-  .cta-actions {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    margin-bottom: 36px;
-
-    .btn-add-cart {
-      height: 54px;
-      background: #000000;
-      color: #ffffff;
-      border: 1px solid #000000;
-      font-family: inherit;
-      font-size: 13px;
-      font-weight: 800;
-      letter-spacing: 0.08em;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      cursor: pointer;
-      transition: all 0.2s ease;
-
-      .cart-icon-svg {
-        width: 18px;
-        height: 18px;
-      }
-
-      &:hover:not(:disabled) {
-        background: #262626;
-      }
-
-      &:disabled {
-        background: #e5e5e5;
-        border-color: #e5e5e5;
-        color: #a3a3a3;
-        cursor: not-allowed;
-      }
-    }
-
-    .btn-buy-express {
-      height: 50px;
-      background: transparent;
-      color: #000000;
-      border: 1px solid #000000;
-      font-family: inherit;
-      font-size: 12px;
-      font-weight: 800;
-      letter-spacing: 0.08em;
-      cursor: pointer;
-      transition: all 0.2s ease;
-
-      &:hover:not(:disabled) {
-        background: #f5f5f5;
-      }
-
-      &:disabled {
-        opacity: 0.4;
-        cursor: not-allowed;
-      }
-    }
-
-    .btn-wishlist-toggle {
-      height: 48px;
-      background: #ffffff;
-      color: #000000;
-      border: 1.5px solid #18181b;
-      font-family: inherit;
-      font-size: 12px;
-      font-weight: 800;
-      letter-spacing: 0.08em;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      transition: all 0.2s ease;
-
-      .heart-svg {
-        width: 18px;
-        height: 18px;
-        transition: transform 0.2s ease;
-      }
-
-      &:hover {
-        background: #f4f4f5;
-        border-color: #000000;
-        .heart-svg {
-          transform: scale(1.15);
-        }
-      }
-
-      &.active {
-        background: #fef2f2;
-        border-color: #f87171;
-        color: #dc2626;
-
-        .heart-svg {
-          color: #ef4444;
-          fill: #ef4444;
-        }
-      }
-    }
-  }
-
-  .assurance-list {
-    border-top: 1px solid #ebebeb;
-    border-bottom: 1px solid #ebebeb;
-    padding: 24px 0;
-    margin-bottom: 30px;
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-
-    .assurance-item {
-      display: flex;
-      gap: 14px;
-      align-items: flex-start;
-
-      .perk-svg {
-        width: 20px;
-        height: 20px;
-        color: #000000;
-        flex-shrink: 0;
-        margin-top: 2px;
-      }
-
-      strong {
-        font-size: 13px;
-        font-weight: 800;
-        color: #000000;
-        display: block;
-        margin-bottom: 2px;
-      }
-
-      p {
-        font-size: 12px;
-        color: #737373;
-        margin: 0;
-        line-height: 1.4;
-      }
-    }
-  }
-
-  .specs-accordion {
-    .specs-title {
-      font-size: 12px;
-      font-weight: 800;
-      letter-spacing: 0.1em;
-      color: #000000;
-      text-transform: uppercase;
-      margin: 0 0 12px;
-    }
-
-    .specs-desc {
-      font-size: 13px;
-      color: #525252;
-      line-height: 1.6;
-      margin: 0 0 16px;
-    }
-
-    .spec-row {
-      display: flex;
-      justify-content: space-between;
-      padding: 8px 0;
-      border-bottom: 1px solid #f5f5f5;
-      font-size: 12px;
-
-      .spec-label {
-        color: #737373;
-      }
-
-      .spec-val {
-        color: #000000;
-        font-weight: 700;
-      }
-    }
-  }
-}
-
-/* ================= REVIEWS SECTION (MINIMALIST & COHESIVE) ================= */
-.reviews-section {
-  margin-top: 60px;
-  padding-top: 40px;
-  border-top: 1px solid #e5e5e5;
-
-  .reviews-head-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-end;
-    margin-bottom: 24px;
-    padding-bottom: 16px;
-    border-bottom: 1px solid #f0f0f0;
-
-    .reviews-title {
-      font-size: 20px;
-      font-weight: 900;
-      letter-spacing: -0.02em;
-      color: #000000;
-      margin: 0 0 4px;
-      text-transform: uppercase;
-    }
-
-    .reviews-sub {
-      font-size: 13px;
-      color: #737373;
-    }
-
-    .overall-rating-box {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-
-      .rating-val {
-        font-size: 32px;
-        font-weight: 900;
-        color: #000000;
-        line-height: 1;
-      }
-
-      .rating-sub {
-        display: flex;
-        flex-direction: column;
-        gap: 2px;
-
-        .scale-text {
-          font-size: 11px;
-          color: #737373;
-          font-weight: 600;
-        }
-      }
-    }
-  }
-
-  /* ANALYTICS CARD */
-  .reviews-analytics-card {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 32px;
-    background: #fafafa;
-    border: 1px solid #ebebeb;
-    border-radius: 4px;
-    padding: 24px;
-    margin-bottom: 30px;
-
-    @media (max-width: 768px) {
-      grid-template-columns: 1fr;
-      gap: 20px;
-    }
-
-    .analytics-col {
-      .col-heading {
-        font-size: 11px;
-        font-weight: 800;
-        letter-spacing: 0.08em;
-        color: #000000;
-        text-transform: uppercase;
-        margin-bottom: 14px;
-      }
-
-      /* STAR BARS */
-      .star-bars-simple {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-
-        .star-row {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          font-size: 12px;
-
-          .star-num {
-            width: 42px;
-            font-weight: 600;
-            color: #525252;
-          }
-
-          .bar-track {
-            flex: 1;
-            height: 6px;
-            background: #e5e5e5;
-            border-radius: 3px;
-            overflow: hidden;
-
-            .bar-fill {
-              height: 100%;
-              background: #000000;
-              border-radius: 3px;
-              transition: width 0.3s ease;
-            }
-          }
-
-          .star-pct {
-            width: 32px;
-            text-align: right;
-            font-weight: 700;
-            color: #171717;
-          }
-        }
-      }
-
-      /* FIT BARS */
-      .fit-bars-simple {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-
-        .fit-row {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          font-size: 12px;
-
-          .fit-label {
-            width: 160px;
-            font-weight: 600;
-            color: #525252;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-          }
-
-          .bar-track {
-            flex: 1;
-            height: 6px;
-            background: #e5e5e5;
-            border-radius: 3px;
-            overflow: hidden;
-
-            .bar-fill {
-              height: 100%;
-              background: #000000;
-              border-radius: 3px;
-
-              &.muted {
-                background: #737373;
-              }
-            }
-          }
-
-          .fit-pct {
-            width: 32px;
-            text-align: right;
-            font-weight: 700;
-            color: #171717;
-          }
-        }
-      }
-
-      .fit-note {
-        font-size: 12px;
-        color: #737373;
-        margin: 12px 0 0;
-        line-height: 1.4;
-      }
-    }
-  }
-
-  /* ON-FEET STRIP */
-  .onfeet-strip-block {
-    margin-bottom: 28px;
-
-    .onfeet-header {
-      font-size: 11px;
-      font-weight: 800;
-      letter-spacing: 0.08em;
-      color: #000000;
-      text-transform: uppercase;
-      margin-bottom: 12px;
-    }
-
-    .onfeet-thumbs {
-      display: flex;
-      gap: 10px;
-      overflow-x: auto;
-      padding-bottom: 6px;
-
-      .onfeet-thumb-item {
-        width: 100px;
-        height: 100px;
-        flex-shrink: 0;
-        border: 1px solid #e5e5e5;
-        border-radius: 4px;
-        overflow: hidden;
-        cursor: pointer;
-        background: #fafafa;
-
-        img {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-          transition: transform 0.2s;
-        }
-
-        &:hover img {
-          transform: scale(1.06);
-        }
-      }
-    }
-  }
-
-  /* FILTER PILLS */
-  .filter-tabs-row {
+  .rev-filter-chips {
     display: flex;
     gap: 8px;
     flex-wrap: wrap;
-    margin-bottom: 20px;
 
-    .filter-pill {
-      padding: 6px 14px;
-      background: #fafafa;
-      border: 1px solid #e5e5e5;
-      border-radius: 4px;
-      font-size: 12px;
-      font-weight: 700;
-      color: #525252;
+    .rev-chip {
+      height: 36px;
+      padding: 0 12px;
+      background: #f4f5f6;
+      border: 1px solid #d9dbdd;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 500;
+      color: #000000;
       cursor: pointer;
-      transition: all 0.15s ease;
 
       &:hover {
-        background: #f0f0f0;
-        color: #000000;
+        border-color: #000000;
       }
 
       &.active {
@@ -1713,182 +1478,728 @@ onMounted(() => {
       }
     }
   }
+}
 
-  /* REVIEWS FEED */
-  .reviews-feed {
-    display: flex;
-    flex-direction: column;
+.reviews-feed {
+  .review-row-item {
+    padding: 18px 0;
+    border-top: 1px solid #eceff1;
 
-    .review-row-item {
-      padding: 20px 0;
-      border-bottom: 1px solid #f0f0f0;
+    .row-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 8px;
 
-      &:last-child {
-        border-bottom: none;
-      }
-
-      .row-header {
+      .user-block {
         display: flex;
-        justify-content: space-between;
         align-items: center;
-        margin-bottom: 10px;
-        flex-wrap: wrap;
         gap: 10px;
-
-        .user-block {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-
-          .user-avatar {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            background: #000000;
-            color: #ffffff;
-            font-size: 13px;
-            font-weight: 800;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-          }
-
-          .user-details {
-            .name-line {
-              display: flex;
-              align-items: center;
-              gap: 8px;
-
-              .user-name {
-                font-size: 13px;
-                font-weight: 800;
-                color: #000000;
-              }
-
-              .verified-tag {
-                font-size: 10px;
-                font-weight: 700;
-                color: #15803d;
-                background: #f0fdf4;
-                border: 1px solid #bbf7d0;
-                padding: 1px 5px;
-                border-radius: 2px;
-              }
-            }
-
-            .date-line {
-              font-size: 11px;
-              color: #a3a3a3;
-            }
-          }
-        }
-
-        .rating-block {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-
-          .fit-tag {
-            font-size: 11px;
-            font-weight: 700;
-            background: #f5f5f5;
-            color: #404040;
-            padding: 2px 7px;
-            border-radius: 3px;
-          }
-        }
-      }
-
-      .review-text {
-        font-size: 13px;
-        color: #404040;
-        line-height: 1.6;
-        margin: 0 0 12px;
-      }
-
-      .review-photos-row {
-        display: flex;
-        gap: 8px;
-        margin-bottom: 12px;
         flex-wrap: wrap;
 
-        .photo-thumb {
-          width: 72px;
-          height: 72px;
-          border-radius: 4px;
-          overflow: hidden;
-          border: 1px solid #e5e5e5;
-          cursor: pointer;
+        .user-name {
+          font-size: 14px;
+          font-weight: 700;
+        }
 
-          img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            transition: transform 0.2s;
-          }
+        .verified-tag {
+          font-size: 11px;
+          background: #eceff1;
+          padding: 2px 6px;
+          color: #000000;
+        }
 
-          &:hover img {
-            transform: scale(1.06);
-          }
+        .date-line {
+          font-size: 12px;
+          color: #767677;
         }
       }
 
-      .row-actions {
-        .btn-helpful-simple {
-          background: transparent;
-          border: 1px solid #e5e5e5;
-          border-radius: 4px;
-          padding: 4px 10px;
-          font-size: 11px;
-          font-weight: 700;
-          color: #525252;
-          cursor: pointer;
-          transition: all 0.15s ease;
+      .rating-block {
+        display: flex;
+        align-items: center;
+        gap: 8px;
 
-          &:hover {
-            border-color: #000000;
-            color: #000000;
-          }
+        .review-stars-inline {
+          font-size: 14px;
+          letter-spacing: 1px;
+        }
 
-          &.active {
-            background: #000000;
-            border-color: #000000;
-            color: #ffffff;
-          }
+        .fit-tag {
+          font-size: 11.5px;
+          background: #eceff1;
+          padding: 2px 8px;
         }
       }
     }
-  }
 
-  /* EMPTY CLEAN */
-  .reviews-empty-clean {
-    padding: 32px 0;
-    text-align: center;
-    color: #737373;
-    font-size: 13px;
-
-    p {
+    .review-text {
+      font-size: 14px;
+      line-height: 1.6;
+      color: #222222;
       margin: 0 0 12px;
     }
 
-    .btn-orders-link {
-      display: inline-block;
-      padding: 8px 16px;
-      background: #000000;
-      color: #ffffff;
-      font-weight: 700;
-      font-size: 12px;
-      border-radius: 4px;
-      text-decoration: none;
+    .review-photos-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 10px;
 
-      &:hover {
-        background: #262626;
+      .photo-thumb {
+        width: 72px;
+        height: 72px;
+        background: #eceff1;
+        cursor: pointer;
+        overflow: hidden;
+
+        img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+      }
+    }
+
+    .btn-helpful-simple {
+      background: #ffffff;
+      border: 1px solid #d9dbdd;
+      padding: 5px 12px;
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 600;
+      color: #000000;
+      cursor: pointer;
+
+      &:hover,
+      &.active {
+        background: #000000;
+        border-color: #000000;
+        color: #ffffff;
       }
     }
   }
 }
 
-/* LIGHTBOX MODAL */
+.reviews-empty-clean {
+  padding: 24px 0 8px;
+  font-size: 14px;
+  color: #555555;
+
+  p {
+    margin: 0 0 12px;
+  }
+
+  .btn-orders-link {
+    display: inline-block;
+    font-size: 13.5px;
+    font-weight: 700;
+    color: #000000;
+    text-decoration: underline;
+    text-underline-offset: 4px;
+
+    &:hover {
+      background: #000000;
+      color: #ffffff;
+      text-decoration: none;
+    }
+  }
+}
+
+/* ============ RELATED PRODUCTS ("HOÀN THIỆN PHONG CÁCH") ============ */
+.pdp-related-section {
+  padding: 36px 48px 72px;
+
+  @media (max-width: 1024px) {
+    padding: 28px 24px 52px;
+  }
+
+  @media (max-width: 640px) {
+    padding: 24px 16px 40px;
+  }
+
+  .related-heading {
+    font-family: 'Barlow Condensed', 'Inter', sans-serif;
+    font-size: 36px;
+    font-weight: 700;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: #000000;
+    margin: 0 0 22px;
+  }
+
+  .related-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+
+    @media (max-width: 768px) {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  .adi-2026-card {
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: border-color 0.14s ease;
+
+    &:hover {
+      border-color: #000000;
+    }
+
+    .card-img-stage {
+      position: relative;
+      aspect-ratio: 1 / 1;
+      background: #eceff1;
+      overflow: hidden;
+
+      img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+      }
+
+      .card-heart-btn {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        width: 32px;
+        height: 32px;
+        background: transparent;
+        border: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+
+        svg {
+          width: 19px;
+          height: 19px;
+        }
+      }
+    }
+
+    .card-info {
+      padding: 10px 8px 12px;
+
+      .price-regular {
+        font-size: 14px;
+        font-weight: 700;
+        color: #000000;
+        margin-bottom: 4px;
+      }
+
+      .card-title {
+        font-size: 13.5px;
+        font-weight: 400;
+        line-height: 18px;
+        color: #000000;
+        margin: 0 0 4px;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+
+      .card-cat {
+        font-size: 13px;
+        color: #767677;
+        margin: 0;
+      }
+    }
+  }
+}
+
+/* ============ RIGHT COLUMN: STICKY 480px ADIDAS BUY BOX ============ */
+.pdp-right-buybox {
+  position: sticky;
+  top: 81px;
+  padding: 28px 34px 44px;
+  background: #ffffff;
+  box-sizing: border-box;
+
+  @media (max-width: 1180px) {
+    padding: 24px 24px 36px;
+  }
+
+  @media (max-width: 960px) {
+    position: static;
+    padding: 24px 16px 36px;
+    border-top: 1px solid #eceff1;
+  }
+}
+
+.buybox-meta-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+
+  .buybox-cat {
+    font-size: 14px;
+    color: #000000;
+  }
+
+  .buybox-rating-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: none;
+    border: none;
+    padding: 0;
+    font-family: inherit;
+    font-size: 13.5px;
+    color: #000000;
+    cursor: pointer;
+
+    .rating-stars {
+      letter-spacing: 1px;
+    }
+
+    .rating-cnt {
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+  }
+}
+
+.buybox-subtle-tag {
+  display: inline-block;
+  background: #eceff1;
+  color: #000000;
+  font-size: 11.5px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  padding: 5px 8px;
+  margin-bottom: 12px;
+}
+
+.buybox-title {
+  font-family: 'Barlow Condensed', 'Inter', sans-serif;
+  font-size: 28px;
+  font-style: normal;
+  font-weight: 700;
+  letter-spacing: 2px;
+  line-height: 1.15;
+  text-transform: uppercase;
+  color: #000000;
+  margin: 0 0 10px;
+}
+
+.buybox-price {
+  font-size: 17px;
+  font-weight: 700;
+  color: #000000;
+  margin-bottom: 26px;
+  font-variant-numeric: tabular-nums;
+}
+
+.buybox-block {
+  margin-bottom: 24px;
+
+  .block-label {
+    font-size: 14px;
+    font-weight: 700;
+    color: #000000;
+    margin-bottom: 12px;
+  }
+}
+
+/* Square Photo-Thumbnail Color Swatches (Exact live adidas.com.vn/vi) */
+.color-thumb-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+  margin-bottom: 8px;
+
+  .color-thumb-tile {
+    position: relative;
+    aspect-ratio: 1 / 1;
+    padding: 0;
+    background: #eceff1;
+    border: none;
+    border-bottom: 3px solid transparent;
+    overflow: hidden;
+    cursor: pointer;
+    transition: border-color 0.14s ease;
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .color-mini-dot {
+      position: absolute;
+      right: 4px;
+      bottom: 4px;
+      width: 10px;
+      height: 10px;
+      border: 1.5px solid #ffffff;
+      box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35);
+    }
+
+    &:hover,
+    &.active {
+      border-bottom-color: #000000;
+    }
+  }
+}
+
+.selected-color-caption {
+  font-size: 13.5px;
+  color: #000000;
+}
+
+/* Size Selector Grid: 5-Col 40px #eceff1 Tiles + 1px Black Fit Box */
+.size-head-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  gap: 8px;
+
+  .block-label {
+    margin-bottom: 0;
+  }
+
+  .size-head-links {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+
+    .underline-action {
+      background: none;
+      border: none;
+      padding: 0;
+      font-family: inherit;
+      font-size: 13.5px;
+      color: #000000;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+      cursor: pointer;
+
+      &:hover {
+        background: #000000;
+        color: #ffffff;
+        text-decoration: none;
+      }
+    }
+  }
+}
+
+.size-grid-5 {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 5px;
+  margin-bottom: 12px;
+
+  .size-cell {
+    height: 40px;
+    background: #eceff1;
+    border: 1px solid #eceff1;
+    color: #000000;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 400;
+    cursor: pointer;
+    transition: background-color 0.12s ease, color 0.12s ease;
+
+    &:hover:not(.disabled) {
+      background: #000000;
+      border-color: #000000;
+      color: #ffffff;
+    }
+
+    &.active {
+      background: #000000;
+      border-color: #000000;
+      color: #ffffff;
+      font-weight: 700;
+    }
+
+    &.disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      text-decoration: line-through;
+    }
+  }
+}
+
+.size-err-msg {
+  font-size: 13px;
+  color: #e32b2b;
+  font-weight: 600;
+  margin: 0 0 10px;
+}
+
+.size-stock-note {
+  font-size: 12.5px;
+  color: #427f5c;
+  font-weight: 600;
+  margin: 0 0 10px;
+}
+
+.fit-advice-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  border: 1px solid #000000;
+  padding: 14px 16px;
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: #000000;
+
+  .fit-info-icon {
+    width: 18px;
+    height: 18px;
+    border: 1px solid #000000;
+    border-radius: 50%;
+    font-size: 11px;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+}
+
+/* Quantity Stepper */
+.buybox-qty-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+
+  .qty-label {
+    font-size: 14px;
+    font-weight: 700;
+  }
+
+  .qty-stepper {
+    display: flex;
+    align-items: center;
+    border: 1px solid #000000;
+
+    .step-btn {
+      width: 36px;
+      height: 36px;
+      background: #ffffff;
+      border: none;
+      font-size: 16px;
+      cursor: pointer;
+
+      &:hover:not(:disabled) {
+        background: #eceff1;
+      }
+
+      &:disabled {
+        opacity: 0.35;
+        cursor: not-allowed;
+      }
+    }
+
+    .qty-val {
+      width: 38px;
+      text-align: center;
+      font-size: 14px;
+      font-weight: 700;
+    }
+  }
+}
+
+/* CTA Buttons: Always-Active 58px Black Offset CTA + 56px Square Heart */
+.buybox-cta-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 24px;
+
+  .cta-main-row {
+    display: flex;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .btn-adi-add-bag {
+    flex: 1;
+    position: relative;
+    height: 56px;
+    padding: 0 20px;
+    background: #000000;
+    color: #ffffff;
+    border: 1px solid #000000;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    transition: color 0.15s ease;
+
+    &::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      transform: translate(3px, 3px);
+      border: 1px solid #000000;
+      pointer-events: none;
+    }
+
+    .bag-plus-svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    &:hover {
+      color: #b8b8b8;
+    }
+  }
+
+  .btn-adi-heart {
+    width: 56px;
+    height: 56px;
+    flex-shrink: 0;
+    background: #ffffff;
+    border: 1px solid #000000;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+
+    svg {
+      width: 22px;
+      height: 22px;
+    }
+
+    &:hover {
+      background: #eceff1;
+    }
+  }
+
+  .btn-adi-secondary {
+    height: 48px;
+    padding: 0 18px;
+    background: #ffffff;
+    color: #000000;
+    border: 1px solid #000000;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease;
+
+    &:hover {
+      background: #000000;
+      color: #ffffff;
+    }
+  }
+}
+
+/* ADHA Club Points Strip */
+.buybox-club-strip {
+  border-top: 1px solid #eceff1;
+  border-bottom: 1px solid #eceff1;
+  padding: 18px 0;
+  margin-bottom: 10px;
+
+  .club-strip-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+
+    .club-strip-title {
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .club-wordmark {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 18px;
+      font-weight: 800;
+      color: #427f5c;
+      letter-spacing: 0.02em;
+    }
+  }
+
+  .club-points-line {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: #000000;
+
+    .points-star {
+      font-size: 16px;
+    }
+  }
+}
+
+/* 3 Crisp 1-Line USP Rows */
+.buybox-usp-list {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 20px;
+
+  .usp-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 11px 4px;
+    background: none;
+    border: none;
+    font-family: inherit;
+    font-size: 13px;
+    color: #000000;
+    text-decoration: none;
+    cursor: pointer;
+
+    .usp-left {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .usp-chevron {
+      font-size: 18px;
+      color: #555555;
+    }
+
+    &:hover {
+      background: #f4f5f6;
+    }
+  }
+}
+
+.buybox-shop-more-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 46px;
+  border: 1px solid #000000;
+  background: #ffffff;
+  color: #000000;
+  font-size: 13.5px;
+  font-weight: 700;
+  text-decoration: none;
+
+  &:hover {
+    background: #000000;
+    color: #ffffff;
+  }
+}
+
+/* Lightbox Modal */
 .lightbox-dialog {
   :deep(.el-dialog__body) {
     padding: 0;
@@ -1901,14 +2212,14 @@ onMounted(() => {
 
   .lightbox-img {
     width: 100%;
-    max-height: 520px;
+    max-height: 560px;
     object-fit: contain;
-    background: #000;
+    background: #eceff1;
   }
 
   .lightbox-caption {
-    padding: 16px 20px;
-    background: #0f172a;
+    padding: 14px 20px;
+    background: #000000;
     color: #ffffff;
 
     strong {
@@ -1919,25 +2230,9 @@ onMounted(() => {
 
     p {
       font-size: 13px;
-      color: #cbd5e1;
+      color: #d3d7da;
       margin: 0;
-      line-height: 1.4;
     }
-  }
-}
-
-.thumbnails-strip .thumb-btn {
-  position: relative;
-
-  .thumb-color-dot {
-    position: absolute;
-    right: 4px;
-    bottom: 4px;
-    width: 11px;
-    height: 11px;
-    border-radius: 50%;
-    border: 1.5px solid #ffffff;
-    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35);
   }
 }
 </style>

@@ -44,12 +44,12 @@
 html,
 body,
 #app {
-  height: 100%;
+  min-height: 100%;
   width: 100%;
   max-width: 100%;
-  overflow-x: hidden;
+  overflow-x: clip;
   font-family: var(--font-sans);
-  background-color: #fafafa;
+  background-color: #ffffff;
   color: var(--snk-text);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -600,13 +600,10 @@ body,
 }
 
 /* =========================================================
-   UNIFIED SOFT-ROUNDED BUTTONS & CONTROLS IN CLIENT STOREFRONT
+   SHARP ZERO-RADIUS ADIDAS CONTROLS IN CLIENT STOREFRONT
    ========================================================= */
 .store-layout {
-  button:not(.el-dialog__headerbtn):not(.el-drawer__close-btn):not(.is-circle) {
-    border-radius: 5px;
-  }
-
+  button:not(.el-dialog__headerbtn):not(.el-drawer__close-btn):not(.is-circle),
   a[class*="btn-"],
   .btn-primary-action,
   .btn-outline-action,
@@ -618,7 +615,7 @@ body,
   .sort-select,
   .pag-btn,
   .pag-num-btn {
-    border-radius: 5px;
+    border-radius: 0;
   }
 }
 
@@ -721,4 +718,48 @@ body,
     }
   }
 }
+
+/* Razor-sharp 0px Adidas Storefront Dialog Overrides (Client-only, Admin untouched) */
+.el-dialog.client-auth-dialog,
+.el-dialog.vietqr-dialog,
+.el-dialog.cancel-order-dialog,
+.el-dialog.lightbox-dialog {
+  border-radius: 0 !important;
+  border: 1px solid #000000 !important;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.22) !important;
+
+  .el-dialog__header {
+    padding: 14px 20px 4px;
+  }
+
+  .el-dialog__headerbtn {
+    top: 12px;
+    right: 12px;
+    width: 34px;
+    height: 34px;
+    border: 1px solid #000000;
+    background: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    .el-dialog__close {
+      color: #000000;
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    &:hover {
+      background: #000000;
+      .el-dialog__close {
+        color: #ffffff;
+      }
+    }
+  }
+
+  .el-dialog__body {
+    padding: 8px 24px 24px !important;
+  }
+}
+
 

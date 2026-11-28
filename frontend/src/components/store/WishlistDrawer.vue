@@ -15,8 +15,8 @@
             <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
           </svg>
           <div class="title-text">
-            <h3>SẢN PHẨM YÊU THÍCH</h3>
-            <span class="count-tag">{{ wishlistStore.count }} SẢN PHẨM</span>
+            <h3>{{ isEn ? 'MY WISHLIST' : 'SẢN PHẨM YÊU THÍCH' }}</h3>
+            <span class="count-tag">{{ wishlistStore.count }} {{ isEn ? 'ITEMS' : 'SẢN PHẨM' }}</span>
           </div>
         </div>
         <button class="close-btn" @click="$emit('update:modelValue', false)" aria-label="Đóng">
@@ -70,14 +70,14 @@
 
               <div class="item-actions">
                 <button class="action-btn view" @click="goToProduct(item.productId)">
-                  XEM CHI TIẾT &rarr;
+                  {{ isEn ? 'VIEW ITEM →' : 'XEM CHI TIẾT →' }}
                 </button>
-                <button class="action-btn remove" @click="removeItem(item.productId)" title="Bỏ khỏi yêu thích">
+                <button class="action-btn remove" @click="removeItem(item.productId)" :title="isEn ? 'Remove' : 'Bỏ khỏi yêu thích'">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <polyline points="3 6 5 6 21 6"></polyline>
                     <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
                   </svg>
-                  XÓA
+                  {{ isEn ? 'REMOVE' : 'XÓA' }}
                 </button>
               </div>
             </div>
@@ -92,22 +92,26 @@
             <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
           </svg>
         </div>
-        <h3 class="empty-title">CHƯA CÓ SẢN PHẨM YÊU THÍCH</h3>
+        <h3 class="empty-title">{{ isEn ? 'YOUR WISHLIST IS EMPTY' : 'CHƯA CÓ SẢN PHẨM YÊU THÍCH' }}</h3>
         <p class="empty-desc">
-          Hãy bấm vào biểu tượng trái tim ở bất kỳ mẫu giày sneaker nào để lưu lại danh sách những mẫu bạn đang cân nhắc mua sắm!
+          {{
+            isEn
+              ? 'Tap the heart icon on any sneaker to save your favorite pairs here for later.'
+              : 'Hãy bấm vào biểu tượng trái tim ở bất kỳ mẫu giày sneaker nào để lưu lại danh sách những mẫu bạn đang cân nhắc mua sắm!'
+          }}
         </p>
         <button class="btn-explore" @click="goToShop">
-          KHÁM PHÁ BỘ SƯU TẬP NGAY &rarr;
+          {{ isEn ? 'EXPLORE COLLECTION →' : 'KHÁM PHÁ BỘ SƯU TẬP NGAY →' }}
         </button>
       </div>
 
       <!-- FOOTER -->
       <div v-if="wishlistStore.count > 0" class="drawer-footer">
         <button class="footer-btn clear" @click="clearAll">
-          XÓA TOÀN BỘ YÊU THÍCH
+          {{ isEn ? 'CLEAR WISHLIST' : 'XÓA TOÀN BỘ YÊU THÍCH' }}
         </button>
         <button class="footer-btn shop" @click="goToShop">
-          TIẾP TỤC XEM SẢN PHẨM &rarr;
+          {{ isEn ? 'CONTINUE SHOPPING →' : 'TIẾP TỤC XEM SẢN PHẨM →' }}
         </button>
       </div>
     </div>
@@ -118,6 +122,7 @@
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useWishlistStore } from '@/stores/wishlist'
+import { useStoreI18n } from '@/composables/useStoreI18n'
 
 defineProps({
   modelValue: {
@@ -130,6 +135,7 @@ const emit = defineEmits(['update:modelValue'])
 
 const router = useRouter()
 const wishlistStore = useWishlistStore()
+const { lp, isEn } = useStoreI18n()
 
 function formatCurrency(amount) {
   if (amount == null) return '0 ₫'
@@ -138,12 +144,12 @@ function formatCurrency(amount) {
 
 function goToProduct(id) {
   emit('update:modelValue', false)
-  router.push(`/product/${id}`)
+  router.push(lp(`product/${id}`))
 }
 
 function goToShop() {
   emit('update:modelValue', false)
-  router.push('/shop')
+  router.push(lp('shop'))
 }
 
 function removeItem(id) {
@@ -210,11 +216,11 @@ function clearAll() {
   }
 
   .close-btn {
-    width: 32px;
-    height: 32px;
+    width: 34px;
+    height: 34px;
     background: transparent;
-    border: 1px solid #e4e4e7;
-    border-radius: 5px;
+    border: 1px solid #000000;
+    border-radius: 0;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -224,7 +230,7 @@ function clearAll() {
     svg {
       width: 16px;
       height: 16px;
-      color: #18181b;
+      color: #000000;
     }
 
     &:hover {
@@ -245,14 +251,14 @@ function clearAll() {
   .wishlist-list {
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: 12px;
   }
 
   .wishlist-item {
     display: flex;
     gap: 14px;
     padding: 12px;
-    border: 1px solid #e4e4e7;
+    border: 1px solid #eceff1;
     background: #ffffff;
     transition: border-color 0.15s ease;
 
@@ -261,9 +267,9 @@ function clearAll() {
     }
 
     .item-thumb {
-      width: 80px;
-      height: 80px;
-      background: #f4f4f5;
+      width: 84px;
+      height: 84px;
+      background: #eceff1;
       flex-shrink: 0;
       cursor: pointer;
       overflow: hidden;
@@ -339,12 +345,12 @@ function clearAll() {
         gap: 8px;
 
         .action-btn {
-          height: 28px;
-          border-radius: 5px;
-          font-family: var(--font-sans);
-          font-size: 10px;
+          height: 30px;
+          border-radius: 0;
+          font-family: inherit;
+          font-size: 10.5px;
           font-weight: 800;
-          letter-spacing: 0.05em;
+          letter-spacing: 0.08em;
           text-transform: uppercase;
           cursor: pointer;
           display: flex;
@@ -353,21 +359,21 @@ function clearAll() {
           transition: all 0.15s ease;
 
           &.view {
-            padding: 0 10px;
+            padding: 0 12px;
             background: #000000;
             color: #ffffff;
             border: 1px solid #000000;
 
             &:hover {
-              background: #27272a;
+              background: #333333;
             }
           }
 
           &.remove {
-            padding: 0 8px;
+            padding: 0 10px;
             background: transparent;
-            color: #71717a;
-            border: 1px solid #e4e4e7;
+            color: #000000;
+            border: 1px solid #d3d7da;
 
             svg {
               width: 12px;
@@ -375,9 +381,8 @@ function clearAll() {
             }
 
             &:hover {
-              color: #dc2626;
-              border-color: #fca5a5;
-              background: #fef2f2;
+              color: #e32b2b;
+              border-color: #e32b2b;
             }
           }
         }
@@ -398,60 +403,66 @@ function clearAll() {
   .empty-icon-circle {
     width: 64px;
     height: 64px;
-    border-radius: 50%;
-    background: #fef2f2;
-    color: #ef4444;
+    border-radius: 0;
+    background: #eceff1;
+    color: #000000;
     display: flex;
     align-items: center;
     justify-content: center;
     margin-bottom: 16px;
 
     svg {
-      width: 32px;
-      height: 32px;
+      width: 28px;
+      height: 28px;
     }
   }
 
   .empty-title {
     margin: 0 0 8px;
-    font-size: 15px;
-    font-weight: 900;
-    letter-spacing: 0.05em;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
     color: #000000;
   }
 
   .empty-desc {
     margin: 0 0 24px;
-    font-size: 12px;
+    font-size: 13px;
     line-height: 1.5;
-    color: #71717a;
+    color: #555555;
     max-width: 300px;
   }
 
   .btn-explore {
-    height: 42px;
-    padding: 0 20px;
+    position: relative;
+    height: 46px;
+    padding: 0 22px;
     background: #000000;
     color: #ffffff;
-    border: none;
-    border-radius: 5px;
-    font-family: var(--font-sans);
-    font-size: 11px;
+    border: 1px solid #000000;
+    border-radius: 0;
+    font-family: inherit;
+    font-size: 12px;
     font-weight: 800;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.12em;
     text-transform: uppercase;
     cursor: pointer;
-    transition: background 0.15s ease;
 
-    &:hover {
-      background: #27272a;
+    &::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      transform: translate(3px, 3px);
+      border: 1px solid #000000;
+      pointer-events: none;
     }
   }
 }
 
 .drawer-footer {
   padding: 16px 20px;
-  border-top: 1px solid #e4e4e7;
+  border-top: 1px solid #eceff1;
   background: #ffffff;
   display: flex;
   flex-direction: column;
@@ -459,12 +470,12 @@ function clearAll() {
 
   .footer-btn {
     width: 100%;
-    height: 38px;
-    border-radius: 5px;
-    font-family: var(--font-sans);
-    font-size: 11px;
+    height: 42px;
+    border-radius: 0;
+    font-family: inherit;
+    font-size: 11.5px;
     font-weight: 800;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.1em;
     text-transform: uppercase;
     cursor: pointer;
     transition: all 0.15s ease;
@@ -475,19 +486,17 @@ function clearAll() {
       border: 1px solid #000000;
 
       &:hover {
-        background: #27272a;
+        background: #333333;
       }
     }
 
     &.clear {
       background: transparent;
-      color: #71717a;
-      border: 1px solid #e4e4e7;
+      color: #000000;
+      border: 1px solid #000000;
 
       &:hover {
-        color: #dc2626;
-        border-color: #fca5a5;
-        background: #fef2f2;
+        background: #eceff1;
       }
     }
   }

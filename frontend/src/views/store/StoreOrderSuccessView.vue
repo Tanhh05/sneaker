@@ -13,11 +13,13 @@
             <line x1="12" y1="16" x2="12.01" y2="16"></line>
           </svg>
         </div>
-        <h2 class="state-title">Không tìm thấy thông tin đơn hàng</h2>
-        <p class="state-desc">Vui lòng kiểm tra lại mã đơn hàng hoặc tra cứu tại trang Tra cứu đơn hàng.</p>
+        <h2 class="state-title">{{ isEn ? 'Order not found' : 'Không tìm thấy thông tin đơn hàng' }}</h2>
+        <p class="state-desc">
+          {{ isEn ? 'Please double-check your order code or search on the Order Tracker page.' : 'Vui lòng kiểm tra lại mã đơn hàng hoặc tra cứu tại trang Tra cứu đơn hàng.' }}
+        </p>
         <div class="state-actions">
-          <router-link to="/tracking" class="btn-black">Đến trang tra cứu</router-link>
-          <router-link to="/shop" class="btn-outline">Tiếp tục mua sắm</router-link>
+          <router-link :to="lp('tracking')" class="btn-black">{{ isEn ? 'ORDER TRACKER' : 'ĐẾN TRANG TRA CỨU' }}</router-link>
+          <router-link :to="lp('shop')" class="btn-outline">{{ isEn ? 'CONTINUE SHOPPING' : 'TIẾP TỤC MUA SẮM' }}</router-link>
         </div>
       </div>
 
@@ -30,16 +32,26 @@
             </svg>
           </div>
           <span class="eyebrow">{{ (isPaidSuccess || order.status === 'CONFIRMED' || order.status === 'COMPLETED') ? 'ORDER CONFIRMED' : 'ORDER PLACED (PENDING PAYMENT)' }}</span>
-          <h1 class="headline">{{ (isPaidSuccess || order.status === 'CONFIRMED' || order.status === 'COMPLETED') ? 'ĐƠN HÀNG ĐÃ ĐƯỢC XÁC NHẬN 🎉' : 'ĐẶT HÀNG THÀNH CÔNG' }}</h1>
+          <h1 class="headline">
+            {{
+              (isPaidSuccess || order.status === 'CONFIRMED' || order.status === 'COMPLETED')
+                ? (isEn ? 'ORDER CONFIRMED' : 'ĐƠN HÀNG ĐÃ ĐƯỢC XÁC NHẬN')
+                : (isEn ? 'THANK YOU FOR YOUR ORDER' : 'ĐẶT HÀNG THÀNH CÔNG')
+            }}
+          </h1>
           <p class="order-code-prompt">
-            Mã đơn hàng:
-            <span class="order-code-badge" @click="copyOrderCode" title="Click để sao chép">
+            {{ isEn ? 'Order number:' : 'Mã đơn hàng:' }}
+            <span class="order-code-badge" @click="copyOrderCode" :title="isEn ? 'Click to copy' : 'Click để sao chép'">
               {{ order.orderCode }}
               <span class="copy-glyph">📋</span>
             </span>
           </p>
           <p class="header-note">
-            Đơn hàng đã được lưu trữ trên hệ thống và chuyển sang bộ phận kho để chuẩn bị đóng gói.
+            {{
+              isEn
+                ? 'Your order has been recorded and forwarded to our warehouse for Legit Check & Double-Box packing.'
+                : 'Đơn hàng đã được lưu trữ trên hệ thống và chuyển sang bộ phận kho để kiểm định & đóng gói Double-Box.'
+            }}
           </p>
         </div>
 
@@ -234,10 +246,10 @@
             <!-- Actions -->
             <div class="receipt-actions">
               <button class="btn-track-action" @click="goToTracking">
-                TRA CỨU VẬN ĐƠN →
+                {{ isEn ? 'TRACK YOUR ORDER →' : 'TRA CỨU VẬN ĐƠN →' }}
               </button>
-              <button class="btn-shop-action" @click="router.push('/shop')">
-                TIẾP TỤC MUA SẮM
+              <button class="btn-shop-action" @click="router.push(lp('shop'))">
+                {{ isEn ? 'CONTINUE SHOPPING' : 'TIẾP TỤC MUA SẮM' }}
               </button>
             </div>
           </div>
@@ -253,9 +265,11 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import storeService from '@/services/storeService'
 import { formatCurrency } from '@/utils/formatters'
+import { useStoreI18n } from '@/composables/useStoreI18n'
 
 const route = useRoute()
 const router = useRouter()
+const { lp, isEn } = useStoreI18n()
 
 const loading = ref(true)
 const order = ref(null)
@@ -371,11 +385,11 @@ const formatDate = (dateStr) => {
 const goToTracking = () => {
   if (order.value?.orderCode) {
     router.push({
-      path: '/tracking',
+      path: lp('tracking'),
       query: { code: order.value.orderCode, phone: order.value.customerPhone }
     })
   } else {
-    router.push('/tracking')
+    router.push(lp('tracking'))
   }
 }
 </script>
@@ -479,9 +493,12 @@ const goToTracking = () => {
   }
 
   .headline {
-    font-size: 32px;
-    font-weight: 900;
-    letter-spacing: -0.02em;
+    font-family: 'Barlow Condensed', 'Plus Jakarta Sans', sans-serif;
+    font-size: 42px;
+    font-style: normal;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
     color: #000000;
     margin: 0 0 10px;
   }

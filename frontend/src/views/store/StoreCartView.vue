@@ -1,119 +1,225 @@
 <template>
   <div class="store-cart">
-    <div class="layout-container">
-      <div class="cart-header">
-        <h1 class="cart-title">GIỎ HÀNG CỦA BẠN</h1>
-        <p class="cart-subtitle" v-if="cartStore.items.length">
-          Đang có <strong>{{ cartStore.totalItems }}</strong> sản phẩm được lưu trong giỏ
+    <div class="adi-cart-container">
+      <!-- ============================================================== -->
+      <!-- EMPTY CART STATE (Exact Live Adidas Clean Left-Aligned Layout) -->
+      <!-- ============================================================== -->
+      <div v-if="cartStore.items.length === 0" class="adi-empty-cart">
+        <h1 class="cart-title">{{ isEn ? 'YOUR BAG IS EMPTY' : 'GIỎ HÀNG CỦA BẠN TRỐNG' }}</h1>
+        <p class="cart-empty-sub">
+          {{
+            isEn
+              ? 'Once you add something to your bag — it will appear here. Ready to get started?'
+              : 'Khi bạn đã sẵn sàng mua sắm, các sản phẩm bạn thêm sẽ hiển thị tại đây. Bắt đầu ngay nhé?'
+          }}
         </p>
-      </div>
-
-      <!-- Empty Cart State -->
-      <div v-if="cartStore.items.length === 0" class="empty-cart-state">
-        <div class="empty-icon-wrap">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="empty-bag-svg">
-            <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
-            <line x1="3" y1="6" x2="21" y2="6"></line>
-            <path d="M16 10a4 4 0 0 1-8 0"></path>
-          </svg>
-        </div>
-        <h2 class="empty-heading">Giỏ hàng của bạn đang trống</h2>
-        <p class="empty-text">Hãy khám phá bộ sưu tập những mẫu sneaker hot nhất và thêm đôi giày yêu thích vào giỏ hàng.</p>
-        <router-link to="/shop" class="btn-continue-shopping">
-          <span>KHÁM PHÁ BỘ SƯU TẬP</span>
-          <span>→</span>
+        <router-link :to="lp('shop')" class="btn-adi-offset-inline">
+          <span>{{ isEn ? 'GET STARTED' : 'BẮT ĐẦU' }}</span>
+          <span class="arrow">→</span>
         </router-link>
-      </div>
 
-      <!-- Cart with Items -->
-      <div v-else class="cart-grid">
-        <!-- Left: Items list & Shipping details -->
-        <div class="cart-main-col">
-          <!-- Items Table -->
-          <div class="section-box items-section">
-            <div class="box-header">
-              <h2 class="box-title">DANH SÁCH SẢN PHẨM</h2>
-              <button class="btn-clear-bag" @click="confirmClearCart">Xóa toàn bộ</button>
-            </div>
-
-            <div class="cart-items-list">
-              <div
-                v-for="item in cartStore.items"
-                :key="item.variantId"
-                class="cart-item-row"
-              >
-                <div class="item-visual" @click="router.push(`/product/${item.productId}`)">
-                  <img
-                    v-if="item.thumbnailUrl || item.imageUrl || (item.imageUrls && item.imageUrls[0])"
-                    :src="item.thumbnailUrl || item.imageUrl || (item.imageUrls && item.imageUrls[0])"
-                    :alt="item.productName"
-                  />
-                  <div v-else class="item-visual-placeholder">
-                    <span>SNK</span>
-                  </div>
-                </div>
-
-                <div class="item-content">
-                  <div class="item-top">
-                    <span class="item-brand">{{ item.brandName }}</span>
-                    <button class="item-remove-btn" @click="cartStore.removeFromCart(item.variantId)" title="Xóa">✕</button>
-                  </div>
-                  <h3 class="item-name" @click="router.push(`/product/${item.productId}`)">{{ item.productName }}</h3>
-
-                  <div class="item-variants-pills">
-                    <span v-if="item.sizeValue" class="variant-pill">Size: {{ item.sizeValue }}</span>
-                    <span v-if="item.colorName" class="variant-pill">{{ item.colorName }}</span>
-                    <span v-if="item.sku" class="sku-pill">{{ item.sku }}</span>
-                  </div>
-
-                  <div class="item-bottom-bar">
-                    <div class="item-stepper">
-                      <button class="step-btn" @click="cartStore.updateQuantity(item.variantId, item.quantity - 1)">−</button>
-                      <span class="step-val">{{ item.quantity }}</span>
-                      <button class="step-btn" @click="cartStore.updateQuantity(item.variantId, item.quantity + 1)">+</button>
-                    </div>
-
-                    <div class="item-price-block">
-                      <span class="unit-price" v-if="item.quantity > 1">{{ formatCurrency(item.salePrice) }} / đôi</span>
-                      <span class="total-item-price">{{ formatCurrency(item.salePrice * item.quantity) }}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Customer & Delivery Form -->
-          <div class="section-box shipping-section">
-            <div class="box-header">
-              <h2 class="box-title">THÔNG TIN NHẬN HÀNG</h2>
-            </div>
-
-            <!-- Customer Member Status Banner -->
-            <div v-if="!authStore.isAuthenticated" class="auth-suggest-banner">
-              <div class="banner-text">
-                <strong>Bạn đã có tài khoản thành viên?</strong>
-                <span>Đăng nhập hoặc tiếp tục bằng Google để tự động điền thông tin và theo dõi đơn hàng.</span>
-              </div>
-              <button class="banner-login-btn" type="button" @click="authModalVisible = true">
-                ĐĂNG NHẬP / GOOGLE &rarr;
-              </button>
-            </div>
-            <div v-else class="auth-suggest-banner logged-in">
-              <div class="banner-text">
-                <strong>Thành viên: {{ authStore.user?.fullName || authStore.user?.username }}</strong>
-                <span>Thông tin giao hàng được cập nhật tự động từ tài khoản của bạn.</span>
-              </div>
-              <div class="banner-actions">
+        <!-- "GỢI Ý CHO BẠN" 4-Column Grid on Empty State -->
+        <section v-if="recommendedProducts.length" class="adi-cart-recs">
+          <h2 class="recs-heading">{{ isEn ? 'TOP PICKS FOR YOU' : 'GỢI Ý CHO BẠN' }}</h2>
+          <div class="recs-grid-4">
+            <article
+              v-for="item in recommendedProducts"
+              :key="item.id"
+              class="rec-card"
+              @click="router.push(lp(`product/${item.id}`))"
+            >
+              <div class="rec-img-stage">
+                <img :src="item.thumbnailUrl || (item.imageUrls && item.imageUrls[0]) || FALLBACK_IMG" :alt="item.productName" loading="lazy" />
                 <button
                   type="button"
-                  class="btn-sync-profile"
-                  @click="fillCustomerFromAuth(true); ElMessage.success('Đã điền nhanh thông tin nhận hàng từ tài khoản!')"
-                  title="Điền lại thông tin mới nhất từ tài khoản"
+                  class="rec-heart"
+                  @click.stop="toggleWishlistItem(item)"
+                  :aria-label="t('account.wishlist')"
                 >
-                  Điền nhanh từ tài khoản
+                  <svg viewBox="0 0 24 24" :fill="wishlistStore.isFavorite(item.id) ? '#000' : 'none'" stroke="#000" stroke-width="1.5">
+                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                  </svg>
                 </button>
-                <span class="member-tag">✓ ĐÃ ĐĂNG NHẬP</span>
+              </div>
+              <div class="rec-meta">
+                <div class="rec-price">{{ formatCurrency(item.salePrice) }}</div>
+                <div class="rec-name">{{ item.productName }}</div>
+                <div class="rec-cat">{{ item.brandName || 'Originals' }}</div>
+              </div>
+            </article>
+          </div>
+        </section>
+      </div>
+
+      <!-- ============================================================== -->
+      <!-- POPULATED CART + CHECKOUT (Exact Live 2026 Adidas 2-Col Split) -->
+      <!-- ============================================================== -->
+      <div v-else class="adi-cart-grid">
+        <!-- LEFT COLUMN (~65%): Bag Header, Promo Strip, Sharp Item Cards, Shipping & Payment, Recs -->
+        <div class="cart-left-col">
+          <!-- Bag Title Row -->
+          <header class="adi-bag-header">
+            <div class="bag-title-row">
+              <h1 class="cart-title">{{ isEn ? 'YOUR BAG' : 'GIỎ HÀNG CỦA BẠN' }}</h1>
+              <span class="cart-count-muted">
+                ({{ cartStore.totalItems }} {{ isEn ? (cartStore.totalItems > 1 ? 'items' : 'item') : 'sản phẩm' }})
+              </span>
+            </div>
+            <div class="bag-sub-row">
+              <p class="bag-reserve-note">
+                {{
+                  isEn
+                    ? 'Items in your bag are not reserved — check out now to make them yours.'
+                    : 'Các mặt hàng trong giỏ hàng của bạn không được bảo lưu — hãy kiểm tra ngay để đặt hàng.'
+                }}
+              </p>
+              <button type="button" class="btn-clear-bag" @click="confirmClearCart">
+                {{ isEn ? 'Clear bag' : 'Xóa toàn bộ' }}
+              </button>
+            </div>
+          </header>
+
+          <!-- Exact Live Adidas #eceff1 Promo Strip -->
+          <div class="adi-promo-strip-box">
+            <strong class="promo-strip-title">{{ t('home.bfTitle') }}</strong>
+            <p class="promo-strip-copy">
+              {{
+                isEn
+                  ? 'STILL MISSING A PAIR? Enjoy exclusive Black Friday deals plus extra 10% member vouchers at checkout.'
+                  : 'CÒN THIẾU MÓN ĐỒ NÀO? MUỐN SẮM THÊM GÌ KHÔNG? Đừng bỏ lỡ ưu đãi độc quyền BLACK FRIDAY.'
+              }}
+            </p>
+            <router-link :to="lp('shop')" class="promo-strip-link">
+              {{ isEn ? 'ADD MORE ITEMS TO YOUR BAG' : 'THÊM NGAY SẢN PHẨM VÀO GIỎ HÀNG' }}
+            </router-link>
+          </div>
+
+          <!-- Exact Live Adidas 1px solid #d9dbdd Cart Item Cards -->
+          <div class="adi-cart-items-stack">
+            <article
+              v-for="item in cartStore.items"
+              :key="item.variantId"
+              class="adi-bag-item-card"
+            >
+              <div class="bag-item-media" @click="router.push(lp(`product/${item.productId}`))">
+                <img
+                  v-if="item.thumbnailUrl || item.imageUrl || (item.imageUrls && item.imageUrls[0])"
+                  :src="item.thumbnailUrl || item.imageUrl || (item.imageUrls && item.imageUrls[0])"
+                  :alt="item.productName"
+                />
+                <div v-else class="bag-media-fallback">SNK</div>
+              </div>
+
+              <div class="bag-item-body">
+                <div class="bag-item-top-row">
+                  <div class="bag-item-info">
+                    <h3 class="bag-item-title" @click="router.push(lp(`product/${item.productId}`))">
+                      {{ item.productName }}
+                    </h3>
+                    <div class="bag-item-spec" v-if="item.colorName">{{ item.colorName }}</div>
+                    <div class="bag-item-spec" v-if="item.sizeValue">
+                      {{ isEn ? 'Size:' : 'Kích cỡ:' }} EU {{ item.sizeValue }}
+                    </div>
+                    <div class="bag-item-amber">
+                      {{ isEn ? 'Authentic in-stock release' : 'Mặt hàng có sẵn mới nhất' }}
+                    </div>
+                  </div>
+
+                  <!-- Top-Right Stacked Trash + Heart Icons (Exact Adidas) -->
+                  <div class="bag-item-icons">
+                    <button
+                      type="button"
+                      class="icon-act-btn"
+                      @click="cartStore.removeFromCart(item.variantId)"
+                      :title="isEn ? 'Remove item' : 'Xóa sản phẩm'"
+                      :aria-label="isEn ? 'Remove' : 'Xóa'"
+                    >
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                        <line x1="10" y1="11" x2="10" y2="17"></line>
+                        <line x1="14" y1="11" x2="14" y2="17"></line>
+                      </svg>
+                    </button>
+                    <button
+                      type="button"
+                      class="icon-act-btn"
+                      @click="toggleWishlistItem({ id: item.productId, productName: item.productName, salePrice: item.salePrice, thumbnailUrl: item.thumbnailUrl, brandName: item.brandName })"
+                      :title="t('account.wishlist')"
+                      :aria-label="t('account.wishlist')"
+                    >
+                      <svg viewBox="0 0 24 24" :fill="wishlistStore.isFavorite(item.productId) ? '#000' : 'none'" stroke="currentColor" stroke-width="1.6">
+                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Bottom Row: Bordered Qty Select Left + Price Right -->
+                <div class="bag-item-bottom-row">
+                  <div class="adi-qty-select-wrap">
+                    <select
+                      class="adi-qty-select"
+                      :value="item.quantity"
+                      @change="cartStore.updateQuantity(item.variantId, Number($event.target.value))"
+                      :aria-label="isEn ? 'Quantity' : 'Số lượng'"
+                    >
+                      <option v-for="n in Math.max(10, item.quantity)" :key="n" :value="n">{{ n }}</option>
+                    </select>
+                    <svg class="select-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                      <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                  </div>
+
+                  <div class="bag-item-price-col">
+                    <span v-if="item.quantity > 1" class="unit-note">
+                      {{ formatCurrency(item.salePrice) }} × {{ item.quantity }}
+                    </span>
+                    <span class="item-total-price">{{ formatCurrency(item.salePrice * item.quantity) }}</span>
+                  </div>
+                </div>
+              </div>
+            </article>
+          </div>
+
+          <!-- ============================================================== -->
+          <!-- CHECKOUT: SHIPPING & PAYMENT SECTION (Razor-Sharp Adidas Form) -->
+          <!-- ============================================================== -->
+          <section id="checkout-shipping-section" class="adi-checkout-section">
+            <h2 class="checkout-heading">
+              {{ isEn ? 'DELIVERY & PAYMENT DETAILS' : 'THÔNG TIN NHẬN HÀNG & THANH TOÁN' }}
+            </h2>
+
+            <!-- Member Auto-Fill Banner -->
+            <div v-if="!authStore.isAuthenticated" class="adi-member-strip">
+              <div class="strip-copy">
+                <strong>{{ isEn ? 'Already an ADHA Club member?' : 'Bạn đã có tài khoản hội viên ADHA Club?' }}</strong>
+                <span>
+                  {{
+                    isEn
+                      ? 'Sign in or continue with Google to auto-fill your delivery address & track orders.'
+                      : 'Đăng nhập hoặc tiếp tục bằng Google để tự động điền địa chỉ nhận hàng và theo dõi đơn.'
+                  }}
+                </span>
+              </div>
+              <button type="button" class="btn-strip-black" @click="authModalVisible = true">
+                {{ isEn ? 'SIGN IN / GOOGLE →' : 'ĐĂNG NHẬP / GOOGLE →' }}
+              </button>
+            </div>
+            <div v-else class="adi-member-strip logged-in">
+              <div class="strip-copy">
+                <strong>{{ isEn ? 'Member:' : 'Hội viên:' }} {{ authStore.user?.fullName || authStore.user?.username }}</strong>
+                <span>{{ isEn ? 'Your saved contact & shipping details are synced automatically.' : 'Thông tin giao hàng được điền tự động từ tài khoản hội viên của bạn.' }}</span>
+              </div>
+              <div class="strip-actions">
+                <button
+                  type="button"
+                  class="btn-strip-outline"
+                  @click="fillCustomerFromAuth(true); ElMessage.success(isEn ? 'Synced shipping details from profile!' : 'Đã điền nhanh thông tin từ tài khoản!')"
+                >
+                  {{ isEn ? 'Sync profile' : 'Điền lại từ tài khoản' }}
+                </button>
+                <span class="member-ok-tag">✓ ADHA CLUB</span>
               </div>
             </div>
 
@@ -122,41 +228,41 @@
               :model="form"
               :rules="rules"
               label-position="top"
-              class="checkout-form"
+              class="adi-checkout-form"
             >
               <div class="form-row-2">
-                <el-form-item label="Họ và tên người nhận (*)" prop="customerName">
-                  <el-input v-model="form.customerName" placeholder="VD: Nguyễn Văn A" />
+                <el-form-item :label="isEn ? 'Recipient Full Name *' : 'Họ và tên người nhận *'" prop="customerName">
+                  <el-input v-model="form.customerName" :placeholder="isEn ? 'e.g. Nguyen Van A' : 'VD: Nguyễn Văn A'" />
                 </el-form-item>
-                <el-form-item label="Số điện thoại (*)" prop="customerPhone">
-                  <el-input v-model="form.customerPhone" placeholder="VD: 0912345678" />
+                <el-form-item :label="isEn ? 'Phone Number *' : 'Số điện thoại *'" prop="customerPhone">
+                  <el-input v-model="form.customerPhone" :placeholder="isEn ? 'e.g. 0912345678' : 'VD: 0912345678'" />
                 </el-form-item>
               </div>
 
-              <!-- TỈNH / THÀNH PHỐ, QUẬN / HUYỆN, PHƯỜNG / XÃ (VIETNAM API) -->
+              <!-- Vietnam Administrative Cascade -->
               <div class="form-row-3 address-cascade-row">
-                <el-form-item label="Tỉnh / Thành phố (*)" prop="provinceCode">
+                <el-form-item :label="isEn ? 'Province / City *' : 'Tỉnh / Thành phố *'" prop="provinceCode">
                   <QuickSelect
                     v-model="form.provinceCode"
                     :options="provinces"
                     value-key="code"
                     label-key="name"
-                    placeholder="Chọn Tỉnh / TP"
-                    search-placeholder="Tìm nhanh Tỉnh / TP..."
+                    :placeholder="isEn ? 'Select Province' : 'Chọn Tỉnh / TP'"
+                    :search-placeholder="isEn ? 'Search province...' : 'Tìm nhanh Tỉnh / TP...'"
                     clearable
                     :loading="loadingProvinces"
                     @change="handleProvinceChange"
                   />
                 </el-form-item>
 
-                <el-form-item label="Quận / Huyện (*)" prop="districtCode">
+                <el-form-item :label="isEn ? 'District *' : 'Quận / Huyện *'" prop="districtCode">
                   <QuickSelect
                     v-model="form.districtCode"
                     :options="districts"
                     value-key="code"
                     label-key="name"
-                    placeholder="Chọn Quận / Huyện"
-                    search-placeholder="Tìm nhanh Quận / Huyện..."
+                    :placeholder="isEn ? 'Select District' : 'Chọn Quận / Huyện'"
+                    :search-placeholder="isEn ? 'Search district...' : 'Tìm nhanh Quận / Huyện...'"
                     clearable
                     :disabled="!form.provinceCode"
                     :loading="loadingDistricts"
@@ -164,14 +270,14 @@
                   />
                 </el-form-item>
 
-                <el-form-item label="Phường / Xã (*)" prop="wardCode">
+                <el-form-item :label="isEn ? 'Ward *' : 'Phường / Xã *'" prop="wardCode">
                   <QuickSelect
                     v-model="form.wardCode"
                     :options="wards"
                     value-key="code"
                     label-key="name"
-                    placeholder="Chọn Phường / Xã"
-                    search-placeholder="Tìm nhanh Phường / Xã..."
+                    :placeholder="isEn ? 'Select Ward' : 'Chọn Phường / Xã'"
+                    :search-placeholder="isEn ? 'Search ward...' : 'Tìm nhanh Phường / Xã...'"
                     clearable
                     :disabled="!form.districtCode"
                     :loading="loadingWards"
@@ -180,230 +286,276 @@
                 </el-form-item>
               </div>
 
-              <!-- SỐ NHÀ, TÊN ĐƯỜNG CỤ THỂ -->
-              <el-form-item label="Số nhà, tên đường, tòa nhà (*)" prop="streetAddress">
+              <el-form-item :label="isEn ? 'Street Address, Building *' : 'Số nhà, tên đường, tòa nhà *'" prop="streetAddress">
                 <el-input
                   v-model="form.streetAddress"
-                  placeholder="VD: Số 45 Ngõ 12 Đường Cầu Giấy, Tòa Landmark..."
+                  :placeholder="isEn ? 'e.g. 45 Cau Giay St, Landmark Tower...' : 'VD: Số 45 Ngõ 12 Đường Cầu Giấy...'"
                   @input="updateFullShippingAddress"
                 />
               </el-form-item>
 
-              <!-- LIVE FORMATTED ADDRESS PREVIEW -->
-              <div v-if="formattedShippingAddress" class="address-preview-banner">
-                <span class="preview-icon">📍</span>
-                <div class="preview-content">
-                  <span class="preview-label">Địa chỉ nhận hàng hoàn chỉnh:</span>
-                  <strong class="preview-address">{{ formattedShippingAddress }}</strong>
-                </div>
+              <div v-if="formattedShippingAddress" class="adi-address-preview">
+                <span class="preview-lbl">{{ isEn ? 'Full delivery address:' : 'Địa chỉ nhận hàng hoàn chỉnh:' }}</span>
+                <strong>{{ formattedShippingAddress }}</strong>
               </div>
 
               <div class="form-row-2">
-                <el-form-item label="Email (để nhận hóa đơn & vận đơn)" prop="customerEmail">
-                  <el-input v-model="form.customerEmail" placeholder="VD: example@email.com" />
+                <el-form-item :label="isEn ? 'Email (for receipt & tracking)' : 'Email (nhận hóa đơn & vận đơn)'" prop="customerEmail">
+                  <el-input v-model="form.customerEmail" placeholder="example@email.com" />
                 </el-form-item>
-                <el-form-item label="Ghi chú giao hàng (tùy chọn)" prop="note">
-                  <el-input v-model="form.note" placeholder="VD: Giao trong giờ hành chính, gọi trước khi giao..." />
+                <el-form-item :label="isEn ? 'Delivery Note (optional)' : 'Ghi chú giao hàng (tùy chọn)'" prop="note">
+                  <el-input v-model="form.note" :placeholder="isEn ? 'e.g. Call before delivery...' : 'VD: Gọi trước khi giao...'" />
                 </el-form-item>
               </div>
 
-              <!-- Payment Method Selection -->
-              <div class="payment-selection">
-                <label class="payment-title">HÌNH THỨC THANH TOÁN</label>
-                <div class="payment-cards">
+              <!-- Payment Methods -->
+              <div class="adi-payment-block">
+                <h3 class="pay-sub-title">{{ isEn ? 'PAYMENT METHOD' : 'HÌNH THỨC THANH TOÁN' }}</h3>
+                <div class="adi-pay-grid">
                   <div
-                    class="payment-option-card"
+                    class="adi-pay-option"
                     :class="{ active: form.paymentMethod === 'BANK_TRANSFER' }"
                     @click="form.paymentMethod = 'BANK_TRANSFER'"
                   >
-                    <div class="card-radio"></div>
-                    <div class="card-text">
-                      <div class="card-headline">
-                        <strong>Chuyển khoản SePay QR (MBBank)</strong>
-                        <span class="recommend-tag">KHUYÊN DÙNG</span>
+                    <span class="pay-radio-ring" :class="{ checked: form.paymentMethod === 'BANK_TRANSFER' }">
+                      <span class="pay-radio-dot"></span>
+                    </span>
+                    <div class="pay-option-body">
+                      <div class="pay-option-head">
+                        <strong>{{ isEn ? 'SePay VietQR Bank Transfer (MBBank)' : 'Chuyển khoản SePay QR (MBBank)' }}</strong>
+                        <span class="pay-rec-badge">{{ isEn ? 'RECOMMENDED' : 'KHUYÊN DÙNG' }}</span>
                       </div>
-                      <p>Quét mã QR tự động qua ứng dụng ngân hàng hoặc MoMo. Tự động gạch nợ đơn hàng lập tức.</p>
+                      <p>
+                        {{
+                          isEn
+                            ? 'Scan instant VietQR via any banking app or MoMo. Auto-confirmed in seconds.'
+                            : 'Quét mã QR tự động qua app ngân hàng hoặc MoMo. Hệ thống tự động gạch nợ lập tức.'
+                        }}
+                      </p>
                     </div>
                   </div>
 
                   <div
-                    class="payment-option-card"
+                    class="adi-pay-option"
                     :class="{ active: form.paymentMethod === 'CASH' }"
                     @click="form.paymentMethod = 'CASH'"
                   >
-                    <div class="card-radio"></div>
-                    <div class="card-text">
-                      <div class="card-headline">
-                        <strong>Thanh toán khi nhận hàng (COD)</strong>
+                    <span class="pay-radio-ring" :class="{ checked: form.paymentMethod === 'CASH' }">
+                      <span class="pay-radio-dot"></span>
+                    </span>
+                    <div class="pay-option-body">
+                      <div class="pay-option-head">
+                        <strong>{{ isEn ? 'Cash on Delivery (COD)' : 'Thanh toán khi nhận hàng (COD)' }}</strong>
                       </div>
-                      <p>Thanh toán tiền mặt cho bưu tá khi nhận giày và kiểm tra sản phẩm tận tay.</p>
+                      <p>
+                        {{
+                          isEn
+                            ? 'Pay in cash to the courier upon receiving and inspecting your sneakers.'
+                            : 'Thanh toán tiền mặt cho bưu tá sau khi kiểm tra sản phẩm tận tay.'
+                        }}
+                      </p>
                     </div>
                   </div>
                 </div>
               </div>
             </el-form>
-          </div>
+          </section>
+
+          <!-- Exact Live Adidas "GỢI Ý CHO BẠN" 4-Col Grid Below -->
+          <section v-if="recommendedProducts.length" class="adi-cart-recs">
+            <h2 class="recs-heading">{{ isEn ? 'TOP PICKS FOR YOU' : 'GỢI Ý CHO BẠN' }}</h2>
+            <div class="recs-grid-4">
+              <article
+                v-for="item in recommendedProducts"
+                :key="item.id"
+                class="rec-card"
+                @click="router.push(lp(`product/${item.id}`))"
+              >
+                <div class="rec-img-stage">
+                  <img :src="item.thumbnailUrl || (item.imageUrls && item.imageUrls[0]) || FALLBACK_IMG" :alt="item.productName" loading="lazy" />
+                  <button
+                    type="button"
+                    class="rec-heart"
+                    @click.stop="toggleWishlistItem(item)"
+                    :aria-label="t('account.wishlist')"
+                  >
+                    <svg viewBox="0 0 24 24" :fill="wishlistStore.isFavorite(item.id) ? '#000' : 'none'" stroke="#000" stroke-width="1.5">
+                      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                    </svg>
+                  </button>
+                </div>
+                <div class="rec-meta">
+                  <div class="rec-price">{{ formatCurrency(item.salePrice) }}</div>
+                  <div class="rec-name">{{ item.productName }}</div>
+                  <div class="rec-cat">{{ item.brandName || 'Originals' }}</div>
+                </div>
+              </article>
+            </div>
+          </section>
         </div>
 
-        <!-- Right: Sticky Order Summary -->
+        <!-- ============================================================== -->
+        <!-- RIGHT COLUMN (416px BORDERLESS WHITE "TÓM TẮT ĐƠN HÀNG")       -->
+        <!-- ============================================================== -->
         <aside class="cart-summary-col">
-          <div class="summary-card">
-            <h2 class="summary-heading">TÓM TẮT ĐƠN HÀNG</h2>
+          <div class="adi-summary-sticky">
+            <h2 class="summary-heading">{{ isEn ? 'ORDER SUMMARY' : 'TÓM TẮT ĐƠN HÀNG' }}</h2>
 
-            <!-- VOUCHER SECTION AT CHECKOUT -->
-            <div class="checkout-voucher-box">
-              <div class="voucher-box-header">
-                <span class="voucher-box-title">MÃ GIẢM GIÁ / VOUCHER</span>
-                <span v-if="availableVouchers.length" class="voucher-count-pill">
-                  {{ availableVouchers.filter(v => v.eligible).length }}/{{ availableVouchers.length }} áp dụng được
+            <div class="summary-table">
+              <div class="sum-row">
+                <span>{{ cartStore.totalItems }} {{ isEn ? (cartStore.totalItems > 1 ? 'items' : 'item') : 'sản phẩm' }}</span>
+                <span>{{ formatCurrency(cartStore.totalPrice) }}</span>
+              </div>
+              <div class="sum-row">
+                <span>{{ isEn ? 'Delivery' : 'Giao hàng' }}</span>
+                <span>{{ cartStore.totalPrice >= 1000000 ? (isEn ? 'Free' : 'Miễn phí') : '30.000₫' }}</span>
+              </div>
+              <div v-if="voucherDiscount > 0" class="sum-row discount">
+                <span>{{ isEn ? 'Voucher' : 'Giảm giá' }} ({{ appliedVoucher?.appliedCode }})</span>
+                <span>- {{ formatCurrency(voucherDiscount) }}</span>
+              </div>
+
+              <div class="sum-total-block">
+                <div class="sum-total-row">
+                  <strong>{{ isEn ? 'Total' : 'Tổng' }}</strong>
+                  <strong>{{ formatCurrency(finalTotal) }}</strong>
+                </div>
+                <div class="sum-tax-note">
+                  {{ isEn ? '(Inclusive of VAT)' : '(Đã bao gồm thuế VAT)' }}
+                </div>
+              </div>
+            </div>
+
+            <div v-if="cartStore.totalPrice < 1000000" class="adi-freeship-hint">
+              {{
+                isEn
+                  ? `Add ${formatCurrency(1000000 - cartStore.totalPrice)} more for FREE nationwide delivery.`
+                  : `Mua thêm ${formatCurrency(1000000 - cartStore.totalPrice)} để được MIỄN PHÍ giao hàng toàn quốc.`
+              }}
+            </div>
+
+            <!-- Exact Adidas Expandable Promo / Voucher Trigger Row -->
+            <div class="adi-promo-accordion">
+              <button
+                type="button"
+                class="promo-acc-trigger"
+                @click="promoExpanded = !promoExpanded"
+              >
+                <span class="promo-acc-text">
+                  {{ isEn ? 'Use a promo code or member voucher' : 'Sử dụng điểm hoặc mã khuyến mãi' }}
                 </span>
-              </div>
+                <span class="promo-acc-chev" :class="{ open: promoExpanded }">›</span>
+              </button>
 
-              <div class="voucher-input-group">
-                <input
-                  v-model="voucherInput"
-                  type="text"
-                  class="voucher-code-input"
-                  placeholder="Nhập mã voucher (VD: SNEAKER10)..."
-                  @keyup.enter="applyVoucherCode()"
-                  @input="voucherInput = voucherInput.toUpperCase()"
-                />
-                <button
-                  type="button"
-                  class="btn-apply-voucher"
-                  :disabled="validatingVoucher || !voucherInput.trim()"
-                  @click="applyVoucherCode()"
-                >
-                  {{ validatingVoucher ? '...' : 'ÁP DỤNG' }}
-                </button>
-              </div>
-
-              <!-- Applied Success Banner -->
-              <div v-if="appliedVoucher" class="voucher-applied-banner">
-                <div class="applied-info">
-                  <strong>✓ {{ appliedVoucher.appliedCode }}</strong>
-                  <span>Đã giảm {{ formatCurrency(appliedVoucher.discountAmount) }}</span>
+              <div v-if="promoExpanded || appliedVoucher || availableVouchers.length > 0" class="promo-acc-body">
+                <div class="voucher-input-row">
+                  <input
+                    v-model="voucherInput"
+                    type="text"
+                    class="adi-voucher-input"
+                    :placeholder="isEn ? 'Enter promo code (e.g. SNEAKER10)' : 'Nhập mã voucher (VD: SNEAKER10)'"
+                    @keyup.enter="applyVoucherCode()"
+                    @input="voucherInput = voucherInput.toUpperCase()"
+                  />
+                  <button
+                    type="button"
+                    class="btn-apply-code"
+                    :disabled="validatingVoucher || !voucherInput.trim()"
+                    @click="applyVoucherCode()"
+                  >
+                    {{ validatingVoucher ? '...' : (isEn ? 'APPLY' : 'ÁP DỤNG') }}
+                  </button>
                 </div>
-                <button type="button" class="btn-remove-voucher" @click="removeVoucher">Bỏ chọn</button>
-              </div>
 
-              <!-- Validation Error Message -->
-              <div v-else-if="voucherError" class="voucher-error-msg">
-                {{ voucherError }}
-              </div>
-
-              <!-- Available Vouchers Wallet + Public Codes -->
-              <div v-if="availableVouchers.length > 0" class="voucher-wallet-section">
-                <div class="wallet-label">
-                  {{ authStore.isAuthenticated ? 'Kho voucher của tôi & ưu đãi hiện có:' : 'Ưu đãi có thể áp dụng ngay:' }}
+                <div v-if="appliedVoucher" class="voucher-applied-chip">
+                  <div>
+                    <strong>✓ {{ appliedVoucher.appliedCode }}</strong>
+                    <span>−{{ formatCurrency(appliedVoucher.discountAmount) }}</span>
+                  </div>
+                  <button type="button" @click="removeVoucher">{{ isEn ? 'Remove' : 'Bỏ' }}</button>
                 </div>
-                <div class="voucher-cards-list">
+                <div v-else-if="voucherError" class="voucher-err-text">{{ voucherError }}</div>
+
+                <!-- Member Voucher Wallet -->
+                <div v-if="promoExpanded && availableVouchers.length > 0" class="voucher-wallet-list">
                   <div
                     v-for="v in availableVouchers"
                     :key="v.code"
-                    class="voucher-ticket"
-                    :class="{
-                      selected: appliedVoucher?.appliedCode === v.code,
-                      ineligible: !v.eligible
-                    }"
+                    class="v-ticket"
+                    :class="{ selected: appliedVoucher?.appliedCode === v.code, disabled: !v.eligible }"
                   >
-                    <div class="ticket-main">
-                      <div class="ticket-top-row">
-                        <span class="ticket-code">{{ v.code }}</span>
-                        <span class="ticket-source" :class="v.sourceType === 'PERSONAL' ? 'personal' : 'public'">
-                          {{ v.sourceType === 'PERSONAL' ? 'CÁ NHÂN' : 'CÔNG KHAI' }}
+                    <div class="v-ticket-left">
+                      <div class="v-code-line">
+                        <strong>{{ v.code }}</strong>
+                        <span class="v-tag" :class="v.sourceType === 'PERSONAL' ? 'personal' : 'public'">
+                          {{ v.sourceType === 'PERSONAL' ? (isEn ? 'MEMBER' : 'CÁ NHÂN') : (isEn ? 'PUBLIC' : 'CÔNG KHAI') }}
                         </span>
                       </div>
-                      <div class="ticket-discount">
-                        {{ v.discountType === 'PERCENT'
-                          ? `Giảm ${v.discountValue}%${v.maxDiscountAmount ? ` (tối đa ${formatCurrency(v.maxDiscountAmount)})` : ''}`
-                          : `Giảm trực tiếp ${formatCurrency(v.discountValue)}` }}
+                      <div class="v-desc">
+                        {{
+                          v.discountType === 'PERCENT'
+                            ? `${isEn ? 'Save' : 'Giảm'} ${v.discountValue}%${v.maxDiscountAmount ? ` (max ${formatCurrency(v.maxDiscountAmount)})` : ''}`
+                            : `${isEn ? 'Save' : 'Giảm'} ${formatCurrency(v.discountValue)}`
+                        }}
                       </div>
-                      <div class="ticket-meta">
-                        <span>Đơn tối thiểu {{ formatCurrency(v.minOrderAmount || 0) }}</span>
-                        <span v-if="v.remainingDays !== null && v.remainingDays <= 7" class="exp-warn">
-                          · Còn {{ v.remainingDays }} ngày
-                        </span>
+                      <div class="v-min">
+                        {{ isEn ? 'Min order' : 'Đơn tối thiểu' }} {{ formatCurrency(v.minOrderAmount || 0) }}
                       </div>
-                      <div v-if="!v.eligible && v.ineligibleReason" class="ticket-reason">
-                        {{ v.ineligibleReason }}
-                      </div>
+                      <div v-if="!v.eligible && v.ineligibleReason" class="v-reason">{{ v.ineligibleReason }}</div>
                     </div>
-                    <div class="ticket-action">
-                      <button
-                        v-if="appliedVoucher?.appliedCode === v.code"
-                        type="button"
-                        class="btn-ticket-use active"
-                        @click="removeVoucher"
-                      >
-                        Đang dùng ✓
-                      </button>
-                      <button
-                        v-else
-                        type="button"
-                        class="btn-ticket-use"
-                        :disabled="!v.eligible"
-                        @click="applyVoucherCode(v.code)"
-                      >
-                        {{ v.eligible ? 'Áp dụng' : 'Chưa đủ' }}
-                      </button>
-                    </div>
+                    <button
+                      v-if="appliedVoucher?.appliedCode === v.code"
+                      type="button"
+                      class="btn-v-use active"
+                      @click="removeVoucher"
+                    >
+                      ✓
+                    </button>
+                    <button
+                      v-else
+                      type="button"
+                      class="btn-v-use"
+                      :disabled="!v.eligible"
+                      @click="applyVoucherCode(v.code)"
+                    >
+                      {{ v.eligible ? (isEn ? 'Use' : 'Dùng') : '—' }}
+                    </button>
                   </div>
                 </div>
               </div>
             </div>
 
-            <div class="summary-calc-rows">
-              <div class="calc-row">
-                <span class="calc-label">Tạm tính ({{ cartStore.totalItems }} đôi):</span>
-                <span class="calc-val">{{ formatCurrency(cartStore.totalPrice) }}</span>
-              </div>
-
-              <div v-if="voucherDiscount > 0" class="calc-row discount-row">
-                <span class="calc-label">Giảm giá voucher ({{ appliedVoucher?.appliedCode }}):</span>
-                <span class="calc-val discount-val">-{{ formatCurrency(voucherDiscount) }}</span>
-              </div>
-
-              <div class="calc-row">
-                <span class="calc-label">Phí vận chuyển:</span>
-                <span class="calc-val" :class="{ 'free': cartStore.totalPrice >= 1000000 }">
-                  {{ cartStore.totalPrice >= 1000000 ? 'MIỄN PHÍ' : '30.000₫' }}
-                </span>
-              </div>
-
-              <div class="freeship-notice" v-if="cartStore.totalPrice < 1000000">
-                <span>Mua thêm <strong>{{ formatCurrency(1000000 - cartStore.totalPrice) }}</strong> để được <strong>FREESHIP</strong> toàn quốc!</span>
-              </div>
-
-              <div class="calc-row total-row">
-                <span class="total-lbl">TỔNG THANH TOÁN:</span>
-                <span class="total-price">{{ formatCurrency(finalTotal) }}</span>
-              </div>
-            </div>
-
+            <!-- Exact Adidas 48px Full-Width Offset Dropshadow Black Checkout CTA -->
             <button
-              class="btn-place-order"
+              type="button"
+              class="btn-adi-checkout"
               :disabled="submitting"
               @click="submitOrder"
             >
-              <span v-if="submitting">ĐANG XỬ LÝ ĐƠN HÀNG...</span>
-              <span v-else>XÁC NHẬN ĐẶT HÀNG →</span>
+              <span>{{ submitting ? (isEn ? 'PROCESSING ORDER...' : 'ĐANG XỬ LÝ...') : (isEn ? 'Checkout' : 'Thanh toán') }}</span>
+              <span class="arrow">→</span>
             </button>
 
-            <div class="guarantee-points">
-              <div class="point-item">
-                <span class="point-dot">•</span>
-                <span>Kiểm tra hàng trước khi thanh toán</span>
+            <!-- Exact Adidas Accepted Payment Methods Strip -->
+            <div class="adi-accepted-payments">
+              <div class="accepted-title">
+                {{ isEn ? 'ACCEPTED PAYMENT METHODS' : 'PHƯƠNG THỨC THANH TOÁN ĐƯỢC CHẤP NHẬN' }}
               </div>
-              <div class="point-item">
-                <span class="point-dot">•</span>
-                <span>Hỗ trợ đổi size trong 7 ngày</span>
-              </div>
-              <div class="point-item">
-                <span class="point-dot">•</span>
-                <span>Bảo mật 100% thông tin giao dịch</span>
+              <div class="payment-badges-row">
+                <span class="pay-badge visa">VISA</span>
+                <span class="pay-badge mc">MC</span>
+                <span class="pay-badge cod">COD</span>
+                <span class="pay-badge qr">VietQR</span>
+                <span class="pay-badge momo">MoMo</span>
               </div>
             </div>
+
+            <!-- Subtle Adidas Guarantees -->
+            <ul class="adi-bag-perks">
+              <li>✓ {{ isEn ? '100% Legit Check authentic sneakers' : '100% Sneaker chính hãng kiểm định Legit Check' }}</li>
+              <li>✓ {{ isEn ? 'Free 7-day size exchange' : 'Hỗ trợ đổi size miễn phí trong 7 ngày' }}</li>
+              <li>✓ {{ isEn ? 'Double-Box protective shipping' : 'Đóng gói Double-Box bảo vệ hộp giày nguyên vẹn' }}</li>
+            </ul>
           </div>
         </aside>
       </div>
@@ -419,21 +571,31 @@ import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useCartStore } from '@/stores/cart'
+import { useWishlistStore } from '@/stores/wishlist'
 import { useClientAuthStore } from '@/stores/clientAuth'
 import storeService from '@/services/storeService'
 import vnAddressService from '@/services/vnAddressService'
 import { formatCurrency } from '@/utils/formatters'
+import { useStoreI18n } from '@/composables/useStoreI18n'
 import ClientAuthModal from '@/components/store/ClientAuthModal.vue'
 
 const router = useRouter()
 const cartStore = useCartStore()
+const wishlistStore = useWishlistStore()
 const authStore = useClientAuthStore()
+const { t, lp, isEn } = useStoreI18n()
+
+const FALLBACK_IMG =
+  'https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?auto=format&fit=crop&w=600&q=80'
+
 const authModalVisible = ref(false)
+const promoExpanded = ref(false)
+const recommendedProducts = ref([])
 
 const formRef = ref(null)
 const submitting = ref(false)
 
-// Administrative division states (API)
+// Administrative division states
 const provinces = ref([])
 const districts = ref([])
 const wards = ref([])
@@ -457,12 +619,30 @@ const form = reactive({
   note: ''
 })
 
-// Formatted full address preview
+const toggleWishlistItem = (prod) => {
+  const added = wishlistStore.toggleFavorite(prod)
+  if (added) {
+    ElMessage.success(isEn.value ? `Saved "${prod.productName}" to wishlist` : `Đã lưu "${prod.productName}" vào yêu thích`)
+  } else {
+    ElMessage.info(isEn.value ? `Removed "${prod.productName}" from wishlist` : `Đã bỏ "${prod.productName}" khỏi yêu thích`)
+  }
+}
+
+const loadRecommendations = async () => {
+  try {
+    const res = await storeService.getProducts({ page: 0, size: 8 })
+    const list = res?.data?.content || []
+    const inBagIds = new Set(cartStore.items.map((i) => Number(i.productId)))
+    const filtered = list.filter((p) => !inBagIds.has(Number(p.id)))
+    recommendedProducts.value = (filtered.length >= 4 ? filtered : list).slice(0, 4)
+  } catch {
+    recommendedProducts.value = []
+  }
+}
+
 const formattedShippingAddress = computed(() => {
   const parts = []
-  if (form.streetAddress && form.streetAddress.trim()) {
-    parts.push(form.streetAddress.trim())
-  }
+  if (form.streetAddress && form.streetAddress.trim()) parts.push(form.streetAddress.trim())
   if (form.wardName) parts.push(form.wardName)
   if (form.districtName) parts.push(form.districtName)
   if (form.provinceName) parts.push(form.provinceName)
@@ -473,19 +653,17 @@ const updateFullShippingAddress = () => {
   form.shippingAddress = formattedShippingAddress.value
 }
 
-// Fetch Vietnam provinces on mount
 const loadProvinces = async () => {
   loadingProvinces.value = true
   try {
     provinces.value = await vnAddressService.getProvinces()
   } catch (err) {
-    console.error('Lỗi khi tải danh sách Tỉnh/Thành phố:', err)
+    console.error('Lỗi tải Tỉnh/TP:', err)
   } finally {
     loadingProvinces.value = false
   }
 }
 
-// Cascade handlers
 const handleProvinceChange = async (val) => {
   form.districtCode = null
   form.wardCode = null
@@ -494,7 +672,7 @@ const handleProvinceChange = async (val) => {
   districts.value = []
   wards.value = []
 
-  const selected = provinces.value.find(p => p.code === val)
+  const selected = provinces.value.find((p) => p.code === val)
   form.provinceName = selected ? selected.name : ''
   updateFullShippingAddress()
 
@@ -503,7 +681,7 @@ const handleProvinceChange = async (val) => {
     try {
       districts.value = await vnAddressService.getDistricts(val)
     } catch (err) {
-      console.error('Lỗi tải danh sách Quận/Huyện:', err)
+      console.error('Lỗi tải Quận/Huyện:', err)
     } finally {
       loadingDistricts.value = false
     }
@@ -515,7 +693,7 @@ const handleDistrictChange = async (val) => {
   form.wardName = ''
   wards.value = []
 
-  const selected = districts.value.find(d => d.code === val)
+  const selected = districts.value.find((d) => d.code === val)
   form.districtName = selected ? selected.name : ''
   updateFullShippingAddress()
 
@@ -524,7 +702,7 @@ const handleDistrictChange = async (val) => {
     try {
       wards.value = await vnAddressService.getWards(val)
     } catch (err) {
-      console.error('Lỗi tải danh sách Phường/Xã:', err)
+      console.error('Lỗi tải Phường/Xã:', err)
     } finally {
       loadingWards.value = false
     }
@@ -532,7 +710,7 @@ const handleDistrictChange = async (val) => {
 }
 
 const handleWardChange = (val) => {
-  const selected = wards.value.find(w => w.code === val)
+  const selected = wards.value.find((w) => w.code === val)
   form.wardName = selected ? selected.name : ''
   updateFullShippingAddress()
 }
@@ -542,17 +720,14 @@ const parseAndFillAddress = async (rawAddress) => {
   form.streetAddress = rawAddress
   form.shippingAddress = rawAddress
 
-  // Ensure provinces are loaded
   if (!provinces.value || provinces.value.length === 0) {
     await loadProvinces()
   }
 
-  // Check if rawAddress has comma-separated structure (street, ward, district, province)
-  const segments = rawAddress.split(',').map(s => s.trim()).filter(Boolean)
+  const segments = rawAddress.split(',').map((s) => s.trim()).filter(Boolean)
   if (segments.length >= 2 && provinces.value.length) {
-    // 1. Try finding Province (from the last segment)
     const lastSeg = segments[segments.length - 1].toLowerCase()
-    const matchedProv = provinces.value.find(p => {
+    const matchedProv = provinces.value.find((p) => {
       const pName = p.name.toLowerCase()
       const cleanPName = pName.replace('thành phố ', '').replace('tỉnh ', '')
       return lastSeg.includes(cleanPName) || cleanPName.includes(lastSeg)
@@ -562,7 +737,6 @@ const parseAndFillAddress = async (rawAddress) => {
       form.provinceCode = matchedProv.code
       form.provinceName = matchedProv.name
 
-      // Load districts for this province
       loadingDistricts.value = true
       try {
         districts.value = await vnAddressService.getDistricts(matchedProv.code)
@@ -572,10 +746,9 @@ const parseAndFillAddress = async (rawAddress) => {
         loadingDistricts.value = false
       }
 
-      // 2. Try finding District (from segment second to last)
       if (segments.length >= 3 && districts.value.length) {
         const distSeg = segments[segments.length - 2].toLowerCase()
-        const matchedDist = districts.value.find(d => {
+        const matchedDist = districts.value.find((d) => {
           const dName = d.name.toLowerCase()
           const cleanDName = dName.replace('quận ', '').replace('huyện ', '').replace('thị xã ', '').replace('thành phố ', '')
           return distSeg.includes(cleanDName) || cleanDName.includes(distSeg)
@@ -585,7 +758,6 @@ const parseAndFillAddress = async (rawAddress) => {
           form.districtCode = matchedDist.code
           form.districtName = matchedDist.name
 
-          // Load wards for this district
           loadingWards.value = true
           try {
             wards.value = await vnAddressService.getWards(matchedDist.code)
@@ -595,10 +767,9 @@ const parseAndFillAddress = async (rawAddress) => {
             loadingWards.value = false
           }
 
-          // 3. Try finding Ward (from segment third to last)
           if (segments.length >= 4 && wards.value.length) {
             const wardSeg = segments[segments.length - 3].toLowerCase()
-            const matchedWard = wards.value.find(w => {
+            const matchedWard = wards.value.find((w) => {
               const wName = w.name.toLowerCase()
               const cleanWName = wName.replace('phường ', '').replace('xã ', '').replace('thị trấn ', '')
               return wardSeg.includes(cleanWName) || cleanWName.includes(wardSeg)
@@ -610,7 +781,6 @@ const parseAndFillAddress = async (rawAddress) => {
             }
           }
 
-          // 4. Street address is everything before ward/district/province
           const streetParts = segments.slice(0, segments.length - (form.wardCode ? 3 : 2))
           if (streetParts.length) {
             form.streetAddress = streetParts.join(', ')
@@ -624,15 +794,9 @@ const parseAndFillAddress = async (rawAddress) => {
 
 const fillCustomerFromAuth = (force = false) => {
   if (authStore.isAuthenticated && authStore.user) {
-    if (authStore.user.fullName && (force || !form.customerName)) {
-      form.customerName = authStore.user.fullName
-    }
-    if (authStore.user.phone && (force || !form.customerPhone)) {
-      form.customerPhone = authStore.user.phone
-    }
-    if (authStore.user.email && (force || !form.customerEmail)) {
-      form.customerEmail = authStore.user.email
-    }
+    if (authStore.user.fullName && (force || !form.customerName)) form.customerName = authStore.user.fullName
+    if (authStore.user.phone && (force || !form.customerPhone)) form.customerPhone = authStore.user.phone
+    if (authStore.user.email && (force || !form.customerEmail)) form.customerEmail = authStore.user.email
     if (authStore.user.address && (force || (!form.streetAddress && !form.provinceCode))) {
       parseAndFillAddress(authStore.user.address)
     }
@@ -642,7 +806,7 @@ const fillCustomerFromAuth = (force = false) => {
 const enrichCartThumbnails = async () => {
   let changed = false
   for (const item of cartStore.items) {
-    if ((!item.thumbnailUrl && !item.imageUrl) && item.productId) {
+    if (!item.thumbnailUrl && !item.imageUrl && item.productId) {
       try {
         const res = await storeService.getProductDetail(item.productId)
         const p = res?.data
@@ -652,8 +816,8 @@ const enrichCartThumbnails = async () => {
           item.imageUrl = img
           changed = true
         }
-      } catch (err) {
-        console.error('Không thể đồng bộ ảnh sản phẩm:', item.productId, err)
+      } catch {
+        // ignore
       }
     }
   }
@@ -667,14 +831,16 @@ onMounted(async () => {
   fillCustomerFromAuth(true)
   enrichCartThumbnails()
   loadAvailableVouchers()
+  loadRecommendations()
 })
 
-watch(() => authStore.isAuthenticated, (isAuth) => {
-  if (isAuth) {
-    fillCustomerFromAuth(true)
+watch(
+  () => authStore.isAuthenticated,
+  (isAuth) => {
+    if (isAuth) fillCustomerFromAuth(true)
+    loadAvailableVouchers()
   }
-  loadAvailableVouchers()
-})
+)
 
 watch(
   () => authStore.user,
@@ -728,14 +894,14 @@ const applyVoucherCode = async (codeOverride) => {
     if (data?.valid) {
       appliedVoucher.value = data
       voucherError.value = ''
-      ElMessage.success(data.message || `Đã áp dụng voucher ${data.appliedCode}`)
+      ElMessage.success(data.message || `${isEn.value ? 'Applied voucher' : 'Đã áp dụng voucher'} ${data.appliedCode}`)
     } else {
       appliedVoucher.value = null
-      voucherError.value = data?.message || 'Mã voucher không hợp lệ'
+      voucherError.value = data?.message || (isEn.value ? 'Invalid promo code' : 'Mã voucher không hợp lệ')
     }
   } catch (err) {
     appliedVoucher.value = null
-    voucherError.value = err?.response?.data?.message || 'Không thể kiểm tra mã voucher'
+    voucherError.value = err?.response?.data?.message || (isEn.value ? 'Unable to validate voucher' : 'Không thể kiểm tra mã voucher')
   } finally {
     validatingVoucher.value = false
   }
@@ -767,7 +933,7 @@ watch(
             voucherError.value = ''
           } else {
             appliedVoucher.value = null
-            voucherError.value = res?.data?.message || 'Mã voucher không còn đủ điều kiện cho giỏ hàng hiện tại'
+            voucherError.value = res?.data?.message || ''
           }
         } catch {
           appliedVoucher.value = null
@@ -777,17 +943,17 @@ watch(
   }
 )
 
-const rules = {
-  customerName: [{ required: true, message: 'Vui lòng nhập họ tên người nhận', trigger: 'blur' }],
+const rules = computed(() => ({
+  customerName: [{ required: true, message: isEn.value ? 'Please enter recipient name' : 'Vui lòng nhập họ tên người nhận', trigger: 'blur' }],
   customerPhone: [
-    { required: true, message: 'Vui lòng nhập số điện thoại', trigger: 'blur' },
-    { pattern: /^[0-9]{9,11}$/, message: 'Số điện thoại không đúng định dạng', trigger: 'blur' }
+    { required: true, message: isEn.value ? 'Please enter phone number' : 'Vui lòng nhập số điện thoại', trigger: 'blur' },
+    { pattern: /^[0-9]{9,11}$/, message: isEn.value ? 'Invalid phone number format' : 'Số điện thoại không đúng định dạng', trigger: 'blur' }
   ],
-  provinceCode: [{ required: true, message: 'Vui lòng chọn Tỉnh / Thành phố', trigger: 'change' }],
-  districtCode: [{ required: true, message: 'Vui lòng chọn Quận / Huyện', trigger: 'change' }],
-  wardCode: [{ required: true, message: 'Vui lòng chọn Phường / Xã', trigger: 'change' }],
-  streetAddress: [{ required: true, message: 'Vui lòng nhập số nhà, tên đường cụ thể', trigger: 'blur' }]
-}
+  provinceCode: [{ required: true, message: isEn.value ? 'Select province/city' : 'Vui lòng chọn Tỉnh / Thành phố', trigger: 'change' }],
+  districtCode: [{ required: true, message: isEn.value ? 'Select district' : 'Vui lòng chọn Quận / Huyện', trigger: 'change' }],
+  wardCode: [{ required: true, message: isEn.value ? 'Select ward' : 'Vui lòng chọn Phường / Xã', trigger: 'change' }],
+  streetAddress: [{ required: true, message: isEn.value ? 'Enter street address' : 'Vui lòng nhập số nhà, tên đường', trigger: 'blur' }]
+}))
 
 const finalTotal = computed(() => {
   const shipFee = cartStore.totalPrice >= 1000000 ? 0 : 30000
@@ -795,25 +961,36 @@ const finalTotal = computed(() => {
 })
 
 const confirmClearCart = () => {
-  ElMessageBox.confirm('Bạn có chắc chắn muốn xóa toàn bộ sản phẩm trong giỏ hàng?', 'Xác nhận', {
-    confirmButtonText: 'Xóa giỏ',
-    cancelButtonText: 'Hủy',
-    type: 'warning'
-  }).then(() => {
-    cartStore.clearCart()
-  })
+  ElMessageBox.confirm(
+    isEn.value ? 'Remove all items from your bag?' : 'Bạn có chắc chắn muốn xóa toàn bộ sản phẩm trong giỏ hàng?',
+    isEn.value ? 'Confirm' : 'Xác nhận',
+    {
+      confirmButtonText: isEn.value ? 'Clear bag' : 'Xóa giỏ',
+      cancelButtonText: isEn.value ? 'Cancel' : 'Hủy',
+      type: 'warning'
+    }
+  )
+    .then(() => {
+      cartStore.clearCart()
+    })
+    .catch(() => {})
 }
 
 const submitOrder = async () => {
   if (!formRef.value) return
   await formRef.value.validate(async (valid) => {
     if (!valid) {
-      ElMessage.error('Vui lòng điền đầy đủ các thông tin nhận hàng bắt buộc (*)')
+      ElMessage.error(
+        isEn.value
+          ? 'Please complete required delivery fields (*)'
+          : 'Vui lòng điền đầy đủ thông tin nhận hàng bắt buộc (*)'
+      )
+      document.getElementById('checkout-shipping-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
       return
     }
 
     if (cartStore.items.length === 0) {
-      ElMessage.warning('Giỏ hàng của bạn đang trống!')
+      ElMessage.warning(isEn.value ? 'Your bag is empty!' : 'Giỏ hàng của bạn đang trống!')
       return
     }
 
@@ -834,7 +1011,7 @@ const submitOrder = async () => {
         paymentMethod: form.paymentMethod,
         voucherCode: appliedVoucher.value?.appliedCode || null,
         note: form.note || null,
-        items: cartStore.items.map(item => ({
+        items: cartStore.items.map((item) => ({
           variantId: item.variantId,
           quantity: item.quantity
         }))
@@ -843,17 +1020,14 @@ const submitOrder = async () => {
       const res = await storeService.checkout(payload)
       const orderData = res?.data
 
-      // Save order details to sessionStorage for success page
       sessionStorage.setItem('last_placed_order', JSON.stringify(orderData))
-
-      // Clear cart
       cartStore.clearCart()
 
-      ElMessage.success('Đặt hàng thành công!')
-      router.push(`/order-success/${orderData.orderCode}`)
+      ElMessage.success(isEn.value ? 'Order placed successfully!' : 'Đặt hàng thành công!')
+      router.push(lp(`order-success/${orderData.orderCode}`))
     } catch (err) {
       console.error('Lỗi đặt hàng:', err)
-      const msg = (err.response && err.response.data && err.response.data.message) || 'Có lỗi xảy ra khi tạo đơn hàng'
+      const msg = (err.response && err.response.data && err.response.data.message) || (isEn.value ? 'Checkout failed' : 'Có lỗi xảy ra khi tạo đơn hàng')
       ElMessage.error(msg)
     } finally {
       submitting.value = false
@@ -864,121 +1038,134 @@ const submitOrder = async () => {
 
 <style scoped lang="scss">
 .store-cart {
-  padding: 40px 0 90px;
+  padding: 40px 0 96px;
   background: #ffffff;
+  color: #000000;
 }
 
-.layout-container {
-  max-width: 1360px;
+.adi-cart-container {
+  max-width: 1296px;
+  width: 100%;
   margin: 0 auto;
-  padding: 0 28px;
-}
+  padding: 0 40px;
+  box-sizing: border-box;
 
-.cart-header {
-  margin-bottom: 36px;
-
-  .cart-title {
-    font-size: 32px;
-    font-weight: 900;
-    letter-spacing: -0.02em;
-    color: #000000;
-    margin: 0 0 6px;
+  @media (max-width: 1024px) {
+    padding: 0 24px;
   }
 
-  .cart-subtitle {
-    font-size: 14px;
-    color: #737373;
-    margin: 0;
+  @media (max-width: 640px) {
+    padding: 0 16px;
   }
 }
 
-/* Empty State */
-.empty-cart-state {
-  text-align: center;
-  padding: 100px 20px;
-  background: #fafafa;
-  border: 1px dashed #e5e5e5;
+.cart-title {
+  font-family: 'Barlow Condensed', 'Plus Jakarta Sans', sans-serif;
+  font-size: 46px;
+  font-style: normal;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  line-height: 1.04;
+  color: #000000;
+  margin: 0;
 
-  .empty-icon-wrap {
-    margin-bottom: 20px;
-    .empty-bag-svg {
-      width: 56px;
-      height: 56px;
-      color: #a3a3a3;
-    }
+  @media (max-width: 640px) {
+    font-size: 34px;
   }
+}
 
-  .empty-heading {
-    font-size: 22px;
-    font-weight: 900;
+/* ============ EMPTY CART STATE (CLEAN LEFT-ALIGNED ADIDAS) ============ */
+.adi-empty-cart {
+  padding-top: 12px;
+
+  .cart-empty-sub {
+    font-size: 15px;
     color: #000000;
-    margin: 0 0 8px;
+    margin: 12px 0 28px;
+    max-width: 560px;
+    line-height: 1.55;
   }
 
-  .empty-text {
-    font-size: 14px;
-    color: #737373;
-    max-width: 440px;
-    margin: 0 auto 28px;
-    line-height: 1.5;
-  }
-
-  .btn-continue-shopping {
+  .btn-adi-offset-inline {
+    position: relative;
     display: inline-flex;
     align-items: center;
-    gap: 10px;
+    gap: 20px;
+    height: 50px;
+    padding: 0 26px;
     background: #000000;
     color: #ffffff;
-    padding: 14px 28px;
-    font-size: 12px;
-    font-weight: 800;
-    letter-spacing: 0.08em;
+    border: 1px solid #000000;
     text-decoration: none;
-    transition: background 0.15s ease;
+    font-size: 14px;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+
+    &::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      transform: translate(3px, 3px);
+      border: 1px solid #000000;
+      pointer-events: none;
+    }
+
+    .arrow {
+      font-size: 18px;
+    }
 
     &:hover {
-      background: #262626;
+      color: #cccccc;
     }
   }
 }
 
-/* Cart Grid */
-.cart-grid {
+/* ============ POPULATED CART 2-COLUMN SPLIT (LEFT ~65% / RIGHT 416px) ============ */
+.adi-cart-grid {
   display: grid;
-  grid-template-columns: 1.35fr 1fr;
-  gap: 48px;
-  align-items: flex-start;
+  grid-template-columns: minmax(0, 1fr) 400px;
+  gap: 56px;
+  align-items: start;
 
-  @media (max-width: 992px) {
-    grid-template-columns: 1fr;
+  @media (max-width: 1080px) {
+    grid-template-columns: minmax(0, 1fr) 340px;
     gap: 36px;
+  }
+
+  @media (max-width: 900px) {
+    grid-template-columns: 1fr;
+    gap: 40px;
   }
 }
 
-.section-box {
-  background: #ffffff;
-  border: 1px solid #ebebeb;
-  padding: 28px;
-  margin-bottom: 28px;
+.adi-bag-header {
+  margin-bottom: 24px;
 
-  @media (max-width: 600px) {
-    padding: 18px 14px;
-    margin-bottom: 20px;
+  .bag-title-row {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+
+    .cart-count-muted {
+      font-size: 15px;
+      color: #767677;
+      font-weight: 500;
+    }
   }
 
-  .box-header {
+  .bag-sub-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding-bottom: 18px;
-    border-bottom: 1px solid #ebebeb;
-    margin-bottom: 20px;
+    gap: 16px;
+    flex-wrap: wrap;
 
-    .box-title {
-      font-size: 14px;
-      font-weight: 800;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
+    .bag-reserve-note {
+      font-size: 14.5px;
       color: #000000;
       margin: 0;
     }
@@ -986,384 +1173,469 @@ const submitOrder = async () => {
     .btn-clear-bag {
       background: none;
       border: none;
+      padding: 0;
       font-family: inherit;
-      font-size: 11px;
-      font-weight: 700;
-      color: #737373;
+      font-size: 13px;
+      font-weight: 600;
+      color: #767677;
       text-decoration: underline;
       cursor: pointer;
+
       &:hover {
-        color: #ef4444;
+        color: #000000;
       }
     }
   }
 }
 
-.auth-suggest-banner {
-  background: #f4f4f5;
-  border: 1px solid #e4e4e7;
-  padding: 14px 18px;
-  margin-bottom: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
+/* #eceff1 Promo Strip Box */
+.adi-promo-strip-box {
+  background: #eceff1;
+  padding: 20px 24px;
+  margin-bottom: 28px;
 
-  &.logged-in {
-    background: #f0fdf4;
-    border-color: #bbf7d0;
-  }
-
-  .banner-text {
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-
-    strong {
-      font-size: 13px;
-      font-weight: 800;
-      color: #000000;
-    }
-
-    span {
-      font-size: 12px;
-      color: #52525b;
-    }
-  }
-
-  .banner-login-btn {
-    height: 34px;
-    padding: 0 14px;
-    background: #000000;
-    color: #ffffff;
-    border: 1px solid #000000;
-    border-radius: 5px;
-    font-size: 11px;
+  .promo-strip-title {
+    display: block;
+    font-size: 14px;
     font-weight: 800;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    cursor: pointer;
-    white-space: nowrap;
-    transition: all 0.15s ease;
+    letter-spacing: 0.04em;
+    color: #000000;
+    margin-bottom: 6px;
+  }
+
+  .promo-strip-copy {
+    font-size: 14px;
+    line-height: 1.5;
+    color: #000000;
+    margin: 0 0 12px;
+  }
+
+  .promo-strip-link {
+    font-size: 13px;
+    font-weight: 700;
+    color: #000000;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    letter-spacing: 0.04em;
 
     &:hover {
-      background: #27272a;
+      background: #000000;
+      color: #ffffff;
+      text-decoration: none;
     }
-  }
-
-  .banner-actions {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    white-space: nowrap;
-
-    .btn-sync-profile {
-      height: 32px;
-      padding: 0 12px;
-      background: #ffffff;
-      color: #000000;
-      border: 1px solid #000000;
-      font-size: 11px;
-      font-weight: 800;
-      letter-spacing: 0.04em;
-      cursor: pointer;
-      transition: all 0.15s ease;
-
-      &:hover {
-        background: #000000;
-        color: #ffffff;
-      }
-    }
-  }
-
-  .member-tag {
-    font-size: 11px;
-    font-weight: 800;
-    color: #16a34a;
-    letter-spacing: 0.05em;
-    white-space: nowrap;
   }
 }
 
-/* Items List */
-.cart-items-list {
+/* Exact Live Adidas Cart Item Card (1px solid #d9dbdd, 220px Square Image) */
+.adi-cart-items-stack {
   display: flex;
   flex-direction: column;
   gap: 20px;
+  margin-bottom: 44px;
+}
 
-  .cart-item-row {
-    display: flex;
-    gap: 20px;
-    padding-bottom: 20px;
-    border-bottom: 1px solid #f5f5f5;
+.adi-bag-item-card {
+  display: flex;
+  border: 1px solid #d9dbdd;
+  background: #ffffff;
 
-    &:last-child {
-      border-bottom: none;
-      padding-bottom: 0;
+  @media (max-width: 600px) {
+    flex-direction: column;
+  }
+
+  .bag-item-media {
+    width: 220px;
+    height: 220px;
+    background: #eceff1;
+    flex-shrink: 0;
+    cursor: pointer;
+    overflow: hidden;
+
+    @media (max-width: 600px) {
+      width: 100%;
+      height: 240px;
     }
 
-    .item-visual {
-      width: 100px;
-      height: 100px;
-      background: #f5f5f7;
-      border: 1px solid #ebebeb;
-      padding: 6px;
-      flex-shrink: 0;
-      cursor: pointer;
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .bag-media-fallback {
+      width: 100%;
+      height: 100%;
       display: flex;
       align-items: center;
       justify-content: center;
+      font-weight: 800;
+      color: #767677;
+    }
+  }
 
-      img {
-        width: 100%;
-        height: 100%;
-        object-fit: contain;
+  .bag-item-body {
+    flex: 1;
+    padding: 18px 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-width: 0;
+  }
+
+  .bag-item-top-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+
+    .bag-item-info {
+      .bag-item-title {
+        font-size: 15px;
+        font-weight: 500;
+        text-transform: uppercase;
+        color: #000000;
+        margin: 0 0 8px;
+        cursor: pointer;
+        line-height: 1.35;
+
+        &:hover {
+          text-decoration: underline;
+        }
       }
 
-      .item-visual-placeholder {
-        width: 100%;
-        height: 100%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: #f1f5f9;
-        color: #94a3b8;
-        font-weight: 800;
-        font-size: 13px;
+      .bag-item-spec {
+        font-size: 14px;
+        color: #000000;
+        line-height: 1.45;
+      }
+
+      .bag-item-amber {
+        margin-top: 8px;
+        font-size: 13.5px;
+        font-weight: 500;
+        color: #9a6700;
       }
     }
 
-    .item-content {
-      flex: 1;
+    .bag-item-icons {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      flex-shrink: 0;
 
-      .item-top {
+      .icon-act-btn {
+        width: 30px;
+        height: 30px;
+        background: transparent;
+        border: none;
+        padding: 0;
         display: flex;
-        justify-content: space-between;
         align-items: center;
-        margin-bottom: 4px;
-
-        .item-brand {
-          font-size: 10px;
-          font-weight: 800;
-          letter-spacing: 0.08em;
-          color: #737373;
-          text-transform: uppercase;
-        }
-
-        .item-remove-btn {
-          background: none;
-          border: none;
-          color: #a3a3a3;
-          font-size: 13px;
-          cursor: pointer;
-          &:hover {
-            color: #000000;
-          }
-        }
-      }
-
-      .item-name {
-        font-size: 15px;
-        font-weight: 800;
+        justify-content: center;
         color: #000000;
-        margin: 0 0 8px;
-        line-height: 1.3;
         cursor: pointer;
+
+        svg {
+          width: 20px;
+          height: 20px;
+        }
+
         &:hover {
-          color: #525252;
+          opacity: 0.65;
+        }
+      }
+    }
+  }
+
+  .bag-item-bottom-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-top: 20px;
+    gap: 16px;
+
+    .adi-qty-select-wrap {
+      position: relative;
+      width: 92px;
+
+      .adi-qty-select {
+        width: 100%;
+        height: 44px;
+        padding: 0 32px 0 14px;
+        border: 1px solid #767677;
+        border-radius: 0;
+        background: #ffffff;
+        font-family: inherit;
+        font-size: 14.5px;
+        font-weight: 500;
+        color: #000000;
+        appearance: none;
+        cursor: pointer;
+        outline: none;
+
+        &:focus {
+          border-color: #000000;
         }
       }
 
-      .item-variants-pills {
-        display: flex;
-        gap: 6px;
-        margin-bottom: 14px;
+      .select-chev {
+        position: absolute;
+        right: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 16px;
+        height: 16px;
+        pointer-events: none;
+      }
+    }
 
-        .variant-pill {
-          font-size: 11px;
-          font-weight: 700;
-          background: #f5f5f5;
-          padding: 2px 8px;
-          color: #262626;
-        }
+    .bag-item-price-col {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 2px;
 
-        .sku-pill {
-          font-size: 10px;
-          font-family: monospace;
-          background: #fafafa;
-          border: 1px solid #e5e5e5;
-          padding: 2px 6px;
-          color: #737373;
-        }
+      .unit-note {
+        font-size: 12px;
+        color: #767677;
       }
 
-      .item-bottom-bar {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-
-        .item-stepper {
-          display: flex;
-          align-items: center;
-          border: 1px solid #e5e5e5;
-
-          .step-btn {
-            width: 30px;
-            height: 30px;
-            background: none;
-            border: none;
-            font-size: 15px;
-            cursor: pointer;
-            &:hover {
-              background: #f5f5f5;
-            }
-          }
-
-          .step-val {
-            width: 30px;
-            text-align: center;
-            font-size: 12px;
-            font-weight: 800;
-            font-variant-numeric: tabular-nums;
-          }
-        }
-
-        .item-price-block {
-          text-align: right;
-
-          .unit-price {
-            font-size: 11px;
-            color: #737373;
-            display: block;
-          }
-
-          .total-item-price {
-            font-size: 15px;
-            font-weight: 900;
-            color: #000000;
-            font-variant-numeric: tabular-nums;
-          }
-        }
+      .item-total-price {
+        font-size: 15.5px;
+        font-weight: 700;
+        color: #000000;
+        font-variant-numeric: tabular-nums;
       }
     }
   }
 }
 
-/* Shipping Form */
-.checkout-form {
-  .form-row-2 {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
+/* ============ CHECKOUT SHIPPING & PAYMENT FORM (0px ADIDAS GEOMETRY) ============ */
+.adi-checkout-section {
+  padding-top: 36px;
+  border-top: 1px solid #d9dbdd;
+  margin-bottom: 48px;
 
-    @media (max-width: 600px) {
-      grid-template-columns: 1fr;
-    }
+  .checkout-heading {
+    font-family: 'Barlow Condensed', 'Plus Jakarta Sans', sans-serif;
+    font-size: 30px;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    margin: 0 0 20px;
   }
 
-  .form-row-3 {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 16px;
-
-    @media (max-width: 768px) {
-      grid-template-columns: 1fr;
-      gap: 0;
-    }
-  }
-
-  .address-preview-banner {
+  .adi-member-strip {
+    background: #eceff1;
+    padding: 16px 20px;
+    margin-bottom: 24px;
     display: flex;
-    align-items: flex-start;
-    gap: 12px;
-    padding: 14px 16px;
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
-    border-left: 4px solid #000000;
-    margin-bottom: 22px;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
 
-    .preview-icon {
-      font-size: 18px;
-      line-height: 1;
+    &.logged-in {
+      border-left: 3px solid #427f5c;
     }
 
-    .preview-content {
+    .strip-copy {
       display: flex;
       flex-direction: column;
       gap: 3px;
 
-      .preview-label {
-        font-size: 11px;
+      strong {
+        font-size: 14px;
         font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        color: #64748b;
       }
 
-      .preview-address {
+      span {
         font-size: 13px;
-        font-weight: 700;
+        color: #555555;
+      }
+    }
+
+    .btn-strip-black {
+      height: 40px;
+      padding: 0 18px;
+      background: #000000;
+      color: #ffffff;
+      border: 1px solid #000000;
+      border-radius: 0;
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      cursor: pointer;
+    }
+
+    .strip-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+
+      .btn-strip-outline {
+        height: 36px;
+        padding: 0 14px;
+        background: #ffffff;
         color: #000000;
-        line-height: 1.4;
+        border: 1px solid #000000;
+        border-radius: 0;
+        font-family: inherit;
+        font-size: 12px;
+        font-weight: 700;
+        cursor: pointer;
+
+        &:hover {
+          background: #000000;
+          color: #ffffff;
+        }
+      }
+
+      .member-ok-tag {
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        color: #427f5c;
       }
     }
   }
 
-  .payment-selection {
-    margin-top: 24px;
-    padding-top: 20px;
-    border-top: 1px solid #ebebeb;
+  .adi-checkout-form {
+    .form-row-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
 
-    .payment-title {
-      font-size: 11px;
-      font-weight: 800;
-      letter-spacing: 0.1em;
-      color: #000000;
-      text-transform: uppercase;
-      display: block;
-      margin-bottom: 12px;
+      @media (max-width: 640px) {
+        grid-template-columns: 1fr;
+        gap: 0;
+      }
     }
 
-    .payment-cards {
+    .form-row-3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 14px;
+
+      @media (max-width: 720px) {
+        grid-template-columns: 1fr;
+        gap: 0;
+      }
+    }
+
+    :deep(.el-form-item__label) {
+      font-size: 12px;
+      font-weight: 700;
+      color: #000000;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      padding-bottom: 6px;
+    }
+
+    :deep(.el-input__wrapper) {
+      border-radius: 0 !important;
+      height: 46px;
+      box-shadow: 0 0 0 1px #767677 inset !important;
+      background: #ffffff;
+
+      &.is-focus {
+        box-shadow: 0 0 0 1.5px #000000 inset !important;
+      }
+    }
+  }
+
+  .adi-address-preview {
+    padding: 12px 16px;
+    background: #f7f8f9;
+    border-left: 3px solid #000000;
+    margin-bottom: 18px;
+    font-size: 13.5px;
+
+    .preview-lbl {
+      display: block;
+      font-size: 11.5px;
+      color: #767677;
+      margin-bottom: 2px;
+    }
+  }
+
+  .adi-payment-block {
+    margin-top: 24px;
+
+    .pay-sub-title {
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin: 0 0 14px;
+    }
+
+    .adi-pay-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+
+      @media (max-width: 640px) {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .adi-pay-option {
       display: flex;
-      flex-direction: column;
-      gap: 12px;
+      align-items: flex-start;
+      gap: 14px;
+      padding: 16px;
+      border: 1px solid #d9dbdd;
+      background: #ffffff;
+      cursor: pointer;
+      transition: border-color 0.14s ease;
 
-      .payment-option-card {
-        display: flex;
-        gap: 14px;
-        padding: 16px 18px;
-        border: 1px solid #e5e5e5;
-        background: #fafafa;
-        cursor: pointer;
-        transition: all 0.15s ease;
+      &.active {
+        border: 1.5px solid #000000;
+      }
 
-        .card-radio {
-          width: 18px;
-          height: 18px;
+      .pay-radio-ring {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        border: 1.5px solid #767677;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        margin-top: 2px;
+
+        .pay-radio-dot {
+          width: 10px;
+          height: 10px;
           border-radius: 50%;
-          border: 2px solid #a3a3a3;
-          margin-top: 2px;
-          flex-shrink: 0;
-          display: flex;
-          align-items: center;
-          justify-content: center;
+          background: transparent;
         }
 
-        .card-headline {
+        &.checked {
+          border-color: #000000;
+          .pay-radio-dot {
+            background: #000000;
+          }
+        }
+      }
+
+      .pay-option-body {
+        .pay-option-head {
           display: flex;
           align-items: center;
-          gap: 10px;
+          gap: 8px;
+          flex-wrap: wrap;
           margin-bottom: 4px;
 
           strong {
             font-size: 14px;
-            font-weight: 800;
-            color: #000000;
+            font-weight: 700;
           }
 
-          .recommend-tag {
-            font-size: 9px;
+          .pay-rec-badge {
+            font-size: 10px;
             font-weight: 800;
             letter-spacing: 0.08em;
             background: #000000;
@@ -1373,130 +1645,302 @@ const submitOrder = async () => {
         }
 
         p {
-          font-size: 12px;
-          color: #737373;
           margin: 0;
-          line-height: 1.4;
-        }
-
-        &:hover {
-          border-color: #737373;
-        }
-
-        &.active {
-          border-color: #000000;
-          background: #ffffff;
-
-          .card-radio {
-            border-color: #000000;
-            background: #000000;
-            box-shadow: inset 0 0 0 3px #ffffff;
-          }
+          font-size: 12.5px;
+          line-height: 1.45;
+          color: #555555;
         }
       }
     }
   }
 }
 
-/* Order Summary Box */
-.summary-card {
+/* ============ RIGHT COLUMN: BORDERLESS WHITE "TÓM TẮT ĐƠN HÀNG" ============ */
+.adi-summary-sticky {
   position: sticky;
-  top: 96px;
-  background: #fafafa;
-  border: 1px solid #ebebeb;
-  padding: 30px 28px;
-
-  @media (max-width: 600px) {
-    padding: 20px 16px;
-    position: static;
-  }
+  top: 108px;
+  background: #ffffff;
 
   .summary-heading {
-    font-size: 14px;
+    font-family: 'Barlow Condensed', 'Plus Jakarta Sans', sans-serif;
+    font-size: 32px;
+    font-style: normal;
     font-weight: 800;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.05em;
     text-transform: uppercase;
-    color: #000000;
+    line-height: 1.05;
     margin: 0 0 24px;
-    padding-bottom: 16px;
-    border-bottom: 1px solid #e5e5e5;
   }
 
-  .summary-calc-rows {
+  .summary-table {
     display: flex;
     flex-direction: column;
-    gap: 14px;
-    margin-bottom: 28px;
+    gap: 10px;
+    margin-bottom: 20px;
 
-    .calc-row {
+    .sum-row {
       display: flex;
       justify-content: space-between;
-      font-size: 13px;
-      color: #525252;
+      font-size: 15px;
+      color: #000000;
 
-      .calc-val {
-        font-weight: 700;
-        color: #000000;
-        font-variant-numeric: tabular-nums;
-
-        &.free {
-          color: #10b981;
-          font-weight: 800;
-        }
-      }
-
-      &.total-row {
-        margin-top: 10px;
-        padding-top: 16px;
-        border-top: 1px solid #e5e5e5;
-        align-items: baseline;
-
-        .total-lbl {
-          font-size: 13px;
-          font-weight: 900;
-          letter-spacing: 0.06em;
-          color: #000000;
-        }
-
-        .total-price {
-          font-size: 24px;
-          font-weight: 900;
-          color: #000000;
-          letter-spacing: -0.02em;
-          font-variant-numeric: tabular-nums;
-        }
+      &.discount {
+        color: #767677;
       }
     }
 
-    .freeship-notice {
-      background: #ffffff;
-      border: 1px solid #e5e5e5;
-      padding: 10px 12px;
-      font-size: 11px;
-      color: #525252;
-      line-height: 1.4;
+    .sum-total-block {
+      margin-top: 10px;
+      padding-top: 14px;
+      border-top: 1px solid #d9dbdd;
 
-      strong {
+      .sum-total-row {
+        display: flex;
+        justify-content: space-between;
+        font-size: 16px;
         color: #000000;
+      }
+
+      .sum-tax-note {
+        font-size: 13px;
+        color: #767677;
+        margin-top: 4px;
       }
     }
   }
 
-  .btn-place-order {
+  .adi-freeship-hint {
+    padding: 10px 14px;
+    background: #eceff1;
+    font-size: 13px;
+    line-height: 1.45;
+    margin-bottom: 18px;
+  }
+
+  /* Underlined Expandable Promo Trigger Row */
+  .adi-promo-accordion {
+    margin-bottom: 24px;
+
+    .promo-acc-trigger {
+      width: 100%;
+      padding: 10px 0;
+      background: transparent;
+      border: none;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      font-family: inherit;
+
+      .promo-acc-text {
+        font-size: 15px;
+        font-weight: 700;
+        color: #000000;
+        text-decoration: underline;
+        text-underline-offset: 4px;
+      }
+
+      .promo-acc-chev {
+        font-size: 22px;
+        line-height: 1;
+        transition: transform 0.16s ease;
+
+        &.open {
+          transform: rotate(90deg);
+        }
+      }
+    }
+
+    .promo-acc-body {
+      padding-top: 12px;
+    }
+
+    .voucher-input-row {
+      display: flex;
+      gap: 8px;
+
+      .adi-voucher-input {
+        flex: 1;
+        height: 44px;
+        padding: 0 12px;
+        border: 1px solid #767677;
+        border-radius: 0;
+        font-family: inherit;
+        font-size: 13.5px;
+        outline: none;
+
+        &:focus {
+          border-color: #000000;
+        }
+      }
+
+      .btn-apply-code {
+        height: 44px;
+        padding: 0 16px;
+        background: #000000;
+        color: #ffffff;
+        border: 1px solid #000000;
+        border-radius: 0;
+        font-family: inherit;
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        cursor: pointer;
+
+        &:disabled {
+          opacity: 0.45;
+          cursor: not-allowed;
+        }
+      }
+    }
+
+    .voucher-applied-chip {
+      margin-top: 10px;
+      padding: 10px 12px;
+      background: #eceff1;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+
+      strong {
+        margin-right: 8px;
+      }
+
+      button {
+        background: none;
+        border: none;
+        text-decoration: underline;
+        font-size: 12.5px;
+        cursor: pointer;
+        color: #000000;
+      }
+    }
+
+    .voucher-err-text {
+      margin-top: 8px;
+      font-size: 12.5px;
+      color: #e32b2b;
+    }
+
+    .voucher-wallet-list {
+      margin-top: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 220px;
+      overflow-y: auto;
+
+      .v-ticket {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 12px;
+        border: 1px solid #d9dbdd;
+
+        &.selected {
+          border-color: #000000;
+          background: #f7f8f9;
+        }
+
+        &.disabled {
+          opacity: 0.55;
+        }
+
+        .v-code-line {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 13px;
+
+          .v-tag {
+            font-size: 9.5px;
+            font-weight: 800;
+            padding: 1px 5px;
+            background: #000000;
+            color: #ffffff;
+
+            &.personal {
+              background: #427f5c;
+            }
+          }
+        }
+
+        .v-desc {
+          font-size: 12.5px;
+          font-weight: 600;
+          margin-top: 2px;
+        }
+
+        .v-min,
+        .v-reason {
+          font-size: 11.5px;
+          color: #767677;
+        }
+
+        .v-reason {
+          color: #e32b2b;
+        }
+
+        .btn-v-use {
+          height: 32px;
+          padding: 0 12px;
+          background: #000000;
+          color: #ffffff;
+          border: 1px solid #000000;
+          border-radius: 0;
+          font-family: inherit;
+          font-size: 11.5px;
+          font-weight: 700;
+          cursor: pointer;
+
+          &:disabled {
+            background: #d9dbdd;
+            border-color: #d9dbdd;
+            color: #767677;
+            cursor: not-allowed;
+          }
+        }
+      }
+    }
+  }
+
+  /* Full-Width 48px Black Offset Dropshadow Checkout CTA */
+  .btn-adi-checkout {
+    position: relative;
     width: 100%;
-    height: 52px;
+    height: 50px;
+    padding: 0 20px;
     background: #000000;
     color: #ffffff;
-    border: none;
+    border: 1px solid #000000;
+    border-radius: 0;
     font-family: inherit;
-    font-size: 13px;
-    font-weight: 800;
-    letter-spacing: 0.08em;
+    font-size: 15px;
+    font-weight: 700;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     cursor: pointer;
-    transition: background 0.15s ease;
+    margin-bottom: 28px;
+
+    &::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      transform: translate(3px, 3px);
+      border: 1px solid #000000;
+      pointer-events: none;
+    }
+
+    .arrow {
+      font-size: 20px;
+      line-height: 1;
+    }
 
     &:hover:not(:disabled) {
-      background: #262626;
+      color: #cccccc;
     }
 
     &:disabled {
@@ -1505,262 +1949,154 @@ const submitOrder = async () => {
     }
   }
 
-  .guarantee-points {
-    margin-top: 24px;
+  .adi-accepted-payments {
+    margin-bottom: 22px;
+
+    .accepted-title {
+      font-size: 11.5px;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      color: #000000;
+      margin-bottom: 12px;
+    }
+
+    .payment-badges-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+
+      .pay-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        height: 28px;
+        padding: 0 10px;
+        border: 1px solid #d9dbdd;
+        font-size: 11px;
+        font-weight: 900;
+        letter-spacing: 0.04em;
+
+        &.visa {
+          color: #1a1f71;
+        }
+        &.mc {
+          color: #eb001b;
+        }
+        &.momo {
+          background: #a50064;
+          border-color: #a50064;
+          color: #ffffff;
+        }
+        &.qr {
+          color: #000000;
+        }
+        &.cod {
+          color: #000000;
+        }
+      }
+    }
+  }
+
+  .adi-bag-perks {
+    list-style: none;
+    padding: 18px 0 0;
+    margin: 0;
+    border-top: 1px solid #eceff1;
     display: flex;
     flex-direction: column;
     gap: 8px;
-
-    .point-item {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 11px;
-      color: #737373;
-
-      .point-dot {
-        font-size: 14px;
-        color: #000000;
-      }
-    }
+    font-size: 13px;
+    color: #555555;
   }
 }
 
-.checkout-voucher-box {
-  margin-bottom: 20px;
-  padding: 16px;
-  background: #fafafa;
-  border: 1px solid #e5e5e5;
+/* ============ "GỢI Ý CHO BẠN" 4-COL PRODUCT GRID ============ */
+.adi-cart-recs {
+  padding-top: 40px;
+  border-top: 1px solid #d9dbdd;
+  margin-top: 40px;
 
-  .voucher-box-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 10px;
-    .voucher-box-title {
-      font-size: 11.5px;
-      font-weight: 800;
-      letter-spacing: 0.08em;
-      color: #000000;
-    }
-    .voucher-count-pill {
-      font-size: 11px;
-      font-weight: 700;
-      color: #059669;
+  .recs-heading {
+    font-family: 'Barlow Condensed', 'Plus Jakarta Sans', sans-serif;
+    font-size: 32px;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    margin: 0 0 20px;
+  }
+
+  .recs-grid-4 {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px 8px;
+
+    @media (max-width: 720px) {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
     }
   }
 
-  .voucher-input-group {
-    display: flex;
-    gap: 8px;
+  .rec-card {
+    border: 1px solid transparent;
+    cursor: pointer;
 
-    .voucher-code-input {
-      flex: 1;
-      height: 38px;
-      padding: 0 12px;
-      border: 1px solid #d4d4d4;
-      background: #ffffff;
-      font-family: inherit;
-      font-size: 12.5px;
-      font-weight: 700;
-      letter-spacing: 0.04em;
-      color: #000000;
-      outline: none;
-      &:focus {
-        border-color: #000000;
-      }
+    &:hover {
+      border-color: #000000;
     }
 
-    .btn-apply-voucher {
-      height: 38px;
-      padding: 0 16px;
-      background: #000000;
-      color: #ffffff;
-      border: none;
-      font-family: inherit;
-      font-size: 11.5px;
-      font-weight: 800;
-      letter-spacing: 0.06em;
-      cursor: pointer;
-      &:hover:not(:disabled) {
-        background: #262626;
-      }
-      &:disabled {
-        opacity: 0.45;
-        cursor: not-allowed;
-      }
-    }
-  }
+    .rec-img-stage {
+      position: relative;
+      aspect-ratio: 1 / 1;
+      background: #eceff1;
+      overflow: hidden;
 
-  .voucher-applied-banner {
-    margin-top: 10px;
-    padding: 8px 12px;
-    background: #ecfdf5;
-    border: 1px solid #a7f3d0;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 12px;
-    color: #065f46;
-
-    .applied-info {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-
-    .btn-remove-voucher {
-      background: none;
-      border: none;
-      color: #dc2626;
-      font-size: 11.5px;
-      font-weight: 700;
-      text-decoration: underline;
-      cursor: pointer;
-    }
-  }
-
-  .voucher-error-msg {
-    margin-top: 8px;
-    font-size: 12px;
-    font-weight: 600;
-    color: #dc2626;
-  }
-
-  .voucher-wallet-section {
-    margin-top: 12px;
-
-    .wallet-label {
-      font-size: 11.5px;
-      font-weight: 700;
-      color: #525252;
-      margin-bottom: 8px;
-    }
-
-    .voucher-cards-list {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      max-height: 240px;
-      overflow-y: auto;
-    }
-
-    .voucher-ticket {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 10px;
-      padding: 10px 12px;
-      background: #ffffff;
-      border: 1px solid #e5e5e5;
-      transition: border-color 0.15s ease;
-
-      &.selected {
-        border-color: #000000;
-        box-shadow: inset 3px 0 0 #000000;
-        background: #f9fafb;
+      img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
       }
 
-      &.ineligible {
-        opacity: 0.72;
-        background: #fcfcfc;
-      }
-
-      .ticket-main {
-        flex: 1;
-        min-width: 0;
-      }
-
-      .ticket-top-row {
+      .rec-heart {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        width: 30px;
+        height: 30px;
+        background: transparent;
+        border: none;
         display: flex;
         align-items: center;
-        gap: 6px;
-        margin-bottom: 3px;
-
-        .ticket-code {
-          font-family: monospace;
-          font-size: 12.5px;
-          font-weight: 900;
-          color: #000000;
-          letter-spacing: 0.04em;
-        }
-
-        .ticket-source {
-          font-size: 9px;
-          font-weight: 800;
-          padding: 1px 5px;
-          letter-spacing: 0.05em;
-
-          &.personal {
-            background: #000000;
-            color: #ffffff;
-          }
-          &.public {
-            background: #f1f5f9;
-            color: #334155;
-            border: 1px solid #cbd5e1;
-          }
-        }
-      }
-
-      .ticket-discount {
-        font-size: 12.5px;
-        font-weight: 800;
-        color: #dc2626;
-      }
-
-      .ticket-meta {
-        font-size: 11px;
-        color: #737373;
-        margin-top: 2px;
-        .exp-warn {
-          color: #d97706;
-          font-weight: 700;
-        }
-      }
-
-      .ticket-reason {
-        font-size: 11px;
-        color: #dc2626;
-        margin-top: 3px;
-        font-weight: 600;
-      }
-
-      .btn-ticket-use {
-        padding: 6px 11px;
-        font-size: 11px;
-        font-weight: 800;
-        border: 1px solid #000000;
-        background: #ffffff;
-        color: #000000;
+        justify-content: center;
         cursor: pointer;
-        white-space: nowrap;
-        transition: all 0.14s ease;
 
-        &:hover:not(:disabled) {
-          background: #000000;
-          color: #ffffff;
-        }
-
-        &.active {
-          background: #000000;
-          color: #ffffff;
-        }
-
-        &:disabled {
-          border-color: #d4d4d4;
-          color: #a3a3a3;
-          cursor: not-allowed;
+        svg {
+          width: 18px;
+          height: 18px;
         }
       }
     }
-  }
-}
 
-.summary-calc-rows .calc-row.discount-row {
-  .discount-val {
-    color: #dc2626;
-    font-weight: 800;
+    .rec-meta {
+      padding: 10px 8px 14px;
+
+      .rec-price {
+        font-size: 13.5px;
+        font-weight: 700;
+        margin-bottom: 4px;
+      }
+
+      .rec-name {
+        font-size: 13.5px;
+        line-height: 1.35;
+        color: #000000;
+      }
+
+      .rec-cat {
+        font-size: 12.5px;
+        color: #767677;
+        margin-top: 2px;
+      }
+    }
   }
 }
 </style>
